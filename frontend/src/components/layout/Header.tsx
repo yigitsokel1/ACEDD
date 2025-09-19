@@ -1,111 +1,82 @@
 "use client";
 
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ROUTES } from "@/lib/constants";
+import { Menu, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { NAVIGATION_ITEMS, SITE_CONFIG } from "@/lib/constants";
 
-export default function Header() {
+export function Header() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
 
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+
   return (
-    <header className="fixed top-0 w-full z-50 bg-white/95 backdrop-blur-xl border-b border-gray-100 shadow-sm">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-6">
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <img 
-                src="/logo.svg" 
-                alt="Acıpayam ve Çevresi Eğitimi Destekleme Derneği Logo" 
-                className="w-12 h-12"
-              />
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <Link href="/" className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">A</span>
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">
-                Acıpayam ve Çevresi Eğitimi Destekleme Derneği
-              </h1>
-            </div>
-          </div>
-          
+            <span className="font-bold text-xl text-gray-900">
+              {SITE_CONFIG.shortName}
+            </span>
+          </Link>
+
+          {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
-            <Link 
-              href={ROUTES.HOME} 
-              className={`font-medium transition-colors duration-200 relative group ${
-                pathname === ROUTES.HOME 
-                  ? "text-blue-600" 
-                  : "text-gray-700 hover:text-blue-600"
-              }`}
-            >
-              Ana Sayfa
-              <span className={`absolute -bottom-1 left-0 h-0.5 bg-blue-600 transition-all duration-200 ${
-                pathname === ROUTES.HOME ? "w-full" : "w-0 group-hover:w-full"
-              }`}></span>
-            </Link>
-            
-            <Link 
-              href={ROUTES.ABOUT} 
-              className={`font-medium transition-colors duration-200 relative group ${
-                pathname === ROUTES.ABOUT 
-                  ? "text-blue-600" 
-                  : "text-gray-700 hover:text-blue-600"
-              }`}
-            >
-              Hakkımızda
-              <span className={`absolute -bottom-1 left-0 h-0.5 bg-blue-600 transition-all duration-200 ${
-                pathname === ROUTES.ABOUT ? "w-full" : "w-0 group-hover:w-full"
-              }`}></span>
-            </Link>
-            
-            <Link 
-              href={ROUTES.SERVICES} 
-              className={`font-medium transition-colors duration-200 relative group ${
-                pathname === ROUTES.SERVICES 
-                  ? "text-blue-600" 
-                  : "text-gray-700 hover:text-blue-600"
-              }`}
-            >
-              Hizmetlerimiz
-              <span className={`absolute -bottom-1 left-0 h-0.5 bg-blue-600 transition-all duration-200 ${
-                pathname === ROUTES.SERVICES ? "w-full" : "w-0 group-hover:w-full"
-              }`}></span>
-            </Link>
-            
-            <Link 
-              href={ROUTES.BOARD} 
-              className={`font-medium transition-colors duration-200 relative group ${
-                pathname === ROUTES.BOARD 
-                  ? "text-blue-600" 
-                  : "text-gray-700 hover:text-blue-600"
-              }`}
-            >
-              Yönetim Kurulu
-              <span className={`absolute -bottom-1 left-0 h-0.5 bg-blue-600 transition-all duration-200 ${
-                pathname === ROUTES.BOARD ? "w-full" : "w-0 group-hover:w-full"
-              }`}></span>
-            </Link>
-            
-            <Link 
-              href={ROUTES.CONTACT} 
-              className={`font-medium transition-colors duration-200 relative group ${
-                pathname === ROUTES.CONTACT 
-                  ? "text-blue-600" 
-                  : "text-gray-700 hover:text-blue-600"
-              }`}
-            >
-              İletişim
-              <span className={`absolute -bottom-1 left-0 h-0.5 bg-blue-600 transition-all duration-200 ${
-                pathname === ROUTES.CONTACT ? "w-full" : "w-0 group-hover:w-full"
-              }`}></span>
-            </Link>
+            {NAVIGATION_ITEMS.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  "text-sm font-medium transition-colors hover:text-blue-600",
+                  pathname === item.href
+                    ? "text-blue-600"
+                    : "text-gray-700"
+                )}
+              >
+                {item.name}
+              </Link>
+            ))}
           </nav>
-          
-          <div className="md:hidden">
-            <button className="p-2 rounded-lg text-gray-600 hover:text-blue-600 hover:bg-gray-100 transition-colors">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-          </div>
+
+          {/* Mobile menu button */}
+          <button
+            onClick={toggleMenu}
+            className="md:hidden p-2 rounded-md text-gray-700 hover:text-blue-600 hover:bg-gray-100"
+            aria-label="Toggle menu"
+          >
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
         </div>
+
+        {/* Mobile Navigation */}
+        {isMenuOpen && (
+          <div className="md:hidden">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gray-50 rounded-lg mt-2">
+              {NAVIGATION_ITEMS.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={cn(
+                    "block px-3 py-2 text-base font-medium rounded-md transition-colors",
+                    pathname === item.href
+                      ? "text-blue-600 bg-blue-50"
+                      : "text-gray-700 hover:text-blue-600 hover:bg-gray-100"
+                  )}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {item.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </header>
   );

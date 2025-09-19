@@ -32,10 +32,10 @@ export default function MissionCard({ data, className = '' }: MissionCardProps) 
   const colors = colorClasses[data.color];
 
   return (
-    <div className={`group relative bg-white p-8 rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 border border-gray-100 overflow-hidden ${className}`}>
+    <div className={`group relative bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 overflow-hidden ${className}`}>
       <div className={`absolute top-0 right-0 w-20 h-20 ${colors.decorative} rounded-full -translate-y-10 translate-x-10 opacity-20`}></div>
       <div className="relative z-10">
-        <div className={`w-16 h-16 bg-gradient-to-br ${colors.icon} rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
+        <div className={`w-16 h-16 bg-gradient-to-br ${colors.icon} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-md`}>
           <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={data.icon} />
           </svg>
