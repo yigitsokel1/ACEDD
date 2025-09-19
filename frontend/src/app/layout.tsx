@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Header, Footer } from "@/components/layout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Eğitim Burs Derneği - Öğrencilere Burs Desteği",
-  description: "Eğitim Burs Derneği olarak öğrencilere maddi destek sağlıyoruz. Burs başvurularınızı yapabilir, eğitim hayatınızı destekleyebilirsiniz.",
+  title: "Acıpayam ve Çevresi Eğitimi Destekleme Derneği - Eğitimde Fırsat Eşitliği",
+  description: "Acıpayam ve çevresindeki öğrencilerin eğitim olanaklarını artırmak, kaliteli eğitime erişimlerini sağlamak ve geleceğe hazırlamak amacıyla 2015 yılından bu yana faaliyet gösteriyoruz.",
 };
 
 export default function RootLayout({
@@ -27,7 +28,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <Header />
+        <main className="min-h-screen">
+          {children}
+        </main>
+        <Footer />
       </body>
     </html>
   );
