@@ -1,29 +1,24 @@
-import { Phone, Mail, MapPin, Clock } from "lucide-react";
+import { Phone, Mail, MapPin } from "lucide-react";
+import { CONTACT_INFO as GLOBAL_CONTACT_INFO } from "@/lib/constants";
 
 export const CONTACT_INFO = [
   {
     title: "Adres",
-    value: "Acıpayam, Denizli, Türkiye",
+    value: GLOBAL_CONTACT_INFO.address,
     icon: MapPin,
     description: "Dernek merkezimiz Acıpayam'da bulunmaktadır",
   },
   {
     title: "Telefon",
-    value: "+90 258 XXX XX XX",
+    value: GLOBAL_CONTACT_INFO.phone,
     icon: Phone,
-    description: "Pazartesi - Cuma: 09:00 - 17:00",
+    description: "Bizimle iletişime geçin",
   },
   {
     title: "E-posta",
-    value: "info@acedd.org",
+    value: GLOBAL_CONTACT_INFO.email,
     icon: Mail,
-    description: "7/24 e-posta desteği",
-  },
-  {
-    title: "Çalışma Saatleri",
-    value: "Pazartesi - Cuma",
-    icon: Clock,
-    description: "09:00 - 17:00",
+    description: "E-posta ile iletişime geçin",
   },
 ] as const;
 

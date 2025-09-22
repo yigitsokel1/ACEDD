@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
-import { Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin } from "lucide-react";
-import { SITE_CONFIG, SOCIAL_LINKS, CONTACT_INFO } from "@/lib/constants";
+import { Mail, Phone, MapPin } from "lucide-react";
+import { SITE_CONFIG, CONTACT_INFO } from "@/lib/constants";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -9,7 +9,7 @@ export function Footer() {
   return (
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Logo ve Açıklama */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
@@ -21,44 +21,6 @@ export function Footer() {
             <p className="text-gray-300 text-sm leading-relaxed">
               {SITE_CONFIG.description}
             </p>
-            <div className="flex space-x-4">
-              <a
-                href={SOCIAL_LINKS.facebook}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-white transition-colors"
-                aria-label="Facebook"
-              >
-                <Facebook size={20} />
-              </a>
-              <a
-                href={SOCIAL_LINKS.twitter}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-white transition-colors"
-                aria-label="Twitter"
-              >
-                <Twitter size={20} />
-              </a>
-              <a
-                href={SOCIAL_LINKS.instagram}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-white transition-colors"
-                aria-label="Instagram"
-              >
-                <Instagram size={20} />
-              </a>
-              <a
-                href={SOCIAL_LINKS.linkedin}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-white transition-colors"
-                aria-label="LinkedIn"
-              >
-                <Linkedin size={20} />
-              </a>
-            </div>
           </div>
 
           {/* Hızlı Linkler */}
@@ -66,13 +28,18 @@ export function Footer() {
             <h3 className="text-lg font-semibold">Hızlı Linkler</h3>
             <ul className="space-y-2">
               <li>
+                <Link href="/" className="text-gray-300 hover:text-white transition-colors text-sm">
+                  Ana Sayfa
+                </Link>
+              </li>
+              <li>
                 <Link href="/hakkimizda" className="text-gray-300 hover:text-white transition-colors text-sm">
                   Hakkımızda
                 </Link>
               </li>
               <li>
-                <Link href="/hizmetler" className="text-gray-300 hover:text-white transition-colors text-sm">
-                  Hizmetlerimiz
+                <Link href="/etkinlikler" className="text-gray-300 hover:text-white transition-colors text-sm">
+                  Etkinlikler
                 </Link>
               </li>
               <li>
@@ -85,18 +52,6 @@ export function Footer() {
                   İletişim
                 </Link>
               </li>
-            </ul>
-          </div>
-
-          {/* Hizmetler */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Hizmetlerimiz</h3>
-            <ul className="space-y-2">
-              <li className="text-gray-300 text-sm">Eğitim Bursları</li>
-              <li className="text-gray-300 text-sm">Kitap Yardımları</li>
-              <li className="text-gray-300 text-sm">Kırtasiye Desteği</li>
-              <li className="text-gray-300 text-sm">Mentorluk Programı</li>
-              <li className="text-gray-300 text-sm">Sosyal Etkinlikler</li>
             </ul>
           </div>
 
@@ -126,9 +81,6 @@ export function Footer() {
                   {CONTACT_INFO.email}
                 </a>
               </div>
-            </div>
-            <div className="text-gray-300 text-sm">
-              <p>{CONTACT_INFO.workingHours}</p>
             </div>
           </div>
         </div>

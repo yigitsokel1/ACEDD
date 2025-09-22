@@ -13,8 +13,8 @@ export default function AboutPage() {
       <HeroSection />
       <MissionVisionSection />
       <ValuesSection />
-      <TeamSection />
       <HistorySection />
+      <TeamSection />
     </div>
   );
 }

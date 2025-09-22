@@ -4,6 +4,7 @@ import "./globals.css";
 import { Header, Footer } from "@/components/layout";
 import { SITE_CONFIG } from "@/lib/constants";
 import { ConditionalLayout } from "@/components/layout/ConditionalLayout";
+import { EventsProvider } from "@/contexts/EventsContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -54,9 +55,11 @@ export default function RootLayout({
   return (
     <html lang="tr" className={inter.variable}>
       <body className="font-sans antialiased">
-        <ConditionalLayout>
-          {children}
-        </ConditionalLayout>
+        <EventsProvider>
+          <ConditionalLayout>
+            {children}
+          </ConditionalLayout>
+        </EventsProvider>
       </body>
     </html>
   );

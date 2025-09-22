@@ -16,7 +16,7 @@ export const SITE_CONFIG = {
 export const NAVIGATION_ITEMS = [
   { name: "Ana Sayfa", href: "/" },
   { name: "Hakkımızda", href: "/hakkimizda" },
-  { name: "Hizmetlerimiz", href: "/hizmetler" },
+  { name: "Etkinlikler", href: "/etkinlikler" },
   { name: "Burs Başvurusu", href: "/burs-basvuru" },
   { name: "İletişim", href: "/iletisim" },
 ] as const;
@@ -39,16 +39,16 @@ export const SOCIAL_LINKS = {
 } as const;
 
 export const CONTACT_INFO = {
-  address: "Acıpayam, Denizli, Türkiye",
-  phone: "+90 258 XXX XX XX",
-  email: "info@acedd.org",
+  address: "Yukarı Mahalle, Atatürk Bulvarı, No:32, Özcan Plaza, Kat 1, Acıpayam, Denizli, Türkiye",
+  phone: "+90 532 655 40 90",
+  email: "Acedd@acipayam.org",
   workingHours: "Pazartesi - Cuma: 09:00 - 17:00",
 } as const;
 
 export const ROUTES = {
   HOME: "/",
   ABOUT: "/hakkimizda",
-  SERVICES: "/hizmetler",
+  EVENTS: "/etkinlikler",
   CONTACT: "/iletisim",
   SCHOLARSHIP: "/burs-basvuru",
   ADMIN: "/admin",
