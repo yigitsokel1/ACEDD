@@ -1,15 +1,26 @@
-import React from "react";
+"use client";
+
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Mail, Phone, MapPin } from "lucide-react";
 import { SITE_CONFIG, CONTACT_INFO } from "@/lib/constants";
 
 export function Footer() {
+  const [mounted, setMounted] = useState(false);
   const currentYear = new Date().getFullYear();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Logo ve Açıklama */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
@@ -43,13 +54,30 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/burs-basvuru" className="text-gray-300 hover:text-white transition-colors text-sm">
-                  Burs Başvurusu
+                <Link href="/iletisim" className="text-gray-300 hover:text-white transition-colors text-sm">
+                  İletişim
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Bize Katıl */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Bize Katıl</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link href="/bagis-yap" className="text-gray-300 hover:text-white transition-colors text-sm">
+                  Bağış Yap
                 </Link>
               </li>
               <li>
-                <Link href="/iletisim" className="text-gray-300 hover:text-white transition-colors text-sm">
-                  İletişim
+                <Link href="/uyelik-basvuru" className="text-gray-300 hover:text-white transition-colors text-sm">
+                  Üyelik Başvurusu
+                </Link>
+              </li>
+              <li>
+                <Link href="/burs-basvuru" className="text-gray-300 hover:text-white transition-colors text-sm">
+                  Burs Başvurusu
                 </Link>
               </li>
             </ul>

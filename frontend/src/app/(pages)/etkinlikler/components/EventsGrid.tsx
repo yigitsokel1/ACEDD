@@ -212,8 +212,8 @@ export function EventsGrid() {
                 <div className={`absolute -top-4 ${index % 2 === 0 ? '-right-4' : '-left-4'} w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full shadow-lg`}></div>
               </div>
 
-              {/* İçerik Bölümü */}
-              <div className="flex-1 space-y-6">
+              {/* İçerik Bölümü - Tıklanabilir */}
+              <Link href={`/etkinlikler/${event.id}`} className="flex-1 space-y-6 cursor-pointer hover:bg-gray-50 rounded-2xl p-6 transition-all duration-300 group-hover:bg-gray-50/50">
                 {/* Tarih ve Öne Çıkan Badge */}
                 <div className="flex items-center justify-between">
                   <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-full text-lg font-bold shadow-lg">
@@ -251,14 +251,12 @@ export function EventsGrid() {
 
                 {/* Detay Butonu */}
                 <div className="pt-4">
-                  <Link href={`/etkinlikler/${event.id}`}>
-                    <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-4 px-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 group-hover:scale-105 text-lg">
-                      <ExternalLink className="w-6 h-6 mr-3" />
-                      Etkinlik Detayları
-                    </Button>
-                  </Link>
+                  <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-4 px-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 group-hover:scale-105 text-lg">
+                    <ExternalLink className="w-6 h-6 mr-3" />
+                    Etkinlik Detayları
+                  </Button>
                 </div>
-              </div>
+              </Link>
 
               {/* Timeline Çizgisi */}
               {index < events.length - 1 && (
