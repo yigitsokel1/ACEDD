@@ -46,3 +46,18 @@ export async function getEventImagesCollection() {
   const db = await getDatabase();
   return db.collection('event_images');
 }
+
+export async function getMembersCollection() {
+  const db = await getDatabase();
+  return db.collection('members');
+}
+
+export async function getMembershipApplicationsCollection() {
+  const db = await getDatabase();
+  return db.collection('membership_applications');
+}
+
+export async function getBoardMembersCollection() {
+  const db = await getDatabase();
+  return db.collection('board_members');
+}

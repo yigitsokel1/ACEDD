@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Menu, X, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ADMIN_NAVIGATION_ITEMS } from "../constants";
+import { MembersProvider } from "@/contexts/MembersContext";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -18,14 +19,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Mobile sidebar overlay */}
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
+    <MembersProvider>
+      <div className="min-h-screen bg-gray-50 flex">
+        {/* Mobile sidebar overlay */}
+        {isSidebarOpen && (
+          <div
+            className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
 
       {/* Sidebar */}
       <div
@@ -116,6 +118,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           {children}
         </main>
       </div>
-    </div>
+      </div>
+    </MembersProvider>
   );
 }

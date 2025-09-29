@@ -39,29 +39,44 @@ export function MembershipForm() {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    alert("Başvurunuz başarıyla gönderildi! En kısa sürede size geri dönüş yapacağız.");
-    setIsSubmitting(false);
-    
-    // Reset form
-    setFormData({
-      firstName: "",
-      lastName: "",
-      gender: "",
-      email: "",
-      phone: "",
-      birthDate: "",
-      academicLevel: "",
-      maritalStatus: "",
-      hometown: "",
-      placeOfBirth: "",
-      nationality: "",
-      currentAddress: "",
-      tcId: "",
-      lastValidDate: ""
-    });
+    try {
+      const response = await fetch('/api/membership-applications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Başvuru gönderilirken bir hata oluştu');
+      }
+
+      alert("Başvurunuz başarıyla gönderildi! En kısa sürede size geri dönüş yapacağız.");
+      
+      // Reset form
+      setFormData({
+        firstName: "",
+        lastName: "",
+        gender: "",
+        email: "",
+        phone: "",
+        birthDate: "",
+        academicLevel: "",
+        maritalStatus: "",
+        hometown: "",
+        placeOfBirth: "",
+        nationality: "",
+        currentAddress: "",
+        tcId: "",
+        lastValidDate: ""
+      });
+    } catch (error) {
+      console.error('Error submitting application:', error);
+      alert("Başvuru gönderilirken bir hata oluştu. Lütfen tekrar deneyin.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClear = () => {

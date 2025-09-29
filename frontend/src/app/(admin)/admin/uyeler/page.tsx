@@ -1,40 +1,80 @@
-import React from "react";
-import { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Üyeler - Admin",
-  description: "Dernek üyelerini yönetin",
-};
+import React, { useState } from "react";
+import { Metadata } from "next";
+import { Users, FileText, Shield, UserPlus } from "lucide-react";
+import { Button } from "@/components/ui";
+import { useMembers } from "@/contexts/MembersContext";
+
+// Components
+import MemberManagementTab from "./components/MemberManagementTab";
+import MembershipApplicationsTab from "./components/MembershipApplicationsTab";
+import BoardMembersTab from "./components/BoardMembersTab";
 
 export default function MembersPage() {
+  const [activeTab, setActiveTab] = useState<'members' | 'applications' | 'board'>('members');
+
+  const tabs = [
+    {
+      id: 'members' as const,
+      label: 'Üye Yönetimi',
+      icon: Users,
+      description: 'Üyeleri görüntüle, ekle, düzenle ve sil'
+    },
+    {
+      id: 'applications' as const,
+      label: 'Başvurular',
+      icon: FileText,
+      description: 'Üyelik başvurularını incele ve onayla'
+    },
+    {
+      id: 'board' as const,
+      label: 'Yönetim Kurulu',
+      icon: Shield,
+      description: 'Yönetim kurulu üyelerini yönet'
+    }
+  ];
+
   return (
     <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Üyeler</h1>
-          <p className="text-gray-600">
-            Dernek üyelerini görüntüleyin ve yönetin.
-          </p>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Üye Yönetimi
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Bu sayfa geliştirilme aşamasındadır. Yakında üyeleri 
-              görüntüleyebilir, yeni üye ekleyebilir ve üye bilgilerini güncelleyebilirsiniz.
-            </p>
-            <div className="text-sm text-gray-500">
-              Özellikler: Üye Listesi, Yeni Üye Ekleme, Üye Detayları, Üye Güncelleme
-            </div>
-          </div>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Üye Yönetimi</h1>
+        <p className="text-gray-600">
+          Dernek üyelerini, başvuruları ve yönetim kurulunu yönetin.
+        </p>
       </div>
+
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`group inline-flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Icon className={`mr-2 h-5 w-5 ${
+                  activeTab === tab.id ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
+                }`} />
+                {tab.label}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      <div className="bg-white rounded-lg shadow">
+        {activeTab === 'members' && <MemberManagementTab />}
+        {activeTab === 'applications' && <MembershipApplicationsTab />}
+        {activeTab === 'board' && <BoardMembersTab />}
+      </div>
+    </div>
   );
 }
