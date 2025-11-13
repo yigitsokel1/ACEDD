@@ -5,12 +5,13 @@ import { Dataset } from '../route';
 // GET - Tek veri seti getir
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const db = await getDatabase();
     const collection = db.collection('datasets');
-    const dataset = await collection.findOne({ id: params.id });
+    const dataset = await collection.findOne({ id });
     
     if (!dataset) {
       return NextResponse.json(
@@ -32,9 +33,10 @@ export async function GET(
 // PUT - Veri seti güncelle
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const updateData: Partial<Dataset> = await request.json();
     const updatedDataset = {
       ...updateData,
@@ -44,7 +46,7 @@ export async function PUT(
     const db = await getDatabase();
     const collection = db.collection('datasets');
     const result = await collection.updateOne(
-      { id: params.id },
+      { id },
       { $set: updatedDataset }
     );
     
@@ -56,7 +58,7 @@ export async function PUT(
     }
     
     if (result.modifiedCount > 0) {
-      const updatedDataset = await collection.findOne({ id: params.id });
+      const updatedDataset = await collection.findOne({ id });
       return NextResponse.json(updatedDataset);
     } else {
       return NextResponse.json(
@@ -76,12 +78,13 @@ export async function PUT(
 // DELETE - Veri seti sil
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const db = await getDatabase();
     const collection = db.collection('datasets');
-    const result = await collection.deleteOne({ id: params.id });
+    const result = await collection.deleteOne({ id });
     
     if (result.deletedCount === 0) {
       return NextResponse.json(

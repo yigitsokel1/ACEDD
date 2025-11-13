@@ -13,26 +13,15 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   error?: string;
   helperText?: string;
   options: string[] | SelectOption[];
-  value?: string;
-  onChange?: (value: string) => void;
   placeholder?: string;
 }
 
 const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
-  ({ className, label, error, helperText, options, value, onChange, placeholder, id, ...props }, ref) => {
+  ({ className, label, error, helperText, options, placeholder, id, ...props }, ref) => {
     const generatedId = useId();
     const selectId = id || generatedId;
 
-    const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-      if (onChange) {
-        onChange(e.target.value);
-      }
-      if (props.onChange) {
-        props.onChange(e);
-      }
-    };
-
-    const isOptionObject = (option: any): option is SelectOption => {
+    const isOptionObject = (option: string | SelectOption): option is SelectOption => {
       return typeof option === 'object' && option !== null && 'value' in option && 'label' in option;
     };
 
@@ -55,8 +44,6 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           )}
           ref={ref}
           id={selectId}
-          value={value}
-          onChange={handleChange}
           {...props}
         >
           <option value="">{placeholder || "Seçiniz"}</option>

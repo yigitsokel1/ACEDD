@@ -4,15 +4,15 @@ import { UpdateMemberData } from '@/lib/types/member';
 import { ObjectId } from 'mongodb';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // GET - Belirli bir üyeyi getir
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PUT - Üye bilgilerini güncelle
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
@@ -90,6 +90,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Güncellenmiş üyeyi getir
     const updatedMember = await collection.findOne({ _id: new ObjectId(id) });
     
+    if (!updatedMember) {
+      return NextResponse.json(
+        { error: 'Member not found after update' },
+        { status: 404 }
+      );
+    }
+    
     const formattedMember = {
       ...updatedMember,
       id: updatedMember._id.toString(),
@@ -109,7 +116,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE - Üyeyi sil
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(

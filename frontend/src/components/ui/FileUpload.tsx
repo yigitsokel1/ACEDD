@@ -96,9 +96,9 @@ export function FileUpload({
       const data = await response.json();
       const newDatasetIds = multiple ? [...value, ...data.datasetIds] : data.datasetIds;
       onChange(newDatasetIds);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Upload error:', error);
-      setUploadError(error.message || 'Dosya yüklenirken bir hata oluştu.');
+      setUploadError((error as Error)?.message || 'Dosya yüklenirken bir hata oluştu.');
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {

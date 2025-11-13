@@ -137,7 +137,7 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
                 <Select
                   label="Cinsiyet"
                   value={formData.gender}
-                  onChange={(value) => setFormData(prev => ({ ...prev, gender: value as any }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value as "" | "erkek" | "kadın" }))}
                   options={genderOptions}
                   required
                 />
@@ -151,14 +151,14 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
                 <Select
                   label="Akademik Seviye"
                   value={formData.academicLevel}
-                  onChange={(value) => setFormData(prev => ({ ...prev, academicLevel: value as any }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, academicLevel: e.target.value as "" | "ilkokul" | "ortaokul" | "lise" | "onlisans" | "lisans" | "yukseklisans" | "doktora" }))}
                   options={academicLevelOptions}
                   required
                 />
                 <Select
                   label="Medeni Hal"
                   value={formData.maritalStatus}
-                  onChange={(value) => setFormData(prev => ({ ...prev, maritalStatus: value as any }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, maritalStatus: e.target.value as "" | "bekar" | "evli" | "bosanmis" | "dul" }))}
                   options={maritalStatusOptions}
                   required
                 />
@@ -274,7 +274,7 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
                 <Select
                   label="Durum"
                   value={formData.status}
-                  onChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as "" | "active" | "inactive" }))}
                   options={statusOptions}
                   required
                 />
@@ -651,7 +651,7 @@ export default function MemberManagementTab() {
               <Select
                 label="Durum"
                 value={statusFilter}
-                onChange={(value) => setStatusFilter(value as any)}
+                onChange={(e) => setStatusFilter(e.target.value as "active" | "inactive" | "all")}
                 placeholder="Tümü"
                 options={[
                   { value: "active", label: "Aktif" },
@@ -665,7 +665,7 @@ export default function MemberManagementTab() {
               <Select
                 label="Ünvan"
                 value={titleFilter}
-                onChange={(value) => setTitleFilter(value)}
+                onChange={(e) => setTitleFilter(e.target.value)}
                 placeholder="Tümü"
                 options={titleOptions}
               />

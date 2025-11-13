@@ -26,7 +26,7 @@ export default function EventsAdminPage() {
     isFeatured: false,
   });
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: string | number | boolean | string[]) => {
     setFormData(prev => ({
       ...prev,
       [field]: value

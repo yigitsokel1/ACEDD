@@ -15,7 +15,7 @@ export function HistorySection() {
             Hedefimiz
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Acıpayam Çevresi Eğitimi Destekleme Derneği'nin Temel Hedefi
+            Acıpayam Çevresi Eğitimi Destekleme Derneği&apos;nin Temel Hedefi
           </p>
         </div>
         
@@ -33,7 +33,7 @@ export function HistorySection() {
                 <div className="w-16 h-1 bg-emerald-500 rounded-full mx-auto"></div>
               </div>
               <p className="text-lg text-gray-700 leading-relaxed mb-6 text-center">
-                <strong className="text-emerald-700">Acıpayam Çevresi Eğitimi Destekleme Derneği'nin ana hedefi,</strong> Acıpayam ve çevresindeki öğrencilere kapsamlı bir eğitim desteği sunmak ve onların kişisel gelişimlerine katkıda bulunmaktır. Bu hedef doğrultusunda, dernek çeşitli faaliyetler yürüterek gençlerin geleceğe daha umutla bakmalarını sağlamayı amaçlar.
+                <strong className="text-emerald-700">Acıpayam Çevresi Eğitimi Destekleme Derneği&apos;nin ana hedefi,</strong> Acıpayam ve çevresindeki öğrencilere kapsamlı bir eğitim desteği sunmak ve onların kişisel gelişimlerine katkıda bulunmaktır. Bu hedef doğrultusunda, dernek çeşitli faaliyetler yürüterek gençlerin geleceğe daha umutla bakmalarını sağlamayı amaçlar.
               </p>
               <div className="bg-gradient-to-r from-emerald-50 to-teal-50 p-6 rounded-2xl border border-emerald-100">
                 <h4 className="text-xl font-bold text-emerald-900 mb-3 text-center">Hedefe Ulaşmak İçin Yürütülen Faaliyetler</h4>

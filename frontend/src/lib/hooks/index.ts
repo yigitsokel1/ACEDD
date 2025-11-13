@@ -87,7 +87,7 @@ export function useDebounce<T>(value: T, delay: number): T {
 
 // Previous value hook
 export function usePrevious<T>(value: T): T | undefined {
-  const ref = useRef<T>();
+  const ref = useRef<T | undefined>(undefined);
   useEffect(() => {
     ref.current = value;
   });
@@ -97,8 +97,8 @@ export function usePrevious<T>(value: T): T | undefined {
 // Click outside hook
 export function useClickOutside<T extends HTMLElement>(
   callback: () => void
-): React.RefObject<T> {
-  const ref = useRef<T>(null);
+): React.RefObject<T | null> {
+  const ref = useRef<T | null>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

@@ -3,15 +3,15 @@ import { getMembershipApplicationsCollection } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // GET - Belirli bir başvuruyu getir
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PUT - Başvuru durumunu güncelle (onay/red)
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
@@ -99,6 +99,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Güncellenmiş başvuruyu getir
     const updatedApplication = await collection.findOne({ _id: new ObjectId(id) });
     
+    if (!updatedApplication) {
+      return NextResponse.json(
+        { error: 'Application not found after update' },
+        { status: 404 }
+      );
+    }
+    
     const formattedApplication = {
       ...updatedApplication,
       id: updatedApplication._id.toString(),
@@ -118,7 +125,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE - Başvuruyu sil
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(

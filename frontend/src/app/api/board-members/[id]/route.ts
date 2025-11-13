@@ -3,15 +3,15 @@ import { getBoardMembersCollection } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // GET - Belirli bir yönetim kurulu üyesini getir
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PUT - Yönetim kurulu üyesi bilgilerini güncelle
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
@@ -89,6 +89,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Güncellenmiş yönetim kurulu üyesini getir
     const updatedBoardMember = await collection.findOne({ _id: new ObjectId(id) });
     
+    if (!updatedBoardMember) {
+      return NextResponse.json(
+        { error: 'Board member not found after update' },
+        { status: 404 }
+      );
+    }
+    
     const formattedBoardMember = {
       ...updatedBoardMember,
       id: updatedBoardMember._id.toString(),
@@ -108,7 +115,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE - Yönetim kurulu üyesini sil
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const { id } = params;
+    const { id } = await params;
     
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(

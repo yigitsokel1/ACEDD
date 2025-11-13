@@ -12,7 +12,7 @@ export async function GET(
     const collection = await getEventsCollection();
     
     // MongoDB'de _id ile ara
-    const { ObjectId } = require('mongodb');
+    const { ObjectId } = await import('mongodb');
     let event;
     
     try {
@@ -63,7 +63,7 @@ export async function PUT(
     const collection = await getEventsCollection();
     
     // MongoDB'de _id ile ara (id field'ı yok, sadece _id var)
-    const { ObjectId } = require('mongodb');
+    const { ObjectId } = await import('mongodb');
     let event;
     
     try {
@@ -135,7 +135,7 @@ export async function DELETE(
     const collection = await getEventsCollection();
     
     // MongoDB'de _id ile ara
-    const { ObjectId } = require('mongodb');
+    const { ObjectId } = await import('mongodb');
     let event;
     
     try {

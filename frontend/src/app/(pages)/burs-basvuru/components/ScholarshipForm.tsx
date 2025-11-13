@@ -126,7 +126,8 @@ export function ScholarshipForm() {
 
   const nextStep = async () => {
     const fieldsToValidate = getFieldsForStep(currentStep);
-    const isValid = await trigger(fieldsToValidate);
+    // Type assertion için daha güvenli bir yaklaşım
+    const isValid = await trigger(fieldsToValidate as (keyof ScholarshipFormData)[]);
     if (isValid && currentStep < steps.length) {
       setCurrentStep(currentStep + 1);
     }
@@ -288,7 +289,7 @@ export function ScholarshipForm() {
               <Select
                 {...register("gender")}
                 label={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.gender.label}
-                options={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.gender.options}
+                options={[...SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.gender.options]}
                 error={errors.gender?.message}
                 required={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.gender.required}
               />
@@ -298,7 +299,7 @@ export function ScholarshipForm() {
               <Select
                 {...register("maritalStatus")}
                 label={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.maritalStatus.label}
-                options={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.maritalStatus.options}
+                options={[...SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.maritalStatus.options]}
                 error={errors.maritalStatus?.message}
                 required={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.maritalStatus.required}
               />
@@ -367,14 +368,14 @@ export function ScholarshipForm() {
               <Select
                 {...register("physicalDisability")}
                 label={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.physicalDisability.label}
-                options={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.physicalDisability.options}
+                options={[...SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.physicalDisability.options]}
                 error={errors.physicalDisability?.message}
                 required={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.physicalDisability.required}
               />
               <Select
                 {...register("healthProblem")}
                 label={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.healthProblem.label}
-                options={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.healthProblem.options}
+                options={[...SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.healthProblem.options]}
                 error={errors.healthProblem?.message}
                 required={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.healthProblem.required}
               />
@@ -403,7 +404,7 @@ export function ScholarshipForm() {
               <Select
                 {...register("scholarshipIncome")}
                 label={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.scholarshipIncome.label}
-                options={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.scholarshipIncome.options}
+                options={[...SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.scholarshipIncome.options]}
                 error={errors.scholarshipIncome?.message}
                 required={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.scholarshipIncome.required}
               />
@@ -724,7 +725,7 @@ export function ScholarshipForm() {
                   <Select
                     {...register(`references.${index}.isAcddMember`)}
                     label={SCHOLARSHIP_FORM_FIELDS.references.fields.isAcddMember.label}
-                    options={SCHOLARSHIP_FORM_FIELDS.references.fields.isAcddMember.options}
+                    options={[...SCHOLARSHIP_FORM_FIELDS.references.fields.isAcddMember.options]}
                     error={errors.references?.[index]?.isAcddMember?.message}
                     required={SCHOLARSHIP_FORM_FIELDS.references.fields.isAcddMember.required}
                   />

@@ -86,7 +86,7 @@ function BoardMemberModal({ boardMember, onClose, onSave, isEditing }: BoardMemb
             <Select
               label="Üye Türü"
               value={formData.memberType}
-              onChange={(value) => setFormData(prev => ({ ...prev, memberType: value as any }))}
+              onChange={(e) => setFormData(prev => ({ ...prev, memberType: e.target.value as "honoraryPresident" | "foundingPresident" | "foundingMember" | "formerPresident" | "boardMember" }))}
               options={memberTypes}
               required
             />
