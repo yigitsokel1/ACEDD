@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql" // MariaDB için mysql kullanıyoruz
+  // Note: url and shadowDatabaseUrl are now configured in prisma.config.ts (Prisma 7+)
+}
+
+// ============================================================================
+// Admin & Authentication
+// ============================================================================
+
+model AdminUser {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         AdminRole @default(ADMIN)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+}
+
+enum AdminRole {
+  ADMIN
+  EDITOR
+}
+
+// ============================================================================
+// Announcements (Duyurular)
+// ============================================================================
+
+model Announcement {
+  id        String   @id @default(uuid())
+  title     String
+  summary   String?  @db.Text
+  content   String   @db.Text
+  category  String   // esnek bırakıyoruz, ileride enum'a dönebilir
+  startsAt  DateTime?
+  endsAt    DateTime?
+  isPinned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([isPinned])
+  @@index([startsAt])
+}
+
+// ============================================================================
+// Members (Üyeler)
+// ============================================================================
+
+model Member {
+  id            String         @id @default(uuid())
+  firstName     String
+  lastName      String
+  gender        MemberGender
+  email         String         @unique
+  phone         String
+  birthDate     DateTime
+  academicLevel MemberAcademicLevel
+  maritalStatus MemberMaritalStatus
+  hometown      String
+  placeOfBirth  String
+  nationality   String
+  currentAddress String        @db.Text
+  tcId          String?
+  lastValidDate DateTime?
+  titles        String         @db.Text // JSON array olarak saklanacak
+  status        MemberStatus   @default(ACTIVE)
+  membershipDate DateTime
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([membershipDate])
+}
+
+enum MemberGender {
+  erkek
+  kadın
+}
+
+enum MemberAcademicLevel {
+  ilkokul
+  ortaokul
+  lise
+  onlisans
+  lisans
+  yukseklisans
+  doktora
+}
+
+enum MemberMaritalStatus {
+  bekar
+  evli
+  dul
+  bosanmis
+}
+
+enum MemberStatus {
+  ACTIVE
+  INACTIVE
+}
+
+// ============================================================================
+// Membership Applications (Üyelik Başvuruları)
+// ============================================================================
+
+model MembershipApplication {
+  id            String                    @id @default(uuid())
+  firstName     String
+  lastName      String
+  gender        MemberGender
+  email         String
+  phone         String
+  birthDate     DateTime
+  academicLevel MemberAcademicLevel
+  maritalStatus MemberMaritalStatus
+  hometown      String
+  placeOfBirth  String
+  nationality   String
+  currentAddress String                   @db.Text
+  tcId          String?
+  lastValidDate DateTime?
+  status        ApplicationStatus         @default(PENDING)
+  applicationDate DateTime                @default(now())
+  reviewedAt    DateTime?
+  reviewedBy    String?                   // AdminUser ID
+  notes         String?                   @db.Text
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([applicationDate])
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ============================================================================
+// Board Members (Yönetim Kurulu Üyeleri)
+// ============================================================================
+
+model BoardMember {
+  id         String            @id @default(uuid())
+  name       String
+  memberType BoardMemberType
+  bio        String?           @db.Text
+  imageUrl   String?
+  order      Int               @default(0)
+  isActive   Boolean           @default(true)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@index([memberType])
+  @@index([isActive])
+  @@index([order])
+}
+
+enum BoardMemberType {
+  honoraryPresident
+  foundingPresident
+  foundingMember
+  formerPresident
+  boardMember
+}
+
+// ============================================================================
+// Events (Etkinlikler)
+// ============================================================================
+
+model Event {
+  id              String   @id @default(uuid())
+  title           String
+  description     String   @db.Text
+  shortDescription String  @db.Text
+  date            DateTime
+  location        String
+  images          String   @db.Text // JSON array olarak saklanacak (Dataset ID'leri)
+  featuredImage   String?  // Dataset ID
+  isFeatured      Boolean  @default(false)
+  requirements    String?  @db.Text // JSON array olarak saklanacak
+  benefits        String?  @db.Text // JSON array olarak saklanacak
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([date])
+  @@index([isFeatured])
+}
+
+// ============================================================================
+// Scholarship Applications (Burs Başvuruları)
+// ============================================================================
+
+model ScholarshipApplication {
+  id             String                      @id @default(uuid())
+  applicantName  String
+  applicantEmail String
+  applicantPhone String
+  schoolName     String
+  grade          String
+  gpa            Float
+  familyIncome   Float
+  familyMembers  Int
+  address        String                      @db.Text
+  motivation     String                      @db.Text
+  status         ScholarshipApplicationStatus @default(PENDING)
+  documents      String                      @db.Text // JSON array olarak saklanacak
+  notes          String?                     @db.Text
+  createdAt      DateTime                    @default(now())
+  updatedAt      DateTime                    @updatedAt
+
+  @@index([applicantEmail])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum ScholarshipApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  UNDER_REVIEW
+}

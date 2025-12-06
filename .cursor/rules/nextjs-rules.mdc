@@ -1,132 +1,330 @@
 ---
-description:
-globs:
+description: ACEDD NGO website & admin panel – Next.js 15 / React 19 / TypeScript 5 / Tailwind 4 / Prisma + MariaDB
 alwaysApply: true
+globs:
+  - "src/**/*.{ts,tsx}"
 ---
 
+# ACEDD – Project Rules for Cursor
 
- You are an expert developer proficient in TypeScript, React and Next.js, Expo (React Native), Tamagui, Supabase, Zod, Turbo (Monorepo Management), i18next (react-i18next, i18next, expo-localization), Zustand, TanStack React Query, Solito, Stripe (with subscription model).
+You are working inside the **ACEDD NGO** full-stack Next.js project.
 
+Your goals:
 
-Proje dosyalarını oluştururken modüler yapı, doğru klasör yapısını göz önüne alarak oluştur.
+1. **Preserve** the existing architecture, routes, and domain language (Turkish field names, statuses, etc.).
+2. **Extend** the admin panel and public site in a consistent, maintainable way.
+3. **Guide** the gradual migration from **MongoDB** to **Prisma + MariaDB** without breaking existing features.
 
-Code Style and Structure
+---
 
-- Write concise, technical TypeScript code with accurate examples.
-- Use functional and declarative programming patterns; avoid classes.
-- Prefer iteration and modularization over code duplication.
-- Use descriptive variable names with auxiliary verbs (e.g., `isLoading`, `hasError`).
-- Structure files with exported components, subcomponents, helpers, static content, and types.
-- Favor named exports for components and functions.
-- Use lowercase with dashes for directory names (e.g., `components/auth-wizard`).
+## 1. Project scope & architecture
 
-TypeScript and Zod Usage
+- Framework: **Next.js 15 App Router** (`src/app`).
+- Language: **TypeScript** with `strict` mode.
+- UI: **React 19** function components + hooks.
+- Styling: **Tailwind CSS v4** – prefer class utilities over inline styles.
+- Database:
+  - Legacy: `src/lib/mongodb.ts` + MongoDB collections.
+  - Primary (new): **Prisma + MariaDB** (`prisma/schema.prisma`, `src/lib/db.ts`).
+- App segments:
+  - Public site: `src/app/(pages)/**`
+  - Admin panel: `src/app/(admin)/admin/**`
+  - API routes: `src/app/api/**`
+  - Shared logic: `src/contexts/**`, `src/lib/**`, `src/components/**`
 
-- Use TypeScript for all code; prefer interfaces over types for object shapes.
-- Utilize Zod for schema validation and type inference.
-- Avoid enums; use literal types or maps instead.
-- Implement functional components with TypeScript interfaces for props.
+Always keep a **clear separation** between:
 
-Syntax and Formatting
+- UI components
+- Data-fetching / API layer
+- Database access (Prisma or legacy Mongo)
 
-- Use the `function` keyword for pure functions.
-- Write declarative JSX with clear and readable structure.
-- Avoid unnecessary curly braces in conditionals; use concise syntax for simple statements.
+---
 
-UI and Styling
+## 2. Folder structure conventions
 
-- Use Tamagui for cross-platform UI components and styling.
-- Implement responsive design with a mobile-first approach.
-- Ensure styling consistency between web and native applications.
-- Utilize Tamagui's theming capabilities for consistent design across platforms.
+Follow and extend the existing structure:
 
-State Management and Data Fetching
+- **Public pages** (`src/app/(pages)`):
+  - Route folders:  
+    - `/` (home), `/etkinlikler`, `/hakkimizda`, `/burs-basvuru`, `/uyelik-basvuru`, `/bagis-yap`, `/iletisim`, etc.
+  - Inside each route:
+    - `page.tsx` – main page component.
+    - `constants.ts` – domain types and static content.
+    - `components/` – page-specific UI pieces.
 
-- Use Zustand for state management.
-- Use TanStack React Query for data fetching, caching, and synchronization.
-- Minimize the use of `useEffect` and `setState`; favor derived state and memoization when possible.
+- **Admin panel** (`src/app/(admin)/admin`):
+  - `layout.tsx` – admin layout wrapper.
+  - `components/AdminLayout.tsx` – sidebar, header, main content.
+  - Feature folders:
+    - `admin/page.tsx` – Dashboard
+    - `admin/burs-basvurulari/page.tsx`
+    - `admin/uyeler/page.tsx`
+    - `admin/etkinlikler/page.tsx`
+    - `admin/duyurular/page.tsx`
+    - `admin/ayarlar/page.tsx`
+  - Reusable admin UI belongs in `admin/components/`.
 
-Internationalization
+- **API routes** (`src/app/api`):
+  - `members`, `membership-applications`, `board-members`, `events`, `datasets`, `upload`, etc.
+  - A debug route for Prisma: `api/debug/prisma-test/route.ts`.
 
-- Use i18next and react-i18next for web applications.
-- Use expo-localization for React Native apps.
-- Ensure all user-facing text is internationalized and supports localization.
+- **Shared modules**:
+  - `src/contexts/*` – React Contexts (Members, Events, future Announcements).
+  - `src/lib/types/*` – domain types (Member, MembershipApplication, BoardMember, Event, Announcement, etc.).
+  - `src/lib/constants/*` – global constants and configuration.
+  - `src/lib/hooks/*` – shared hooks.
+  - `src/lib/utils/*` – helpers (e.g. `cn`).
+  - `src/lib/db.ts` – Prisma client (MariaDB).
+  - `src/lib/mongodb.ts` – legacy Mongo driver (do not extend).
 
-Error Handling and Validation
+When you add new functionality:
 
-- Prioritize error handling and edge cases.
-- Handle errors and edge cases at the beginning of functions.
-- Use early returns for error conditions to avoid deep nesting.
-- Utilize guard clauses to handle preconditions and invalid states early.
-- Implement proper error logging and user-friendly error messages.
-- Use custom error types or factories for consistent error handling.
+- **Domain types** → `src/lib/types/<domain>.ts`
+- **API endpoints** → `src/app/api/<domain>/**`
+- **Admin pages** → `src/app/(admin)/admin/<domain>/page.tsx`
+- **Public UI** → either:
+  - `src/app/(pages)/<route>/components`, or
+  - `src/components/<domain>` for truly shared widgets.
 
-Performance Optimization
+---
 
-- Optimize for both web and mobile performance.
-- Use dynamic imports for code splitting in Next.js.
-- Implement lazy loading for non-critical components.
-- Optimize images use appropriate formats, include size data, and implement lazy loading.
+## 3. Coding standards & quality gates
 
-Monorepo Management
+### 3.1. TypeScript & style
 
-- Follow best practices using Turbo for monorepo setups.
-- Ensure packages are properly isolated and dependencies are correctly managed.
-- Use shared configurations and scripts where appropriate.
-- Utilize the workspace structure as defined in the root `package.json`.
+- `strict` mode must remain enabled.
+- Avoid `any`. If truly necessary:
+  - Limit scope,
+  - Add a comment explaining why.
+- Prefer `type`/`interface` for domain models over ad-hoc inline types.
+- Use **ESLint + Prettier** conventions (no custom style unless required by the repo).
 
-Backend and Database
+### 3.2. Commits & PRs (mental model for changes)
 
-- Use Supabase for backend services, including authentication and database interactions.
-- Follow Supabase guidelines for security and performance.
-- Use Zod schemas to validate data exchanged with the backend.
+Assume the following workflow and keep diffs compatible with it:
 
-Cross-Platform Development
+- **Trunk-based development**, feature branches are short-lived.
+- Commit messages follow **Conventional Commits**:
+  - `feat:`, `fix:`, `refactor:`, `test:`, `chore:`, etc.
+- Each PR should be:
+  - **< 300 LOC** of meaningful change when possible.
+  - Focused on a single feature or refactor.
+- Include tests and docs updates in the same PR when you change behavior.
 
-- Use Solito for navigation in both web and mobile applications.
-- Implement platform-specific code when necessary, using `.native.tsx` files for React Native-specific components.
-- Handle images using `SolitoImage` for better cross-platform compatibility.
+### 3.3. Testing expectations
 
-Stripe Integration and Subscription Model
+- New non-trivial business logic (validation, status transitions, filtering, etc.) should live in small pure functions under `src/lib/**` and be unit-testable.
+- Aim for:
+  - ≥ 80% coverage overall,
+  - ≥ 90% on critical modules (auth, payments/donations, admin actions).
+- When you add new APIs:
+  - Cover success, validation error, and generic failure paths.
 
-- Implement Stripe for payment processing and subscription management.
-- Use Stripe's Customer Portal for subscription management.
-- Implement webhook handlers for Stripe events (e.g., subscription created, updated, or cancelled).
-- Ensure proper error handling and security measures for Stripe integration.
-- Sync subscription status with user data in Supabase.
+### 3.4. CI/CD expectations
 
-Testing and Quality Assurance
+Design code changes as if CI runs the following pipelines:
 
-- Write unit and integration tests for critical components.
-- Use testing libraries compatible with React and React Native.
-- Ensure code coverage and quality metrics meet the project's requirements.
+1. Install & build
+2. TypeScript check
+3. ESLint
+4. Tests + coverage threshold enforcement
+5. Prisma migrations (if schema changed)
+6. Dependency audit (no high-severity vulns)
 
-Project Structure and Environment
+Code you write should be ready to pass all of the above.
 
-- Follow the established project structure with separate packages for `app`, `ui`, and `api`.
-- Use the `apps` directory for Next.js and Expo applications.
-- Utilize the `packages` directory for shared code and components.
-- Use `dotenv` for environment variable management.
-- Follow patterns for environment-specific configurations in `eas.json` and `next.config.js`.
-- Utilize custom generators in `turbo/generators` for creating components, screens, and tRPC routers using `yarn turbo gen`.
+### 3.5. Security & secrets
 
-Key Conventions
+- Never hardcode secrets, tokens, or connection strings.
+- Use environment variables (e.g. `DATABASE_URL`) loaded outside the repo.
+- When logging errors:
+  - Log enough to debug,
+  - Do **not** log sensitive data (passwords, personal details, etc.).
+- For admin features:
+  - Assume they must be protected by authentication (even if not fully implemented yet).
+  - Do not rely on “hidden URLs” as security.
 
-- Use descriptive and meaningful commit messages.
-- Ensure code is clean, well-documented, and follows the project's coding standards.
-- Implement error handling and logging consistently across the application.
+---
 
-Follow Official Documentation
+## 4. Data layer rules (MongoDB → Prisma migration)
 
-- Adhere to the official documentation for each technology used.
-- For Next.js, focus on data fetching methods and routing conventions.
-- Stay updated with the latest best practices and updates, especially for Expo, Tamagui, and Supabase.
+The project is in a **gradual migration** from MongoDB to Prisma + MariaDB.
 
-Output Expectations
+### 4.1. Legacy MongoDB (keep stable)
 
-- Code Examples Provide code snippets that align with the guidelines above.
-- Explanations Include brief explanations to clarify complex implementations when necessary.
-- Clarity and Correctness Ensure all code is clear, correct, and ready for use in a production environment.
-- Best Practices Demonstrate adherence to best practices in performance, security, and maintainability.
+- `src/lib/mongodb.ts` – legacy client and collection helpers.
+- Existing APIs under `src/app/api/**` that import from `lib/mongodb` must continue to work until fully migrated.
+- **Do not**:
+  - Add new collections or new logic to Mongo.
+  - Introduce new features that depend on Mongo.
 
-  
+If you must touch Mongo-based routes:
+
+- Either keep behavior **as-is**, or
+- Plan a full migration for that feature:
+  1. Add/adjust Prisma models.
+  2. Write Prisma-backed API routes.
+  3. Update contexts/hooks to call the new API.
+  4. Ensure UI behavior stays the same.
+
+### 4.2. Prisma + MariaDB (source of truth for new work)
+
+- `prisma/schema.prisma` defines models such as:
+  - `AdminUser` + `AdminRole` enum
+  - `Announcement`
+  - `Member`
+  - `MembershipApplication`
+  - `BoardMember`
+  - `Event`
+  - and potential CMS models (`Page`, `ContentBlock`, etc.).
+- `src/lib/db.ts` must be the **only place** where `PrismaClient` is instantiated.
+  - Use the MariaDB adapter.
+  - Use the global singleton pattern for dev.
+
+**Rules for new features:**
+
+1. **All new persistent data must use Prisma.**
+2. Frontend types for domain entities should mirror Prisma models:
+   - Use explicit DTOs if you don’t want to expose all fields.
+3. UI components must not import `prisma` directly.
+   - Use API routes (`src/app/api/**`) or server actions instead.
+
+**⚠️ Critical: Schema Change Workflow**
+
+When adding new models or fields, **always follow this order:**
+
+1. **First:** Update `prisma/schema.prisma` with your changes
+   - Add/modify models, fields, indexes, enums, etc.
+   - `schema.prisma` is the **single source of truth**
+
+2. **Second:** Create and apply migration (local only):
+   ```bash
+   npx prisma migrate dev --name descriptive_name
+   ```
+   This creates migration files and applies them to local DB.
+
+3. **Third:** Update TypeScript types and API handlers
+   - Prisma Client is auto-regenerated after migration
+   - Update `src/lib/types/*` if needed
+   - Update API routes to use new schema
+
+4. **Fourth:** Commit migration files
+   - Always commit `prisma/migrations/` folder
+   - Production will use these migration files
+
+**Never:**
+- ❌ Modify database directly without updating `schema.prisma` first
+- ❌ Skip migration files (they are required for production)
+
+**Note:** `prisma db push` erken aşamada hızlı iterasyon için kabul edilebilir, ancak production-ready değişiklikler için `prisma migrate dev` kullan.
+
+### 4.2.1. Prisma Migration Strategy
+
+**Şu Anki Durum (Sprint 0):**
+- Tek DB kullanılıyor (geliştirme ve ilk yayın için)
+- Bu DB dev gibi davranıyor: `prisma migrate dev` kullanılabilir
+- Shadow DB: `.env`'de tanımlamaya gerek yok, Prisma otomatik oluşturmaya çalışır
+- `prisma db push` erken aşamada hızlı iterasyon için kabul edilebilir
+
+**İlk Prod Release Sonrası:**
+- Şu anki DB prod sayılacak
+- Ayrı dev DB açılacak
+- Dev DB'de `prisma migrate dev`, prod DB'de `prisma migrate deploy` kullanılacak
+
+**Critical rules for database migrations (İlk Prod Release Sonrası):**
+
+#### 🔹 Kural 1 – Production (Plesk) üzerinde asla `prisma migrate dev` çalıştırma
+
+**⚠️ CRITICAL: Production'da ASLA `prisma migrate dev` kullanma!**
+
+- **Production/Plesk'te sadece:**
+  ```bash
+  npx prisma migrate deploy
+  ```
+- Migration dosyaları zaten lokalinde üretilmiş ve test edilmiş olacak.
+- `prisma migrate dev` shadow database gerektirir ve production DB kullanıcısının yeni DB oluşturma yetkisi olmayabilir.
+- `prisma migrate dev` yeni migration dosyası oluşturur (production'da istenmez).
+- Production'da sadece mevcut migration dosyalarını uygulamak için `prisma migrate deploy` kullan.
+
+**Production migration checklist:**
+- [ ] Migration dosyaları local'de oluşturuldu ve test edildi
+- [ ] Migration dosyaları commit edildi
+- [ ] Kod Plesk'e deploy edildi
+- [ ] Plesk'te `npx prisma migrate deploy` çalıştırıldı (ASLA `migrate dev` değil!)
+
+#### 🔹 Kural 2 – Shadow DB (Otomatik)
+
+**Şu Anki Strateji (Sprint 0 - Prod Release Öncesi):**
+- Tek DB kullanılıyor (geliştirme ve ilk yayın için)
+- Schema değişiklikleri için `prisma db push` kullanılır
+  - ✅ Tablo/kolonlar direkt DB'de güncellenir
+  - ✅ Shadow DB'ye ihtiyaç duymaz
+  - ❌ Migration dosyası üretilmez (şimdilik sorun değil)
+- Test için: `npx prisma studio` ile tabloları kontrol edebilirsiniz
+
+**İlk Prod Release Sonrası:**
+- Şu anki DB prod sayılacak
+- Ayrı dev DB açılacak
+- Dev DB'de `prisma migrate dev`, prod DB'de `prisma migrate deploy` kullanılacak
+
+#### 🔹 Kural 3 – `prisma db push` (Şu Anki Strateji - Prod Release Öncesi)
+
+**Şu Anki Durum (Sprint 0):**
+- `prisma db push` kullanılır (migration dosyası üretilmez)
+- Shadow DB'ye ihtiyaç duymaz
+- Schema değişiklikleri direkt DB'ye uygulanır
+- Test için: `npx prisma studio` ile tabloları kontrol edebilirsiniz
+
+**Prod Release Sonrası:**
+- `prisma db push` artık kullanılmayacak
+- Dev DB'de `prisma migrate dev` + migration dosyaları kullanılacak
+- Prod DB'de `prisma migrate deploy` kullanılacak
+- `db push` migration geçmişi oluşturmaz, prod release sonrası kabul edilemez
+
+**Workflow özeti (Şu An):**
+1. Schema değişikliği: `prisma/schema.prisma` güncelle
+2. DB'ye uygula: `prisma db push`
+3. Test: `prisma studio` veya test route
+
+**Workflow özeti (Prod Release Sonrası):**
+1. Dev DB'de: `prisma migrate dev` (shadow DB ile)
+2. Migration dosyalarını commit et
+3. Production deploy: `prisma migrate deploy` (shadow DB gerekmez)
+
+### 4.3. Announcements (Duyurular) as the first fully Prisma feature
+
+**Prisma model (already exists conceptually):**
+
+- `Announcement`:
+  - `id` (uuid),
+  - `title`, `summary`, `content`,
+  - `category` (string; may later become enum),
+  - `startsAt`, `endsAt`,
+  - `isPinned` (boolean),
+  - `createdAt`, `updatedAt`,
+  - indexes on `category`, `isPinned`, `startsAt`.
+
+**TypeScript type:**
+
+Create `src/lib/types/announcement.ts`:
+
+```ts
+export type AnnouncementCategory =
+  | "general"
+  | "scholarship"
+  | "event"
+  | "system"
+  | string; // allow future/custom categories
+
+export interface Announcement {
+  id: string;
+  title: string;
+  summary?: string;
+  content: string;
+  category: AnnouncementCategory;
+  startsAt?: string; // ISO 8601
+  endsAt?: string;   // ISO 8601
+  isPinned: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
