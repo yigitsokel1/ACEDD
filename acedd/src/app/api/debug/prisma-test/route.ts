@@ -5,11 +5,13 @@ export async function GET() {
   try {
     const announcementCount = await prisma.announcement.count();
     const adminUserCount = await prisma.adminUser.count();
+    const eventCount = await prisma.event.count();
 
     return NextResponse.json({
       ok: true,
       announcements: announcementCount,
       adminUsers: adminUserCount,
+      events: eventCount,
       message: "Prisma client is working correctly",
     });
   } catch (error) {

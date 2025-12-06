@@ -233,3 +233,31 @@ enum ScholarshipApplicationStatus {
   REJECTED
   UNDER_REVIEW
 }
+
+// ============================================================================
+// Dataset (Görsel/Dosya Yönetimi)
+// ============================================================================
+
+model Dataset {
+  id            String   @id @default(uuid())
+  name          String
+  description   String?  @db.Text
+  category      String
+  fileUrl       String   @db.MediumText // Base64 data URL (MEDIUMTEXT: 16MB limit)
+  fileName      String
+  fileSize      Int      // bytes
+  fileType      String   // MIME type
+  tags          String?  @db.Text // JSON array olarak saklanacak
+  isPublic      Boolean  @default(true)
+  downloadCount Int      @default(0)
+  uploadedBy    String
+  source        String   // 'event-upload', 'announcement-upload', vb.
+  eventId       String?  // İlişkili event ID (opsiyonel)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category])
+  @@index([source])
+  @@index([eventId])
+  @@index([createdAt])
+}

@@ -21,10 +21,54 @@ export default function EventsAdminPage() {
     shortDescription: "",
     date: "",
     location: "",
-    images: [] as string[], // Artık dataset ID'leri
-    featuredImage: "", // Artık dataset ID
+    images: [] as string[], // Dataset ID'leri (mevcut görseller)
+    featuredImage: "", // Dataset ID (mevcut görsel)
     isFeatured: false,
   });
+
+  // Yeni seçilmiş görseller (henüz database'e kaydedilmemiş)
+  const [previewFiles, setPreviewFiles] = useState<{
+    featured?: { id: string; preview: string; file: File };
+    images?: { id: string; preview: string; file: File }[];
+  }>({});
+
+  // Preview dosyalarını database'e kaydet
+  const uploadPreviewFiles = async (files: { id: string; preview: string; file: File }[]): Promise<string[]> => {
+    const datasetIds: string[] = [];
+    
+    for (const fileData of files) {
+      const formData = new FormData();
+      formData.append('file', fileData.file);
+      
+      try {
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!response.ok) {
+          let errorMessage = 'Dosya yüklenirken bir hata oluştu.';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          } catch {
+            errorMessage = `${errorMessage} (${response.status}: ${response.statusText})`;
+          }
+          throw new Error(errorMessage);
+        }
+        
+        const data = await response.json();
+        if (data.datasetIds && Array.isArray(data.datasetIds) && data.datasetIds.length > 0) {
+          datasetIds.push(data.datasetIds[0]);
+        }
+      } catch (error) {
+        console.error('Error uploading preview file:', error);
+        throw error;
+      }
+    }
+    
+    return datasetIds;
+  };
 
   const handleInputChange = (field: string, value: string | number | boolean | string[]) => {
     setFormData(prev => ({
@@ -100,64 +144,101 @@ export default function EventsAdminPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const eventData = {
-      title: formData.title,
-      description: formData.description,
-      shortDescription: formData.shortDescription,
-      date: formData.date,
-      location: formData.location,
-      images: formData.images,
-      featuredImage: formData.featuredImage,
-      isFeatured: formData.isFeatured,
-    };
+    // Validate required fields
+    if (!formData.title.trim() || !formData.description.trim() || !formData.shortDescription.trim() || !formData.date || !formData.location.trim()) {
+      alert("Lütfen tüm zorunlu alanları doldurun.");
+      return;
+    }
 
     try {
+      // Önce preview dosyalarını database'e kaydet
+      let finalImages = [...formData.images];
+      let finalFeaturedImage = formData.featuredImage;
+
+      // Preview görsellerini kaydet
+      if (previewFiles.images && previewFiles.images.length > 0) {
+        const uploadedIds = await uploadPreviewFiles(previewFiles.images);
+        finalImages = [...finalImages, ...uploadedIds];
+      }
+
+      // Preview featured image'i kaydet
+      if (previewFiles.featured) {
+        const uploadedIds = await uploadPreviewFiles([previewFiles.featured]);
+        if (uploadedIds.length > 0) {
+          finalFeaturedImage = uploadedIds[0];
+        }
+      }
+
+      // Convert date to ISO string format
+      const dateISO = new Date(formData.date).toISOString();
+      
+      // Prepare event data for API
+      const eventData = {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        shortDescription: formData.shortDescription.trim(),
+        date: dateISO, // ISO 8601 string
+        location: formData.location.trim(),
+        images: finalImages,
+        featuredImage: finalFeaturedImage && finalFeaturedImage.trim() ? finalFeaturedImage.trim() : null, // Convert empty string to null
+        isFeatured: formData.isFeatured,
+      };
+
       if (editingEvent) {
         await updateEvent(editingEvent.id, eventData);
         setEditingEvent(null);
       } else {
         await addEvent(eventData);
       }
+      
+      // Formu sıfırla
+      setFormData({
+        title: "",
+        description: "",
+        shortDescription: "",
+        date: "",
+        location: "",
+        images: [],
+        featuredImage: "",
+        isFeatured: false,
+      });
+      setPreviewFiles({});
+      setIsAddingEvent(false);
     } catch (error) {
       console.error('Error saving event:', error);
-      // Hata durumunda kullanıcıya bildirim gösterilebilir
+      alert(error instanceof Error ? error.message : 'Etkinlik kaydedilirken bir hata oluştu.');
     }
-
-    // Formu sıfırla
-    setFormData({
-      title: "",
-      description: "",
-      shortDescription: "",
-      date: "",
-      location: "",
-      images: [],
-      featuredImage: "",
-      isFeatured: false,
-    });
-    setIsAddingEvent(false);
   };
 
   const handleEdit = (event: Event) => {
     setEditingEvent(event);
+    
+    // Convert ISO date string to date input format (YYYY-MM-DD)
+    const dateInput = event.date ? new Date(event.date).toISOString().split('T')[0] : "";
+    
     setFormData({
       title: event.title,
       description: event.description,
       shortDescription: event.shortDescription,
-      date: event.date,
+      date: dateInput,
       location: event.location,
-      images: event.images,
-      featuredImage: event.featuredImage,
+      images: event.images || [],
+      featuredImage: event.featuredImage || "", // Convert null to empty string for form
       isFeatured: event.isFeatured,
     });
     setIsAddingEvent(true);
   };
 
   const handleDelete = async (eventId: string) => {
+    if (!confirm("Bu etkinliği silmek istediğinize emin misiniz?")) {
+      return;
+    }
+    
     try {
       await deleteEvent(eventId);
     } catch (error) {
       console.error('Error deleting event:', error);
-      // Hata durumunda kullanıcıya bildirim gösterilebilir
+      alert(error instanceof Error ? error.message : 'Etkinlik silinirken bir hata oluştu.');
     }
   };
 
@@ -330,8 +411,20 @@ export default function EventsAdminPage() {
                     label="Öne Çıkan Görsel"
                     value={formData.featuredImage ? [formData.featuredImage] : []}
                     onChange={(urls) => handleInputChange("featuredImage", urls[0] || "")}
+                    onFileSelect={(files) => {
+                      if (files.length > 0) {
+                        setPreviewFiles(prev => ({ ...prev, featured: files[0] }));
+                      } else {
+                        setPreviewFiles(prev => {
+                          const newFiles = { ...prev };
+                          delete newFiles.featured;
+                          return newFiles;
+                        });
+                      }
+                    }}
                     multiple={false}
                     maxFiles={1}
+                    previewMode={true}
                     className="mb-6"
                   />
                   
@@ -340,8 +433,12 @@ export default function EventsAdminPage() {
                     label="Etkinlik Görselleri"
                     value={formData.images}
                     onChange={(urls) => handleInputChange("images", urls)}
+                    onFileSelect={(files) => {
+                      setPreviewFiles(prev => ({ ...prev, images: files }));
+                    }}
                     multiple={true}
                     maxFiles={10}
+                    previewMode={true}
                     className="mb-6"
                   />
                 </div>

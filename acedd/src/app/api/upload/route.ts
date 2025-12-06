@@ -1,5 +1,13 @@
+/**
+ * API Route: /api/upload
+ * 
+ * POST /api/upload
+ * - Body: FormData with 'file' field(s)
+ * - Returns: { success: true, datasetIds: string[] }
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
-import { getEventImagesCollection } from '@/lib/mongodb';
+import { prisma } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,50 +38,42 @@ export async function POST(request: NextRequest) {
       const base64String = buffer.toString('base64');
       const dataUrl = `data:${file.type};base64,${base64String}`;
 
-      // Benzersiz ID oluştur
-      const timestamp = Date.now();
-      const randomString = Math.random().toString(36).substring(2, 15);
-      const datasetId = `${timestamp}-${randomString}`;
+      // Dosya türüne göre kategori belirle
+      let category = 'Etkinlik';
+      let tags = ['etkinlik', 'görsel', 'eğitim'];
+      
+      if (file.type.includes('image/')) {
+        category = 'Görsel';
+        tags = ['görsel', 'etkinlik', 'eğitim', 'fotoğraf'];
+      }
 
-      // Yüklenen görseli event_images koleksiyonuna ekle
+      // Prisma ile dataset oluştur
       try {
-        const eventImagesCollection = await getEventImagesCollection();
-        
-        // Dosya türüne göre kategori belirle
-        let category = 'Etkinlik';
-        let tags = ['etkinlik', 'görsel', 'eğitim'];
-        
-        if (file.type.includes('image/')) {
-          category = 'Görsel';
-          tags = ['görsel', 'etkinlik', 'eğitim', 'fotoğraf'];
-        }
-        
-        const datasetEntry = {
-          id: datasetId,
-          name: `Etkinlik Görseli - ${file.name.split('.')[0]}`,
-          description: `Etkinlik için yüklenen görsel dosyası: ${file.name}. Dosya boyutu: ${(file.size / 1024 / 1024).toFixed(2)} MB`,
-          category: category,
-          fileUrl: dataUrl, // Base64 data URL kullan
-          fileName: file.name,
-          fileSize: file.size,
-          fileType: file.type,
-          tags: tags,
-          isPublic: true,
-          downloadCount: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          uploadedBy: 'Admin',
-          source: 'event-upload',
-          eventId: null // Etkinlik ID'si daha sonra güncellenebilir
-        };
+        // Type assertion to bypass TypeScript error until TS server cache is cleared
+        const dataset = await (prisma as any).dataset.create({
+          data: {
+            name: `Etkinlik Görseli - ${file.name.split('.')[0]}`,
+            description: `Etkinlik için yüklenen görsel dosyası: ${file.name}. Dosya boyutu: ${(file.size / 1024 / 1024).toFixed(2)} MB`,
+            category: category,
+            fileUrl: dataUrl, // Base64 data URL
+            fileName: file.name,
+            fileSize: file.size,
+            fileType: file.type,
+            tags: JSON.stringify(tags), // JSON string olarak sakla
+            isPublic: true,
+            downloadCount: 0,
+            uploadedBy: 'Admin',
+            source: 'event-upload',
+            eventId: null, // Etkinlik ID'si daha sonra güncellenebilir
+          },
+        });
 
-        await eventImagesCollection.insertOne(datasetEntry);
-        uploadedDatasetIds.push(datasetId);
-        console.log('Görsel event_images koleksiyonuna eklendi:', datasetId);
+        uploadedDatasetIds.push(dataset.id);
+        console.log('Görsel Prisma Dataset olarak eklendi:', dataset.id);
       } catch (dbError) {
-        console.error('Event images koleksiyonuna ekleme hatası:', dbError);
+        console.error('Dataset oluşturma hatası:', dbError);
         return NextResponse.json(
-          { error: 'Failed to save to event images' },
+          { error: 'Failed to save dataset' },
           { status: 500 }
         );
       }
@@ -87,7 +87,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error uploading files:', error);
     return NextResponse.json(
-      { error: 'Failed to upload files' },
+      { 
+        error: 'Failed to upload files',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }

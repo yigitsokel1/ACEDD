@@ -239,6 +239,23 @@ User was denied access on the database `prisma_migrate_shadow_db_...`
 - [ ] DB kullanıcısının migration tablolarına yazma yetkisi var mı?
 - [ ] Önceki migration'lar başarıyla uygulanmış mı?
 
+## Migration Status
+
+**Prisma-tabanlı domainler (MongoDB'den tamamen taşındı):**
+- ✅ **Announcements (Duyurular)** - Fully migrated to Prisma + MariaDB
+- ✅ **Events (Etkinlikler)** - Fully migrated to Prisma + MariaDB
+- ✅ **Datasets (Görsel/Dosya Yönetimi)** - Fully migrated to Prisma + MariaDB
+
+**MongoDB'de kalan domainler (migration planlanıyor):**
+- ⏳ Members, MembershipApplications, BoardMembers, ScholarshipApplications
+
+**Not:** Events, Announcements ve Datasets artık MongoDB kullanmıyor. Tüm CRUD işlemleri Prisma üzerinden yapılıyor.
+
+**Dataset Model Özellikleri:**
+- Base64 data URL formatında görsel saklama (MEDIUMTEXT: 16MB limit)
+- Etkinlik görselleri için özel upload endpoint (`/api/upload`)
+- Görsel önizleme özelliği (preview mode) - görseller form submit edilmeden önce database'e kaydedilmez
+
 ## İlgili Dokümantasyon
 
 - [Prisma Migrate Guide](https://www.prisma.io/docs/guides/migrate)

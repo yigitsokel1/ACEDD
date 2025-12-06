@@ -1,69 +1,144 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getEventImagesCollection } from '@/lib/mongodb';
+/**
+ * API Route: /api/datasets
+ * 
+ * GET /api/datasets
+ * - Returns: Dataset[] (array of datasets, sorted by createdAt desc)
+ * 
+ * POST /api/datasets
+ * - Body: CreateDatasetRequest
+ * - Returns: Dataset (created dataset)
+ */
 
-export interface Dataset {
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+
+/**
+ * Helper function to parse JSON string to array
+ */
+function parseJsonArray(jsonString: string | null | undefined): string[] | null {
+  if (!jsonString) return null;
+  try {
+    const parsed = JSON.parse(jsonString);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Helper function to format Prisma Dataset to frontend Dataset
+ */
+function formatDataset(prismaDataset: {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   category: string;
   fileUrl: string;
   fileName: string;
   fileSize: number;
   fileType: string;
-  tags: string[];
+  tags: string | null;
   isPublic: boolean;
   downloadCount: number;
-  createdAt: string;
-  updatedAt: string;
   uploadedBy: string;
-  source?: string;
-  eventId?: string;
+  source: string;
+  eventId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  return {
+    id: prismaDataset.id,
+    name: prismaDataset.name,
+    description: prismaDataset.description,
+    category: prismaDataset.category,
+    fileUrl: prismaDataset.fileUrl,
+    fileName: prismaDataset.fileName,
+    fileSize: prismaDataset.fileSize,
+    fileType: prismaDataset.fileType,
+    tags: parseJsonArray(prismaDataset.tags),
+    isPublic: prismaDataset.isPublic,
+    downloadCount: prismaDataset.downloadCount,
+    createdAt: prismaDataset.createdAt.toISOString(),
+    updatedAt: prismaDataset.updatedAt.toISOString(),
+    uploadedBy: prismaDataset.uploadedBy,
+    source: prismaDataset.source,
+    eventId: prismaDataset.eventId,
+  };
 }
 
-// GET - Tüm event images'ları getir
+// GET - Tüm datasets'ları getir
 export async function GET() {
   try {
-    const collection = await getEventImagesCollection();
-    const eventImages = await collection.find({}).sort({ createdAt: -1 }).toArray();
+    const datasets = await (prisma as any).dataset.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    const formattedDatasets = datasets.map(formatDataset);
     
-    return NextResponse.json(eventImages);
+    return NextResponse.json(formattedDatasets);
   } catch (error) {
-    console.error('Error fetching event images:', error);
+    console.error('Error fetching datasets:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch event images' },
+      { 
+        error: 'Failed to fetch datasets',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }
 }
 
-// POST - Yeni event image oluştur
+// POST - Yeni dataset oluştur
 export async function POST(request: NextRequest) {
   try {
-    const eventImageData: Omit<Dataset, 'id' | 'createdAt' | 'updatedAt' | 'downloadCount'> = await request.json();
-    
-    const newEventImage: Dataset = {
-      ...eventImageData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      downloadCount: 0,
-    };
+    const body = await request.json();
 
-    const collection = await getEventImagesCollection();
-    const result = await collection.insertOne(newEventImage);
-    
-    if (result.insertedId) {
-      return NextResponse.json(newEventImage, { status: 201 });
-    } else {
+    // Validation
+    if (!body.name || typeof body.name !== 'string' || body.name.trim().length === 0) {
       return NextResponse.json(
-        { error: 'Failed to create event image' },
-        { status: 500 }
+        { error: 'Validation error', message: 'name is required' },
+        { status: 400 }
       );
     }
+
+    if (!body.fileUrl || typeof body.fileUrl !== 'string') {
+      return NextResponse.json(
+        { error: 'Validation error', message: 'fileUrl is required' },
+        { status: 400 }
+      );
+    }
+
+    // Create dataset
+    const dataset = await (prisma as any).dataset.create({
+      data: {
+        name: body.name.trim(),
+        description: body.description || null,
+        category: body.category || 'Görsel',
+        fileUrl: body.fileUrl,
+        fileName: body.fileName || 'unknown',
+        fileSize: body.fileSize || 0,
+        fileType: body.fileType || 'image/jpeg',
+        tags: body.tags && Array.isArray(body.tags) ? JSON.stringify(body.tags) : null,
+        isPublic: body.isPublic ?? true,
+        downloadCount: 0,
+        uploadedBy: body.uploadedBy || 'Admin',
+        source: body.source || 'manual',
+        eventId: body.eventId || null,
+      },
+    });
+
+    const formattedDataset = formatDataset(dataset);
+    
+    return NextResponse.json(formattedDataset, { status: 201 });
   } catch (error) {
-    console.error('Error creating event image:', error);
+    console.error('Error creating dataset:', error);
     return NextResponse.json(
-      { error: 'Failed to create event image' },
+      { 
+        error: 'Failed to create dataset',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }

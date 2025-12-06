@@ -3,29 +3,33 @@
 import React, { useState, useRef } from 'react';
 import { Button } from './Button';
 import { Image as ImageIcon, Plus, X, UploadCloud, Loader2 } from 'lucide-react';
-import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 interface FileUploadProps {
   label: string;
-  value?: string[]; // Artık dataset ID'leri
+  value?: string[]; // Dataset ID'leri (mevcut görseller için)
   onChange: (datasetIds: string[]) => void;
+  onFileSelect?: (files: { id: string; preview: string; file: File }[]) => void; // Yeni seçilmiş görseller için (preview için)
   multiple?: boolean;
   maxFiles?: number;
   className?: string;
+  previewMode?: boolean; // true ise sadece preview, database'e kaydetme
 }
 
 export function FileUpload({ 
   label, 
   value = [], 
   onChange, 
+  onFileSelect,
   multiple = false, 
   maxFiles = 1, 
-  className 
+  className,
+  previewMode = false, // Preview mode: sadece önizle, database'e kaydetme
 }: FileUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [imageUrls, setImageUrls] = useState<{[key: string]: string | null}>({});
+  const [previewFiles, setPreviewFiles] = useState<{[key: string]: { preview: string; file: File }}>({}); // Yeni seçilmiş görseller için preview (Base64 data URL + File objesi)
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Veri setinden görsel URL'ini çek
@@ -35,9 +39,30 @@ export function FileUpload({
     try {
       const response = await fetch(`/api/datasets/image/${datasetId}`);
       if (response.ok) {
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error('Invalid response type from image API:', contentType);
+          setImageUrls(prev => ({ ...prev, [datasetId]: null }));
+          return null;
+        }
+        
         const data = await response.json();
-        setImageUrls(prev => ({ ...prev, [datasetId]: data.fileUrl }));
-        return data.fileUrl;
+        if (data.fileUrl) {
+          // Validate Base64 data URL format
+          const fileUrl = data.fileUrl;
+          if (fileUrl.startsWith('data:image/') || fileUrl.startsWith('data:')) {
+            console.log(`[FileUpload] Valid Base64 URL for ${datasetId}:`, fileUrl.substring(0, 50) + '...');
+            setImageUrls(prev => ({ ...prev, [datasetId]: fileUrl }));
+            return fileUrl;
+          } else {
+            console.error('Invalid fileUrl format (not a data URL):', fileUrl.substring(0, 100));
+            setImageUrls(prev => ({ ...prev, [datasetId]: null }));
+          }
+        } else {
+          console.error('Invalid response format from image API:', data);
+          setImageUrls(prev => ({ ...prev, [datasetId]: null }));
+        }
       } else {
         console.error('Failed to fetch image:', response.status, response.statusText);
         // Hata durumunda placeholder göster
@@ -53,9 +78,13 @@ export function FileUpload({
 
   // Component mount olduğunda mevcut dataset ID'lerini çek
   React.useEffect(() => {
+    console.log('[FileUpload] Component mounted/updated, value:', value);
     value.forEach(datasetId => {
-      if (datasetId && !imageUrls[datasetId]) {
+      if (datasetId && datasetId.trim() && !imageUrls[datasetId]) {
+        console.log('[FileUpload] Fetching image for datasetId:', datasetId);
         fetchImageUrl(datasetId);
+      } else if (!datasetId || !datasetId.trim()) {
+        console.warn('[FileUpload] Empty or invalid datasetId:', datasetId);
       }
     });
   }, [value]);
@@ -69,7 +98,8 @@ export function FileUpload({
       return;
     }
     
-    if (multiple && files.length + value.length > maxFiles) {
+    const totalFiles = previewMode ? files.length : (files.length + value.length);
+    if (multiple && totalFiles > maxFiles) {
       setUploadError(`En fazla ${maxFiles} dosya yükleyebilirsiniz.`);
       return;
     }
@@ -77,6 +107,59 @@ export function FileUpload({
     setIsUploading(true);
     setUploadError(null);
 
+    // Preview mode: Sadece Base64'e çevir, database'e kaydetme
+    if (previewMode && onFileSelect) {
+      try {
+        const previewData: { id: string; preview: string; file: File }[] = [];
+        
+        // Tüm dosyaları paralel olarak işle
+        const filePromises = Array.from(files).map(async (file, index) => {
+          // Dosya türünü kontrol et
+          if (!file.type.startsWith('image/')) {
+            throw new Error('Sadece görsel dosyaları yükleyebilirsiniz.');
+          }
+
+          // Dosya boyutunu kontrol et (5MB limit)
+          if (file.size > 5 * 1024 * 1024) {
+            throw new Error('Dosya boyutu 5MB\'dan küçük olmalıdır.');
+          }
+
+          // FileReader ile Base64'e çevir (browser uyumlu)
+          return new Promise<{ id: string; preview: string; file: File }>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const dataUrl = reader.result as string;
+              const tempId = `preview-${Date.now()}-${index}`;
+              resolve({ id: tempId, preview: dataUrl, file });
+            };
+            reader.onerror = () => reject(new Error('Dosya okunurken bir hata oluştu.'));
+            reader.readAsDataURL(file);
+          });
+        });
+
+        const results = await Promise.all(filePromises);
+        
+        // Preview dosyalarını state'e ekle
+        results.forEach(({ id, preview, file }) => {
+          setPreviewFiles(prev => ({ ...prev, [id]: { preview, file } }));
+        });
+        
+        // Callback'e gönder
+        onFileSelect(results);
+        setUploadError(null);
+      } catch (error) {
+        console.error('Error processing files for preview:', error);
+        setUploadError(error instanceof Error ? error.message : 'Dosyalar işlenirken bir hata oluştu.');
+      } finally {
+        setIsUploading(false);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
+      return;
+    }
+
+    // Normal mode: Database'e kaydet
     const formData = new FormData();
     for (let i = 0; i < files.length; i++) {
       formData.append('file', files[i]);
@@ -89,11 +172,23 @@ export function FileUpload({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Dosya yüklenirken bir hata oluştu.');
+        // Try to parse error response as JSON
+        let errorMessage = 'Dosya yüklenirken bir hata oluştu.';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch {
+          // If response is not JSON (e.g., HTML error page), use status text
+          errorMessage = `${errorMessage} (${response.status}: ${response.statusText})`;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
+      if (!data.datasetIds || !Array.isArray(data.datasetIds)) {
+        throw new Error('Invalid response format from server');
+      }
+      
       const newDatasetIds = multiple ? [...value, ...data.datasetIds] : data.datasetIds;
       onChange(newDatasetIds);
     } catch (error: unknown) {
@@ -121,7 +216,7 @@ export function FileUpload({
     <div className={cn("space-y-4", className)}>
       <label className="block text-sm font-medium text-gray-700">{label}</label>
       
-      {/* Mevcut Görseller */}
+      {/* Mevcut Görseller (Database'den) */}
       {value.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {value.map((datasetId, index) => {
@@ -129,11 +224,11 @@ export function FileUpload({
             return (
               <div key={datasetId} className="relative w-full h-32 rounded-lg overflow-hidden group">
                 {imageUrl ? (
-                  <Image 
+                  // Base64 data URL'ler için normal img tag kullan (Next.js Image desteklemiyor)
+                  <img 
                     src={imageUrl} 
                     alt={`Yüklenen görsel ${index + 1}`} 
-                    fill 
-                    className="object-cover" 
+                    className="w-full h-full object-cover"
                   />
                 ) : imageUrls[datasetId] === null ? (
                   <div className="w-full h-full bg-red-100 flex items-center justify-center">
@@ -161,6 +256,43 @@ export function FileUpload({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Preview Görselleri (Henüz database'e kaydedilmemiş) */}
+      {previewMode && Object.keys(previewFiles).length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {Object.entries(previewFiles).map(([tempId, fileData], index) => (
+            <div key={tempId} className="relative w-full h-32 rounded-lg overflow-hidden group">
+              <img 
+                src={fileData.preview} 
+                alt={`Önizleme görsel ${index + 1}`} 
+                className="w-full h-full object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setPreviewFiles(prev => {
+                    const newFiles = { ...prev };
+                    delete newFiles[tempId];
+                    return newFiles;
+                  });
+                  // Callback'i güncelle (kaldırılan dosyayı çıkar)
+                  if (onFileSelect) {
+                    // State güncellenmeden önce mevcut dosyaları al
+                    const currentFiles = Object.entries(previewFiles)
+                      .filter(([id]) => id !== tempId)
+                      .map(([id, data]) => ({ id, preview: data.preview, file: data.file }));
+                    onFileSelect(currentFiles);
+                  }
+                }}
+                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label="Önizlemeyi kaldır"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
         </div>
       )}
 

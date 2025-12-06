@@ -21,31 +21,50 @@ export function EventsProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // MongoDB'den etkinlikleri yükle
+  // Fetch events from API
   const fetchEvents = async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await fetch('/api/events');
       if (!response.ok) {
-        throw new Error('Failed to fetch events');
+        // Try to get error message from response
+        let errorMessage = 'Failed to fetch events';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = `${errorMessage} (${response.status}: ${response.statusText})`;
+        }
+        throw new Error(errorMessage);
       }
       const data = await response.json();
       setEvents(data);
+      
+      // Update localStorage as cache (optional fallback)
+      try {
+        localStorage.setItem("acedd-events", JSON.stringify(data));
+      } catch (localError) {
+        // localStorage might be unavailable (e.g., in private mode)
+        console.warn("Could not save events to localStorage:", localError);
+      }
     } catch (err) {
-      console.error('Error fetching events from MongoDB:', err);
+      console.error('Error fetching events:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch events');
-      // Fallback olarak local storage'dan yükle
-      const savedEvents = localStorage.getItem("acedd-events");
-      if (savedEvents) {
-        try {
+      
+      // Fallback: Try to load from localStorage if API fails
+      try {
+        const savedEvents = localStorage.getItem("acedd-events");
+        if (savedEvents) {
           const parsedEvents = JSON.parse(savedEvents);
           setEvents(parsedEvents);
-        } catch (localError) {
-          console.error("Error loading events from localStorage:", localError);
+          console.warn("Loaded events from localStorage cache (API unavailable)");
+        } else {
           setEvents([]);
         }
-      } else {
+      } catch (localError) {
+        console.error("Error loading events from localStorage:", localError);
         setEvents([]);
       }
     } finally {
@@ -77,8 +96,13 @@ export function EventsProvider({ children }: { children: React.ReactNode }) {
       const newEvent = await response.json();
       setEvents(prev => [newEvent, ...prev]);
       
-      // Local storage'a da kaydet (fallback için)
-      localStorage.setItem("acedd-events", JSON.stringify([newEvent, ...events]));
+      // Update localStorage cache
+      try {
+        const updatedEvents = [newEvent, ...events];
+        localStorage.setItem("acedd-events", JSON.stringify(updatedEvents));
+      } catch (localError) {
+        console.warn("Could not update localStorage:", localError);
+      }
     } catch (err) {
       console.error('Error creating event:', err);
       setError(err instanceof Error ? err.message : 'Failed to create event');
@@ -110,9 +134,13 @@ export function EventsProvider({ children }: { children: React.ReactNode }) {
         prev.map(event => event.id === id ? updatedEvent : event)
       );
       
-      // Local storage'ı güncelle
-      const updatedEvents = events.map(event => event.id === id ? updatedEvent : event);
-      localStorage.setItem("acedd-events", JSON.stringify(updatedEvents));
+      // Update localStorage cache
+      try {
+        const updatedEvents = events.map(event => event.id === id ? updatedEvent : event);
+        localStorage.setItem("acedd-events", JSON.stringify(updatedEvents));
+      } catch (localError) {
+        console.warn("Could not update localStorage:", localError);
+      }
     } catch (err) {
       console.error('Error updating event:', err);
       setError(err instanceof Error ? err.message : 'Failed to update event');
@@ -137,9 +165,13 @@ export function EventsProvider({ children }: { children: React.ReactNode }) {
 
       setEvents(prev => prev.filter(event => event.id !== id));
       
-      // Local storage'dan da sil
-      const updatedEvents = events.filter(event => event.id !== id);
-      localStorage.setItem("acedd-events", JSON.stringify(updatedEvents));
+      // Update localStorage cache
+      try {
+        const updatedEvents = events.filter(event => event.id !== id);
+        localStorage.setItem("acedd-events", JSON.stringify(updatedEvents));
+      } catch (localError) {
+        console.warn("Could not update localStorage:", localError);
+      }
     } catch (err) {
       console.error('Error deleting event:', err);
       setError(err instanceof Error ? err.message : 'Failed to delete event');

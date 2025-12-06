@@ -10,6 +10,12 @@ ACEDD (Araştırma, Çevre ve Doğa Derneği) web sitesi ve yönetim paneli.
 - Prisma + MariaDB
 - MongoDB (legacy, migration in progress)
 
+**Migration Status:**
+- ✅ **Announcements (Duyurular)** - Fully migrated to Prisma
+- ✅ **Events (Etkinlikler)** - Fully migrated to Prisma
+- ✅ **Datasets (Görsel/Dosya Yönetimi)** - Fully migrated to Prisma
+- ⏳ Other domains - Still using MongoDB (migration planned)
+
 ## Getting Started
 
 ### Prerequisites
@@ -189,3 +195,4 @@ See test examples in `src/lib/utils/__tests__/isAnnouncementActive.test.ts`.
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Prisma Documentation](https://www.prisma.io/docs)
 - [Project Rules](./.cursor/rules/nextjs-rules.mdc) - Development guidelines and conventions
+- [Sprint 2 Completion Report](./docs/sprint-2-completion.md) - Events & Datasets migration details
