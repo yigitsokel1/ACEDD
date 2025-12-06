@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { X } from "lucide-react";
+import { X, XCircle } from "lucide-react";
 import type {
   Announcement,
   CreateAnnouncementRequest,
@@ -77,6 +77,7 @@ export function AnnouncementFormDialog({
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
+    const now = new Date();
 
     if (!formData.title.trim()) {
       newErrors.title = "Başlık zorunludur";
@@ -90,6 +91,28 @@ export function AnnouncementFormDialog({
       newErrors.category = "Kategori zorunludur";
     }
 
+    // Validate startsAt
+    if (formData.startsAt) {
+      const starts = new Date(formData.startsAt);
+      if (isNaN(starts.getTime())) {
+        newErrors.startsAt = "Geçerli bir tarih giriniz";
+      } else if (starts < now) {
+        // Allow past dates but warn (not an error, just informational)
+        // We'll show a warning in the helper text instead
+      }
+    }
+
+    // Validate endsAt
+    if (formData.endsAt) {
+      const ends = new Date(formData.endsAt);
+      if (isNaN(ends.getTime())) {
+        newErrors.endsAt = "Geçerli bir tarih giriniz";
+      } else if (ends < now) {
+        newErrors.endsAt = "Bitiş tarihi geçmiş bir tarih olamaz (duyuru pasif olur)";
+      }
+    }
+
+    // Validate date range logic
     if (formData.startsAt && formData.endsAt) {
       const starts = new Date(formData.startsAt);
       const ends = new Date(formData.endsAt);
@@ -173,23 +196,61 @@ export function AnnouncementFormDialog({
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Başlangıç Tarihi"
-                type="datetime-local"
-                value={formData.startsAt}
-                onChange={(e) => setFormData({ ...formData, startsAt: e.target.value })}
-                error={errors.startsAt}
-                helperText="Opsiyonel"
-              />
+              <div>
+                <div className="relative">
+                  <Input
+                    label="Başlangıç Tarihi"
+                    type="datetime-local"
+                    value={formData.startsAt}
+                    onChange={(e) => setFormData({ ...formData, startsAt: e.target.value })}
+                    error={errors.startsAt}
+                    helperText={
+                      formData.startsAt && new Date(formData.startsAt) > new Date()
+                        ? "Gelecekteki bir tarih seçtiniz - duyuru bu tarihe kadar pasif kalacak"
+                        : "Opsiyonel - Boş bırakırsanız duyuru hemen aktif olur"
+                    }
+                    className={formData.startsAt ? "pr-8" : ""}
+                  />
+                  {formData.startsAt && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, startsAt: "" })}
+                      className="absolute right-3 top-[34px] text-gray-400 hover:text-gray-600 transition-colors"
+                      title="Tarihi temizle"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
 
-              <Input
-                label="Bitiş Tarihi"
-                type="datetime-local"
-                value={formData.endsAt}
-                onChange={(e) => setFormData({ ...formData, endsAt: e.target.value })}
-                error={errors.endsAt}
-                helperText="Opsiyonel"
-              />
+              <div>
+                <div className="relative">
+                  <Input
+                    label="Bitiş Tarihi"
+                    type="datetime-local"
+                    value={formData.endsAt}
+                    onChange={(e) => setFormData({ ...formData, endsAt: e.target.value })}
+                    error={errors.endsAt}
+                    helperText={
+                      formData.endsAt && new Date(formData.endsAt) < new Date()
+                        ? "Geçmiş bir tarih seçtiniz - duyuru pasif olacak"
+                        : "Opsiyonel - Boş bırakırsanız duyuru süresiz aktif kalır"
+                    }
+                    className={formData.endsAt ? "pr-8" : ""}
+                  />
+                  {formData.endsAt && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, endsAt: "" })}
+                      className="absolute right-3 top-[34px] text-gray-400 hover:text-gray-600 transition-colors"
+                      title="Tarihi temizle"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="flex items-center space-x-2">

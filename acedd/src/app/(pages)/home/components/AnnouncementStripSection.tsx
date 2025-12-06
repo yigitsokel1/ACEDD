@@ -1,26 +1,40 @@
 import React from "react";
-import { AnnouncementStrip } from "@/components/AnnouncementStrip";
+import { AnnouncementStrip } from "./AnnouncementStrip";
+import { prisma } from "@/lib/db";
 import type { Announcement } from "@/lib/types/announcement";
+import { isAnnouncementActive } from "@/lib/utils/isAnnouncementActive";
 
 async function fetchActiveAnnouncements(): Promise<Announcement[]> {
   try {
-    // In Next.js server components, we can use relative URLs
-    // The fetch will automatically use the same origin
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    const url = process.env.NODE_ENV === "production" 
-      ? `${baseUrl}/api/announcements?activeOnly=true`
-      : `http://localhost:3000/api/announcements?activeOnly=true`;
-    
-    const response = await fetch(url, {
-      cache: "no-store", // Always fetch fresh data
+    // Directly use Prisma in server component instead of API route
+    // This is more efficient and avoids HTTP overhead
+    const announcements = await prisma.announcement.findMany({
+      orderBy: [
+        { isPinned: "desc" },
+        { createdAt: "desc" },
+      ],
     });
 
-    if (!response.ok) {
-      console.error("Failed to fetch announcements");
-      return [];
-    }
+    // Convert Prisma DateTime to ISO strings
+    const formattedAnnouncements: Announcement[] = announcements.map((announcement) => ({
+      id: announcement.id,
+      title: announcement.title,
+      summary: announcement.summary,
+      content: announcement.content,
+      category: announcement.category,
+      startsAt: announcement.startsAt?.toISOString() ?? null,
+      endsAt: announcement.endsAt?.toISOString() ?? null,
+      isPinned: announcement.isPinned,
+      createdAt: announcement.createdAt.toISOString(),
+      updatedAt: announcement.updatedAt.toISOString(),
+    }));
 
-    return await response.json();
+    // Debug: Log in server (will appear in terminal, not browser console)
+    console.log(`[AnnouncementStripSection] Fetched ${formattedAnnouncements.length} announcements from DB`);
+
+    // Don't filter here - let AnnouncementStrip component filter by active status
+    // This way we can show a message if there are announcements but none are active
+    return formattedAnnouncements;
   } catch (error) {
     console.error("Error fetching announcements:", error);
     return [];

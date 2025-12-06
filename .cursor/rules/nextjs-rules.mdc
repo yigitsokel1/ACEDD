@@ -77,14 +77,97 @@ Follow and extend the existing structure:
   - `src/lib/db.ts` – Prisma client (MariaDB).
   - `src/lib/mongodb.ts` – legacy Mongo driver (do not extend).
 
+- **Component organization** – **CRITICAL: Follow this structure strictly**
+
+  **1. Shared/Reusable Components** (`src/components/`):
+  
+  - `src/components/ui/` – **UI primitives** (generic, reusable building blocks)
+    - Examples: `Button`, `Input`, `Card`, `Select`, `Textarea`, `Badge`, `FileUpload`
+    - These have NO domain logic, NO business rules
+    - Can be used anywhere in the app (public pages, admin panel, etc.)
+  
+  - `src/components/layout/` – **Layout components** (site-wide structure)
+    - Examples: `Header`, `Footer`, `ConditionalLayout`
+    - These define the overall page structure
+    - Used across multiple routes/pages
+
+  **2. Page-Specific Components** (`src/app/(pages)/<route>/components/`):
+  
+  - **Public page components** – Components used ONLY in a specific public page
+    - Examples:
+      - `src/app/(pages)/home/components/HeroSection.tsx` (only on homepage)
+      - `src/app/(pages)/home/components/AnnouncementStrip.tsx` (only on homepage)
+      - `src/app/(pages)/home/components/AnnouncementStripSection.tsx` (only on homepage)
+      - `src/app/(pages)/etkinlikler/components/EventsGrid.tsx` (only on events page)
+    - **Rule:** Even if a component is domain-specific (e.g., announcement-related), if it's ONLY used in one page, it belongs in that page's `components/` folder
+  
+  - Each route folder structure:
+    ```
+    src/app/(pages)/<route>/
+      ├── page.tsx
+      ├── constants.ts
+      ├── components/
+      │   ├── ComponentName.tsx
+      │   └── index.ts
+      └── hooks/ (optional)
+    ```
+
+  **3. Admin-Specific Components** (`src/app/(admin)/admin/components/`):
+  
+  - **Admin panel components** – Components used ONLY in admin panel
+    - Examples:
+      - `AdminLayout.tsx` (admin layout wrapper)
+      - `AdminAnnouncementsTable.tsx` (admin announcements management)
+      - `AnnouncementFormDialog.tsx` (admin announcement form)
+      - `AnnouncementsSummaryWidget.tsx` (admin dashboard widget)
+    - **Rule:** All admin-specific components stay in `admin/components/`, even if they're domain-specific
+
+**Component placement decision tree:**
+
+1. **Is it a generic UI primitive?** (button, input, card, select, etc.)
+   → `src/components/ui/`
+   - ✅ No domain logic
+   - ✅ Reusable across entire app
+
+2. **Is it a layout component?** (header, footer, sidebar, conditional layout)
+   → `src/components/layout/`
+   - ✅ Site-wide structure
+   - ✅ Used across multiple routes
+
+3. **Is it admin-specific?** (only used in admin panel)
+   → `src/app/(admin)/admin/components/`
+   - ✅ Admin dashboard widgets
+   - ✅ Admin management tables/forms
+   - ✅ Admin-specific layouts
+
+4. **Is it page-specific?** (used in only ONE public page/route)
+   → `src/app/(pages)/<route>/components/`
+   - ✅ Home page components → `home/components/`
+   - ✅ Events page components → `etkinlikler/components/`
+   - ✅ Contact page components → `iletisim/components/`
+   - **Important:** Even domain-specific components (announcements, events, etc.) go here if they're only used in one page
+
+5. **Is it shared across MULTIPLE pages?** (used in 2+ different routes)
+   → `src/components/<domain>/`
+   - ⚠️ **Rare case** – Only use this if a component is truly shared across multiple pages
+   - Example: Future `EventCard` used in both events list page AND homepage
+   - **Default:** Prefer page-specific placement unless truly needed in multiple places
+
+**Examples:**
+
+- ✅ `src/components/ui/Button.tsx` – Generic UI primitive
+- ✅ `src/components/layout/Header.tsx` – Site-wide layout
+- ✅ `src/app/(pages)/home/components/AnnouncementStrip.tsx` – Home page only
+- ✅ `src/app/(pages)/home/components/AnnouncementStripSection.tsx` – Home page only
+- ✅ `src/app/(admin)/admin/components/AnnouncementFormDialog.tsx` – Admin only
+- ❌ `src/components/announcements/` – Don't create unless truly shared across multiple pages
+
 When you add new functionality:
 
 - **Domain types** → `src/lib/types/<domain>.ts`
 - **API endpoints** → `src/app/api/<domain>/**`
 - **Admin pages** → `src/app/(admin)/admin/<domain>/page.tsx`
-- **Public UI** → either:
-  - `src/app/(pages)/<route>/components`, or
-  - `src/components/<domain>` for truly shared widgets.
+- **Public UI components** → Follow the decision tree above
 
 ---
 

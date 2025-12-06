@@ -145,15 +145,31 @@ export function AdminAnnouncementsTable({
                       {formatDateRange(announcement.startsAt, announcement.endsAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <Badge
-                        className={
-                          isActive
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }
-                      >
-                        {isActive ? "Aktif" : "Pasif"}
-                      </Badge>
+                      <div className="flex items-center space-x-2">
+                        <Badge
+                          className={
+                            isActive
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }
+                        >
+                          {isActive ? "Aktif" : "Pasif"}
+                        </Badge>
+                        {!isActive && (
+                          <span
+                            className="text-xs text-gray-500 cursor-help"
+                            title={
+                              announcement.startsAt && new Date(announcement.startsAt) > new Date()
+                                ? `Duyuru ${formatDate(announcement.startsAt)} tarihinde aktif olacak`
+                                : announcement.endsAt && new Date(announcement.endsAt) < new Date()
+                                ? `Duyuru ${formatDate(announcement.endsAt)} tarihinde sona erdi`
+                                : "Duyuru pasif durumda"
+                            }
+                          >
+                            ℹ️
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Button
