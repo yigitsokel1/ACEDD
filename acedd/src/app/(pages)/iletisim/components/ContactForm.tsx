@@ -23,6 +23,7 @@ type ContactFormData = z.infer<typeof contactFormSchema>;
 export function ContactForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
     register,
@@ -35,14 +36,49 @@ export function ContactForm() {
 
   const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true);
+    setSubmitError(null);
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      console.log("Form data:", data);
+      const response = await fetch("/api/contact-messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        // Parse error response
+        let errorMessage = "Mesaj gönderilirken bir hata oluştu. Lütfen tekrar deneyin.";
+
+        try {
+          const errorData = await response.json();
+          // API returns { error: "...", message: "..." }
+          // Prefer message over error as it contains the actual error details
+          if (errorData.message && errorData.message !== "Unknown error") {
+            errorMessage = errorData.message;
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch {
+          // If JSON parsing fails, use default message
+          if (response.status === 400) {
+            errorMessage = "Lütfen tüm zorunlu alanları doldurun.";
+          } else if (response.status >= 500) {
+            errorMessage = "Şu an bir sorun oluştu, lütfen daha sonra tekrar deneyin.";
+          }
+        }
+
+        setSubmitError(errorMessage);
+        return;
+      }
+
+      // Success - form submitted
       setIsSubmitted(true);
       reset();
     } catch (error) {
-      console.error("Error submitting form:", error);
+      console.error("Error submitting contact form:", error);
+      setSubmitError("Şu an bir sorun oluştu, lütfen daha sonra tekrar deneyin.");
     } finally {
       setIsSubmitting(false);
     }
@@ -81,6 +117,11 @@ export function ContactForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {submitError && (
+            <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+              <p className="text-sm font-medium">{submitError}</p>
+            </div>
+          )}
           <div className="grid md:grid-cols-2 gap-6">
             <Input
               {...register("name")}

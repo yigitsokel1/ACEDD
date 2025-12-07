@@ -1,4 +1,4 @@
-import { Users, FileText, Calendar, Megaphone, Settings, BarChart3, UserCheck, BookOpen } from "lucide-react";
+import { Users, FileText, Calendar, Megaphone, Settings, BarChart3, UserCheck, BookOpen, MessageCircle } from "lucide-react";
 import type { AdminRole } from "@/lib/types/admin";
 
 export type AdminNavItem = {
@@ -38,6 +38,12 @@ export const ADMIN_NAVIGATION_ITEMS: AdminNavItem[] = [
     href: "/admin/burs-basvurulari", 
     icon: FileText,
     roles: ["SUPER_ADMIN", "ADMIN"] // Read access for ADMIN, full access for SUPER_ADMIN
+  },
+  { 
+    name: "İletişim Mesajları", 
+    href: "/admin/iletisim-mesajlari", 
+    icon: MessageCircle,
+    roles: ["SUPER_ADMIN", "ADMIN"]
   },
   { 
     name: "Ayarlar", 

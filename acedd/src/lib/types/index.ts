@@ -38,3 +38,6 @@ export * from "./admin";
 
 // Scholarship types (Sprint 7)
 export * from "./scholarship";
+
+// Contact types (Sprint 8)
+export * from "./contact";

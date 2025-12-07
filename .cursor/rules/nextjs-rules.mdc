@@ -290,6 +290,7 @@ Code you write should be ready to pass all of the above.
     - **Announcements** (POST/PUT/DELETE): `ADMIN` + `SUPER_ADMIN`
     - **Events** (POST/PUT/DELETE): `ADMIN` + `SUPER_ADMIN`
     - **Scholarship Applications** (GET/PUT/DELETE): `ADMIN` + `SUPER_ADMIN` (POST is public for form submission)
+    - **Contact Messages** (GET/PUT): `ADMIN` + `SUPER_ADMIN`, DELETE: `SUPER_ADMIN` only (POST is public for form submission)
   - GET endpoint'leri genellikle public (admin paneli için middleware korumalı)
 - **UI Level Protection:**
   - Admin menü öğeleri role bazlı filtreleme (`hasRole()` helper)
@@ -487,6 +488,28 @@ When adding new models or fields, **always follow this order:**
 - **RBAC:** GET/PUT/DELETE için `requireRole(["SUPER_ADMIN", "ADMIN"])`, POST public
 - **Test Pattern:** `src/app/api/scholarship-applications/__tests__/route.test.ts` ve `[id]/__tests__/route.test.ts`
 
+### 4.3.1. Contact Messages (İletişim Mesajları) - Sprint 8
+
+**Yeni Modül: ContactMessage (Sprint 8)**
+
+- **API İsimlendirmesi:** `/api/contact-messages`
+- **Prisma Model:** `ContactMessage` (basit alanlar: fullName, email, phone?, subject, message, metadata: ipAddress, userAgent, status management)
+- **TypeScript Types:** `src/lib/types/contact.ts`
+  - `ContactMessageStatus`: `"NEW" | "READ" | "ARCHIVED"`
+  - `ContactMessage` interface
+  - `CreateContactMessageRequest` interface (form'da `name` → backend'de `fullName`)
+  - `UpdateContactMessageStatusRequest` interface
+- **API Endpoints:**
+  - POST `/api/contact-messages` (Public - form submission, metadata extraction: ipAddress, userAgent)
+  - GET `/api/contact-messages` (Admin - list with filters: status, search)
+  - GET `/api/contact-messages/[id]` (Admin - detail)
+  - PUT `/api/contact-messages/[id]` (Admin - status update: READ/ARCHIVED, auto-set readAt/archivedAt)
+  - DELETE `/api/contact-messages/[id]` (SUPER_ADMIN only - deletion)
+- **Admin Panel:** `src/app/(admin)/admin/iletisim-mesajlari/page.tsx`
+- **Public Form:** `src/app/(pages)/iletisim/components/ContactForm.tsx`
+- **RBAC:** GET/PUT için `requireRole(["SUPER_ADMIN", "ADMIN"])`, DELETE için `requireRole(["SUPER_ADMIN"])`, POST public
+- **Test Pattern:** `src/app/api/contact-messages/__tests__/route.test.ts` ve `[id]/__tests__/route.test.ts`
+
 **Yeni Domain Ekleme Pattern'i (Sprint 7):**
 
 Yeni bir domain eklerken şu pattern'i takip et:
@@ -498,6 +521,10 @@ Yeni bir domain eklerken şu pattern'i takip et:
 5. **Tests:** `src/app/api/<domain>/__tests__/route.test.ts` ve `[id]/__tests__/route.test.ts` oluştur
 6. **RBAC:** Mutating endpoint'ler için `requireRole()` kullan
 7. **Error Handling:** 400, 401, 403, 404, 500 status codes için proper error handling
+
+**Referans Örnekler:**
+- **Scholarship Applications (Sprint 7):** Kapsamlı form, JSON fields, nested arrays
+- **Contact Messages (Sprint 8):** Basit form, metadata extraction (ipAddress, userAgent), status management (NEW → READ → ARCHIVED)
 
 ### 4.4. Announcements (Duyurular) as the first fully Prisma feature
 

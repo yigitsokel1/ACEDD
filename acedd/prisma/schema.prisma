@@ -287,6 +287,36 @@ enum ScholarshipApplicationStatus {
 }
 
 // ============================================================================
+// Contact Messages (İletişim Mesajları)
+// ============================================================================
+
+model ContactMessage {
+  id          String                @id @default(uuid())
+  fullName    String
+  email       String
+  phone       String?
+  subject     String
+  message     String                @db.Text
+  // Opsiyonel metadata
+  ipAddress   String?
+  userAgent   String?
+  status      ContactMessageStatus  @default(NEW)
+  createdAt   DateTime              @default(now())
+  readAt      DateTime?
+  archivedAt  DateTime?
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum ContactMessageStatus {
+  NEW
+  READ
+  ARCHIVED
+}
+
+// ============================================================================
 // Dataset (Görsel/Dosya Yönetimi)
 // ============================================================================
 
