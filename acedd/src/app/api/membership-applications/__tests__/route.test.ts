@@ -3,6 +3,7 @@ import { PUT } from "../[id]/route";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireRole } from "@/lib/auth/adminAuth";
+import { MemberGender, MemberAcademicLevel, MemberMaritalStatus, ApplicationStatus } from "@prisma/client";
 
 // Mock Prisma
 vi.mock("@/lib/db", () => ({
@@ -37,19 +38,19 @@ describe("PUT /api/membership-applications/[id] - Status Update", () => {
       id: "app-1",
       firstName: "John",
       lastName: "Doe",
-      gender: "erkek",
+      gender: "erkek" as MemberGender,
       email: "john@example.com",
       phone: "5551234567",
       birthDate: new Date("1990-01-01T00:00:00Z"),
-      academicLevel: "lisans",
-      maritalStatus: "bekar",
+      academicLevel: "lisans" as MemberAcademicLevel,
+      maritalStatus: "bekar" as MemberMaritalStatus,
       hometown: "Istanbul",
       placeOfBirth: "Istanbul",
       nationality: "TR",
       currentAddress: "Istanbul",
       tcId: null,
       lastValidDate: null,
-      status: "APPROVED",
+      status: "APPROVED" as ApplicationStatus,
       applicationDate: new Date("2024-01-01T00:00:00Z"),
       reviewedAt: new Date("2024-01-02T00:00:00Z"),
       reviewedBy: "admin-123",
@@ -90,7 +91,7 @@ describe("PUT /api/membership-applications/[id] - Status Update", () => {
     expect(prisma.membershipApplication.update).toHaveBeenCalledWith({
       where: { id: "app-1" },
       data: {
-        status: "APPROVED",
+        status: "APPROVED" as ApplicationStatus,
         reviewedAt: expect.any(Date),
         notes: "Approved by admin",
         reviewedBy: "admin-123",
@@ -103,19 +104,19 @@ describe("PUT /api/membership-applications/[id] - Status Update", () => {
       id: "app-2",
       firstName: "Jane",
       lastName: "Smith",
-      gender: "kadın",
+      gender: "kadın" as MemberGender,
       email: "jane@example.com",
       phone: "5559876543",
       birthDate: new Date("1995-05-15T00:00:00Z"),
-      academicLevel: "yukseklisans",
-      maritalStatus: "evli",
+      academicLevel: "yukseklisans" as MemberAcademicLevel,
+      maritalStatus: "evli" as MemberMaritalStatus,
       hometown: "Ankara",
       placeOfBirth: "Ankara",
       nationality: "TR",
       currentAddress: "Ankara",
       tcId: null,
       lastValidDate: null,
-      status: "REJECTED",
+      status: "REJECTED" as const,
       applicationDate: new Date("2024-01-01T00:00:00Z"),
       reviewedAt: new Date("2024-01-02T00:00:00Z"),
       reviewedBy: "admin-123",

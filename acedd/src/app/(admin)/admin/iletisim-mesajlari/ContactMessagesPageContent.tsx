@@ -70,7 +70,7 @@ function ContactMessageModal({
       case 'READ':
         return <Badge variant="secondary">Okundu</Badge>;
       case 'ARCHIVED':
-        return <Badge variant="outline">Arşivde</Badge>;
+        return <Badge variant="secondary">Arşivde</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -418,7 +418,7 @@ export default function ContactMessagesPageContent() {
       case 'READ':
         return <Badge variant="secondary">Okundu</Badge>;
       case 'ARCHIVED':
-        return <Badge variant="outline">Arşivde</Badge>;
+        return <Badge variant="secondary">Arşivde</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }

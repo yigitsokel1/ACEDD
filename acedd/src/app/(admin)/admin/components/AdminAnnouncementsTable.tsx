@@ -39,7 +39,7 @@ export function AdminAnnouncementsTable({
     }
   };
 
-  const formatDateRange = (startsAt: string | null, endsAt: string | null) => {
+  const formatDateRange = (startsAt: string | null | undefined, endsAt: string | null | undefined) => {
     if (!startsAt && !endsAt) return "Süresiz";
     if (startsAt && endsAt) {
       return `${formatDate(startsAt)} - ${formatDate(endsAt)}`;

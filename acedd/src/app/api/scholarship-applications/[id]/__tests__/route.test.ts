@@ -441,7 +441,7 @@ describe("PUT /api/scholarship-applications/[id] - Status Update", () => {
       educationHistory: null,
       references: null,
       documents: null,
-      status: "APPROVED",
+      status: "APPROVED" as const,
       reviewedBy: "admin-2",
       reviewedAt: new Date("2024-01-02T00:00:00Z"),
       reviewNotes: "Approved by admin",

@@ -40,16 +40,17 @@ async function generateSignature(payload: string): Promise<string> {
   const payloadData = stringToUint8Array(payload);
   
   // Import key for HMAC (HMAC keys can be any length)
+  // Cast to ArrayBuffer for Web Crypto API compatibility
   const key = await crypto.subtle.importKey(
     "raw",
-    keyData,
+    keyData.buffer as ArrayBuffer,
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"]
   );
   
   // Sign the payload
-  const signature = await crypto.subtle.sign("HMAC", key, payloadData);
+  const signature = await crypto.subtle.sign("HMAC", key, payloadData.buffer as ArrayBuffer);
   
   // Convert to hex string
   return arrayBufferToHex(signature);

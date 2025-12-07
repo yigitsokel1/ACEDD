@@ -14,6 +14,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import type { ScholarshipApplication, ScholarshipRelative, ScholarshipEducationHistory, ScholarshipReference } from "@/lib/types/scholarship";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
 
@@ -373,10 +374,10 @@ export async function POST(request: NextRequest) {
         scholarshipIncome: body.scholarshipIncome?.trim() || "",
         interests: body.interests?.trim() || null,
         selfIntroduction: body.selfIntroduction?.trim() || "",
-        relatives: body.relatives ? JSON.stringify(body.relatives) : null,
-        educationHistory: body.educationHistory ? JSON.stringify(body.educationHistory) : null,
-        references: body.references ? JSON.stringify(body.references) : null,
-        documents: body.documents ? JSON.stringify(body.documents) : null,
+        relatives: body.relatives ? (body.relatives as Prisma.InputJsonValue) : Prisma.JsonNull,
+        educationHistory: body.educationHistory ? (body.educationHistory as Prisma.InputJsonValue) : Prisma.JsonNull,
+        references: body.references ? (body.references as Prisma.InputJsonValue) : Prisma.JsonNull,
+        documents: body.documents ? (body.documents as Prisma.InputJsonValue) : Prisma.JsonNull,
         status: "PENDING", // Always start as pending
       },
     });

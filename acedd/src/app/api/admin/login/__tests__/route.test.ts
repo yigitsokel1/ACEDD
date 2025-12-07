@@ -114,7 +114,7 @@ describe("POST /api/admin/login", () => {
     };
 
     vi.mocked(prisma.adminUser.findUnique).mockResolvedValue(mockAdminUser);
-    vi.mocked(bcrypt.compare).mockResolvedValue(false);
+    (vi.mocked(bcrypt.compare) as any).mockResolvedValue(false);
 
     const body = {
       email: "admin@acedd.org",
@@ -181,7 +181,7 @@ describe("POST /api/admin/login", () => {
     };
 
     vi.mocked(prisma.adminUser.findUnique).mockResolvedValue(mockAdminUser);
-    vi.mocked(bcrypt.compare).mockResolvedValue(true);
+    (vi.mocked(bcrypt.compare) as any).mockResolvedValue(true);
 
     const body = {
       email: "admin@acedd.org",
@@ -242,7 +242,7 @@ describe("POST /api/admin/login", () => {
     };
 
     vi.mocked(prisma.adminUser.findUnique).mockResolvedValue(mockAdminUser);
-    vi.mocked(bcrypt.compare).mockResolvedValue(true);
+    (vi.mocked(bcrypt.compare) as any).mockResolvedValue(true);
 
     const body = {
       email: "superadmin@acedd.org",
@@ -276,7 +276,7 @@ describe("POST /api/admin/login", () => {
     };
 
     vi.mocked(prisma.adminUser.findUnique).mockResolvedValue(mockAdminUser);
-    vi.mocked(bcrypt.compare).mockResolvedValue(true);
+    (vi.mocked(bcrypt.compare) as any).mockResolvedValue(true);
 
     const body = {
       email: "  ADMIN@ACEDD.ORG  ",
@@ -310,7 +310,7 @@ describe("POST /api/admin/login", () => {
       };
 
       vi.mocked(prisma.adminUser.findUnique).mockResolvedValue(mockAdminUser);
-      vi.mocked(bcrypt.compare).mockResolvedValue(true);
+      (vi.mocked(bcrypt.compare) as any).mockResolvedValue(true);
 
       const body = {
         email: "admin@acedd.org",
@@ -377,7 +377,7 @@ describe("POST /api/admin/login", () => {
       };
 
       vi.mocked(prisma.adminUser.findUnique).mockResolvedValue(mockAdminUser);
-      vi.mocked(bcrypt.compare).mockResolvedValue(true);
+      (vi.mocked(bcrypt.compare) as any).mockResolvedValue(true);
 
       const body = {
         email: "admin@acedd.org",

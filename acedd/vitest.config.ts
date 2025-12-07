@@ -4,9 +4,11 @@ import path from "path";
 export default defineConfig({
   test: {
     globals: true,
-    environment: "node",
+    // Use jsdom for React component tests, node for API tests
+    environment: "jsdom",
     include: ["src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
     exclude: ["node_modules", ".next", "dist"],
+    setupFiles: ["./src/test/setup.ts"], // Setup file for test environment
   },
   resolve: {
     alias: {

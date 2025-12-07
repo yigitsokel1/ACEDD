@@ -63,13 +63,13 @@ describe("GET /api/board-members", () => {
           phone: "5551234567",
           tags: JSON.stringify([]),
         },
-        role: "PRESIDENT",
+        role: "PRESIDENT" as const,
         termStart: null,
         termEnd: null,
         createdAt: new Date("2024-01-01T00:00:00Z"),
         updatedAt: new Date("2024-01-01T00:00:00Z"),
       },
-    ];
+    ] as any;
 
     vi.mocked(prisma.boardMember.findMany).mockResolvedValue(mockBoardMembers);
 
