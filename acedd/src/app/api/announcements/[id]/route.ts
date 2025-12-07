@@ -30,6 +30,7 @@ import type {
   Announcement,
   UpdateAnnouncementRequest,
 } from "@/lib/types/announcement";
+import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
 
 /**
  * GET /api/announcements/[id]
@@ -92,6 +93,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Sprint 6: Announcements CRUD requires ADMIN or SUPER_ADMIN
+    requireRole(request, ["SUPER_ADMIN", "ADMIN"]);
+    
     const { id } = await params;
     const body: UpdateAnnouncementRequest = await request.json();
 
@@ -247,6 +251,11 @@ export async function PUT(
 
     return NextResponse.json(formattedAnnouncement);
   } catch (error) {
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+    
     console.error("Error updating announcement:", error);
     return NextResponse.json(
       {
@@ -267,6 +276,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Require SUPER_ADMIN or ADMIN role
+    requireRole(request, ["SUPER_ADMIN", "ADMIN"]);
+    
     const { id } = await params;
 
     // Check if announcement exists
@@ -291,6 +303,11 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+    
     console.error("Error deleting announcement:", error);
     return NextResponse.json(
       {

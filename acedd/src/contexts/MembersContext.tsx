@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Member, MembershipApplication, BoardMember, CreateMemberData, UpdateMemberData, CreateApplicationData, CreateBoardMemberData } from "@/lib/types/member";
+import { sortBoardMembersByRole } from "@/lib/utils/memberHelpers";
 
 interface MembersContextType {
   // Members
@@ -54,14 +55,32 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
   const [boardMembersError, setBoardMembersError] = useState<string | null>(null);
 
   // Fetch members
-  const fetchMembers = async () => {
+  const fetchMembers = async (filters?: { activeOnly?: boolean; department?: string; search?: string }) => {
     setMembersLoading(true);
     setMembersError(null);
     try {
-      const response = await fetch('/api/members');
+      // Build query string
+      const params = new URLSearchParams();
+      if (filters?.activeOnly) params.append('activeOnly', 'true');
+      if (filters?.department) params.append('department', filters.department);
+      if (filters?.search) params.append('search', filters.search);
+      
+      const url = `/api/members${params.toString() ? `?${params.toString()}` : ''}`;
+      const response = await fetch(url);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch members');
+        // Try to get error message from response
+        let errorMessage = 'Failed to fetch members';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = `${errorMessage} (${response.status}: ${response.statusText})`;
+        }
+        throw new Error(errorMessage);
       }
+      
       const data = await response.json();
       setMembers(data);
     } catch (err) {
@@ -73,14 +92,30 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Fetch applications
-  const fetchApplications = async () => {
+  const fetchApplications = async (status?: 'pending' | 'approved' | 'rejected') => {
     setApplicationsLoading(true);
     setApplicationsError(null);
     try {
-      const response = await fetch('/api/membership-applications');
+      // Build query string
+      const params = new URLSearchParams();
+      if (status) params.append('status', status);
+      
+      const url = `/api/membership-applications${params.toString() ? `?${params.toString()}` : ''}`;
+      const response = await fetch(url);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch applications');
+        // Try to get error message from response
+        let errorMessage = 'Failed to fetch applications';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = `${errorMessage} (${response.status}: ${response.statusText})`;
+        }
+        throw new Error(errorMessage);
       }
+      
       const data = await response.json();
       setApplications(data);
     } catch (err) {
@@ -97,9 +132,20 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
     setBoardMembersError(null);
     try {
       const response = await fetch('/api/board-members');
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch board members');
+        // Try to get error message from response
+        let errorMessage = 'Failed to fetch board members';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = `${errorMessage} (${response.status}: ${response.statusText})`;
+        }
+        throw new Error(errorMessage);
       }
+      
       const data = await response.json();
       setBoardMembers(data);
     } catch (err) {
@@ -131,7 +177,16 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create member');
+        // Try to get error message from response
+        let errorMessage = 'Failed to create member';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = `${errorMessage} (${response.status}: ${response.statusText})`;
+        }
+        throw new Error(errorMessage);
       }
 
       const newMember = await response.json();
@@ -158,8 +213,16 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to update member: ${errorData.error || response.statusText}`);
+        // Try to get error message from response
+        let errorMessage = 'Failed to update member';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = `${errorMessage} (${response.status}: ${response.statusText})`;
+        }
+        throw new Error(errorMessage);
       }
 
       const updatedMember = await response.json();
@@ -184,8 +247,16 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to delete member: ${errorData.error || response.statusText}`);
+        // Try to get error message from response
+        let errorMessage = 'Failed to delete member';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = `${errorMessage} (${response.status}: ${response.statusText})`;
+        }
+        throw new Error(errorMessage);
       }
 
       setMembers(prev => prev.filter(member => member.id !== id));
@@ -220,7 +291,16 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create application');
+        // Try to get error message from response
+        let errorMessage = 'Failed to create application';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = `${errorMessage} (${response.status}: ${response.statusText})`;
+        }
+        throw new Error(errorMessage);
       }
 
       const newApplication = await response.json();
@@ -247,8 +327,16 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to update application: ${errorData.error || response.statusText}`);
+        // Try to get error message from response
+        let errorMessage = 'Failed to update application';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = `${errorMessage} (${response.status}: ${response.statusText})`;
+        }
+        throw new Error(errorMessage);
       }
 
       const updatedApplication = await response.json();
@@ -273,8 +361,16 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to delete application: ${errorData.error || response.statusText}`);
+        // Try to get error message from response
+        let errorMessage = 'Failed to delete application';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = `${errorMessage} (${response.status}: ${response.statusText})`;
+        }
+        throw new Error(errorMessage);
       }
 
       setApplications(prev => prev.filter(application => application.id !== id));
@@ -309,11 +405,21 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create board member');
+        // Try to get error message from response
+        let errorMessage = 'Failed to create board member';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = `${errorMessage} (${response.status}: ${response.statusText})`;
+        }
+        throw new Error(errorMessage);
       }
 
       const newBoardMember = await response.json();
-      setBoardMembers(prev => [...prev, newBoardMember].sort((a, b) => a.order - b.order));
+      // Sprint 6: Helper fonksiyonla sıralama
+      setBoardMembers(prev => sortBoardMembersByRole([...prev, newBoardMember]));
     } catch (err) {
       console.error('Error creating board member:', err);
       setBoardMembersError(err instanceof Error ? err.message : 'Failed to create board member');
@@ -336,15 +442,23 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to update board member: ${errorData.error || response.statusText}`);
+        // Try to get error message from response
+        let errorMessage = 'Failed to update board member';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = `${errorMessage} (${response.status}: ${response.statusText})`;
+        }
+        throw new Error(errorMessage);
       }
 
       const updatedBoardMember = await response.json();
-      setBoardMembers(prev => 
+      // Sprint 6: Helper fonksiyonla sıralama
+      setBoardMembers(prev => sortBoardMembersByRole(
         prev.map(boardMember => boardMember.id === id ? updatedBoardMember : boardMember)
-          .sort((a, b) => a.order - b.order)
-      );
+      ));
     } catch (err) {
       console.error('Error updating board member:', err);
       setBoardMembersError(err instanceof Error ? err.message : 'Failed to update board member');
@@ -363,8 +477,16 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`Failed to delete board member: ${errorData.error || response.statusText}`);
+        // Try to get error message from response
+        let errorMessage = 'Failed to delete board member';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch {
+          // If response is not JSON, use status text
+          errorMessage = `${errorMessage} (${response.status}: ${response.statusText})`;
+        }
+        throw new Error(errorMessage);
       }
 
       setBoardMembers(prev => prev.filter(boardMember => boardMember.id !== id));

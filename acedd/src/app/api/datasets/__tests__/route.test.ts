@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { GET, POST } from "../route";
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireRole } from "@/lib/auth/adminAuth";
 
 // Mock Prisma
 vi.mock("@/lib/db", () => ({
@@ -11,6 +12,29 @@ vi.mock("@/lib/db", () => ({
       create: vi.fn(),
     },
   },
+}));
+
+// Mock adminAuth
+vi.mock("@/lib/auth/adminAuth", () => ({
+  requireRole: vi.fn(),
+  createAuthErrorResponse: vi.fn((error: string) => {
+    if (error === "UNAUTHORIZED") {
+      return new Response(JSON.stringify({ error: "Oturum bulunamadı. Lütfen giriş yapın." }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (error === "FORBIDDEN") {
+      return new Response(JSON.stringify({ error: "Bu işlem için yetkiniz bulunmamaktadır." }), {
+        status: 403,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify({ error: "Yetkilendirme hatası" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }),
 }));
 
 describe("GET /api/datasets", () => {
@@ -131,6 +155,14 @@ describe("GET /api/datasets", () => {
 describe("POST /api/datasets", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Mock requireRole to return a valid session for successful tests
+    const mockSession = {
+      adminUserId: "admin-1",
+      role: "ADMIN" as const,
+      email: "admin@acedd.org",
+      name: "Admin User",
+    };
+    vi.mocked(requireRole).mockReturnValue(mockSession);
   });
 
   it("should create dataset with valid data", async () => {
@@ -265,5 +297,92 @@ describe("POST /api/datasets", () => {
     expect(response.status).toBe(500);
     expect(data).toHaveProperty("error", "Failed to create dataset");
     expect(data).toHaveProperty("message");
+  });
+
+  // Sprint 6: Role-based access control tests
+  it("should allow ADMIN role for dataset creation", async () => {
+    const mockAdminSession = {
+      adminUserId: "admin-1",
+      role: "ADMIN" as const,
+      email: "admin@acedd.org",
+      name: "Admin User",
+    };
+    vi.mocked(requireRole).mockReturnValue(mockAdminSession);
+
+    const mockDataset = {
+      id: "dataset-new",
+      name: "New Dataset",
+      category: "Görsel",
+      fileUrl: "data:image/png;base64,test",
+      fileName: "test.png",
+      fileSize: 1024,
+      fileType: "image/png",
+      tags: null,
+      isPublic: true,
+      downloadCount: 0,
+      uploadedBy: "Admin",
+      source: "event-upload",
+      eventId: null,
+      description: null,
+      createdAt: new Date("2024-01-01T00:00:00Z"),
+      updatedAt: new Date("2024-01-01T00:00:00Z"),
+    };
+
+    vi.mocked((prisma as any).dataset.create).mockResolvedValue(mockDataset);
+
+    const requestBody = {
+      name: "New Dataset",
+      category: "Görsel",
+      fileUrl: "data:image/png;base64,test",
+      fileName: "test.png",
+      fileSize: 1024,
+      fileType: "image/png",
+      uploadedBy: "Admin",
+      source: "event-upload",
+    };
+
+    const request = new NextRequest("http://localhost:3000/api/datasets", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(201);
+    expect(requireRole).toHaveBeenCalledWith(request, ["SUPER_ADMIN", "ADMIN"]);
+  });
+
+  it("should reject UNAUTHORIZED requests (no session)", async () => {
+    vi.mocked(requireRole).mockImplementation(() => {
+      throw new Error("UNAUTHORIZED");
+    });
+
+    const requestBody = {
+      name: "Test Dataset",
+      category: "Görsel",
+      fileUrl: "data:image/png;base64,test",
+      fileName: "test.png",
+      fileSize: 1024,
+      fileType: "image/png",
+      uploadedBy: "Admin",
+      source: "event-upload",
+    };
+
+    const request = new NextRequest("http://localhost:3000/api/datasets", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(data).toHaveProperty("error");
   });
 });

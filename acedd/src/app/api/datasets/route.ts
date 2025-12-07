@@ -11,6 +11,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
 
 /**
  * Helper function to parse JSON string to array
@@ -69,7 +70,7 @@ function formatDataset(prismaDataset: {
 // GET - Tüm datasets'ları getir
 export async function GET() {
   try {
-    const datasets = await (prisma as any).dataset.findMany({
+    const datasets = await prisma.dataset.findMany({
       orderBy: {
         createdAt: 'desc',
       },
@@ -93,6 +94,9 @@ export async function GET() {
 // POST - Yeni dataset oluştur
 export async function POST(request: NextRequest) {
   try {
+    // Sprint 6: Datasets CRUD requires ADMIN or SUPER_ADMIN
+    requireRole(request, ["SUPER_ADMIN", "ADMIN"]);
+    
     const body = await request.json();
 
     // Validation
@@ -111,7 +115,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create dataset
-    const dataset = await (prisma as any).dataset.create({
+    const dataset = await prisma.dataset.create({
       data: {
         name: body.name.trim(),
         description: body.description || null,
@@ -133,6 +137,11 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json(formattedDataset, { status: 201 });
   } catch (error) {
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+    
     console.error('Error creating dataset:', error);
     return NextResponse.json(
       { 

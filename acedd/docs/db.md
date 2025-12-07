@@ -245,11 +245,14 @@ User was denied access on the database `prisma_migrate_shadow_db_...`
 - ✅ **Announcements (Duyurular)** - Fully migrated to Prisma + MariaDB
 - ✅ **Events (Etkinlikler)** - Fully migrated to Prisma + MariaDB
 - ✅ **Datasets (Görsel/Dosya Yönetimi)** - Fully migrated to Prisma + MariaDB
+- ✅ **Members (Üyeler)** - Fully migrated to Prisma + MariaDB
+- ✅ **MembershipApplications (Üyelik Başvuruları)** - Fully migrated to Prisma + MariaDB
+- ✅ **BoardMembers (Yönetim Kurulu)** - Fully migrated to Prisma + MariaDB
 
 **MongoDB'de kalan domainler (migration planlanıyor):**
-- ⏳ Members, MembershipApplications, BoardMembers, ScholarshipApplications
+- ⏳ ScholarshipApplications
 
-**Not:** Events, Announcements ve Datasets artık MongoDB kullanmıyor. Tüm CRUD işlemleri Prisma üzerinden yapılıyor.
+**Not:** Events, Announcements, Datasets, Members, MembershipApplications ve BoardMembers artık MongoDB kullanmıyor. Tüm CRUD işlemleri Prisma üzerinden yapılıyor.
 
 **Dataset Model Özellikleri:**
 - Base64 data URL formatında görsel saklama (MEDIUMTEXT: 16MB limit)

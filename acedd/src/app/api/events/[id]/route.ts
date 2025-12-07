@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import type { Event } from "@/app/(pages)/etkinlikler/constants";
+import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
 
 /**
  * Helper function to parse JSON string to array
@@ -109,6 +110,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Require SUPER_ADMIN or ADMIN role
+    requireRole(request, ["SUPER_ADMIN", "ADMIN"]);
+    
     const { id } = await params;
     const body = await request.json();
 
@@ -305,6 +309,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Require SUPER_ADMIN or ADMIN role
+    requireRole(request, ["SUPER_ADMIN", "ADMIN"]);
+    
     const { id } = await params;
 
     // Check if event exists
@@ -326,6 +333,11 @@ export async function DELETE(
 
     return NextResponse.json({ message: "Event deleted successfully" });
   } catch (error) {
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+    
     console.error("Error deleting event:", error);
     
     // Handle Prisma not found error

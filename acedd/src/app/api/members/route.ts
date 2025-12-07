@@ -1,25 +1,144 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getMembersCollection } from '@/lib/mongodb';
-import { Member, CreateMemberData } from '@/lib/types/member';
+/**
+ * API Route: /api/members
+ * 
+ * GET /api/members
+ * - Query params: activeOnly, department, search
+ * - Returns: Member[] (array of members, sorted by createdAt desc)
+ * 
+ * POST /api/members
+ * - Body: CreateMemberRequest
+ * - Returns: Member (created member)
+ */
+
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import type { Member } from "@/lib/types/member";
+import { requireRole, createAuthErrorResponse, getAdminFromRequest } from "@/lib/auth/adminAuth";
+import { validateMemberTags } from "@/lib/utils/memberHelpers";
+
+/**
+ * Helper function to parse JSON string to array
+ */
+function parseJsonArray(jsonString: string | null | undefined): string[] | null {
+  if (!jsonString) return null;
+  try {
+    const parsed = JSON.parse(jsonString);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Helper function to format Prisma Member to frontend Member
+ * Sprint 5: membershipKind ve tags eklendi
+ */
+function formatMember(prismaMember: {
+  id: string;
+  firstName: string;
+  lastName: string;
+  gender: string;
+  email: string;
+  phone: string | null;
+  birthDate: Date;
+  academicLevel: string;
+  maritalStatus: string;
+  hometown: string;
+  placeOfBirth: string;
+  nationality: string;
+  currentAddress: string;
+  tcId: string | null;
+  lastValidDate: Date | null;
+  titles: string;
+  status: string;
+  membershipDate: Date;
+  membershipKind: string;
+  tags: any; // JSON array
+  department: string | null;
+  graduationYear: number | null;
+  occupation: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  const tags = prismaMember.tags ? (Array.isArray(prismaMember.tags) ? prismaMember.tags : JSON.parse(prismaMember.tags as string)) : [];
+  
+  return {
+    id: prismaMember.id,
+    firstName: prismaMember.firstName,
+    lastName: prismaMember.lastName,
+    gender: prismaMember.gender as "erkek" | "kadın",
+    email: prismaMember.email,
+    phone: prismaMember.phone || "",
+    birthDate: prismaMember.birthDate.toISOString(),
+    academicLevel: prismaMember.academicLevel as Member["academicLevel"],
+    maritalStatus: prismaMember.maritalStatus as Member["maritalStatus"],
+    hometown: prismaMember.hometown,
+    placeOfBirth: prismaMember.placeOfBirth,
+    nationality: prismaMember.nationality,
+    currentAddress: prismaMember.currentAddress,
+    tcId: prismaMember.tcId || undefined,
+    lastValidDate: prismaMember.lastValidDate?.toISOString() || undefined,
+    titles: parseJsonArray(prismaMember.titles) || [],
+    status: prismaMember.status.toLowerCase() as "active" | "inactive",
+    membershipDate: prismaMember.membershipDate.toISOString(),
+    membershipKind: prismaMember.membershipKind as "MEMBER" | "VOLUNTEER",
+    tags: tags as Member["tags"],
+    createdAt: prismaMember.createdAt.toISOString(),
+    updatedAt: prismaMember.updatedAt.toISOString(),
+  };
+}
 
 // GET - Tüm üyeleri getir
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const collection = await getMembersCollection();
-    const members = await collection.find({}).sort({ createdAt: -1 }).toArray();
-    
-    // MongoDB'nin _id'sini id'ye dönüştür
-    const formattedMembers = members.map(member => ({
-      ...member,
-      id: member._id.toString(),
-      _id: undefined // _id'yi kaldır
-    }));
-    
+    const { searchParams } = new URL(request.url);
+    const activeOnly = searchParams.get("activeOnly") === "true";
+    const department = searchParams.get("department");
+    const search = searchParams.get("search");
+
+    // Build where clause
+    const where: any = {};
+
+    if (activeOnly) {
+      where.status = "ACTIVE";
+    }
+
+    if (department) {
+      where.department = department;
+    }
+
+    if (search) {
+      where.OR = [
+        { firstName: { contains: search, mode: "insensitive" } },
+        { lastName: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    const members = await prisma.member.findMany({
+      where,
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    const formattedMembers: Member[] = members.map(formatMember);
+
     return NextResponse.json(formattedMembers);
   } catch (error) {
-    console.error('Error fetching members:', error);
+    console.error("Error fetching members:", error);
+
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+
+    console.error("Error details:", errorDetails);
+
     return NextResponse.json(
-      { error: 'Failed to fetch members' },
+      {
+        error: "Failed to fetch members",
+        message: errorMessage,
+        ...(process.env.NODE_ENV === "development" && { details: errorDetails }),
+      },
       { status: 500 }
     );
   }
@@ -28,34 +147,151 @@ export async function GET() {
 // POST - Yeni üye oluştur
 export async function POST(request: NextRequest) {
   try {
-    const memberData: CreateMemberData = await request.json();
+    // Require SUPER_ADMIN role for creating members
+    requireRole(request, ["SUPER_ADMIN"]);
     
-    const newMember: Omit<Member, 'id'> = {
-      ...memberData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    const body = await request.json();
 
-    const collection = await getMembersCollection();
-    const result = await collection.insertOne(newMember);
-    
-    if (result.insertedId) {
-      const createdMember = {
-        ...newMember,
-        id: result.insertedId.toString(),
-        _id: undefined
-      };
-      return NextResponse.json(createdMember, { status: 201 });
-    } else {
+    // Validation
+    if (!body.firstName || typeof body.firstName !== "string" || body.firstName.trim().length === 0) {
       return NextResponse.json(
-        { error: 'Failed to create member' },
-        { status: 500 }
+        { error: "Validation error", message: "firstName is required and must be a non-empty string" },
+        { status: 400 }
       );
     }
+
+    if (!body.lastName || typeof body.lastName !== "string" || body.lastName.trim().length === 0) {
+      return NextResponse.json(
+        { error: "Validation error", message: "lastName is required and must be a non-empty string" },
+        { status: 400 }
+      );
+    }
+
+    if (!body.email || typeof body.email !== "string" || body.email.trim().length === 0) {
+      return NextResponse.json(
+        { error: "Validation error", message: "email is required and must be a non-empty string" },
+        { status: 400 }
+      );
+    }
+
+    if (!body.birthDate) {
+      return NextResponse.json(
+        { error: "Validation error", message: "birthDate is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!body.membershipDate) {
+      return NextResponse.json(
+        { error: "Validation error", message: "membershipDate is required" },
+        { status: 400 }
+      );
+    }
+
+    // Sprint 5: membershipKind validation
+    if (!body.membershipKind || (body.membershipKind !== "MEMBER" && body.membershipKind !== "VOLUNTEER")) {
+      return NextResponse.json(
+        { error: "Validation error", message: "membershipKind is required and must be 'MEMBER' or 'VOLUNTEER'" },
+        { status: 400 }
+      );
+    }
+
+    // Parse dates
+    const birthDate = new Date(body.birthDate);
+    const membershipDate = new Date(body.membershipDate);
+
+    if (isNaN(birthDate.getTime())) {
+      return NextResponse.json(
+        { error: "Validation error", message: "birthDate must be a valid date" },
+        { status: 400 }
+      );
+    }
+
+    if (isNaN(membershipDate.getTime())) {
+      return NextResponse.json(
+        { error: "Validation error", message: "membershipDate must be a valid date" },
+        { status: 400 }
+      );
+    }
+
+    // Sprint 6: Validate tags if provided (using centralized helper)
+    let tags = null;
+    if (body.tags !== undefined) {
+      if (Array.isArray(body.tags)) {
+        const validation = validateMemberTags(body.tags);
+        if (!validation.valid) {
+          return NextResponse.json(
+            { error: "Validation error", message: `Invalid tags: ${validation.invalidTags.join(", ")}` },
+            { status: 400 }
+          );
+        }
+        tags = body.tags.length > 0 ? body.tags : null;
+      } else {
+        return NextResponse.json(
+          { error: "Validation error", message: "tags must be an array" },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Create member
+    const member = await prisma.member.create({
+      data: {
+        firstName: body.firstName.trim(),
+        lastName: body.lastName.trim(),
+        gender: body.gender || "erkek",
+        email: body.email.trim(),
+        phone: body.phone || null,
+        birthDate,
+        academicLevel: body.academicLevel || "lise",
+        maritalStatus: body.maritalStatus || "bekar",
+        hometown: body.hometown || "",
+        placeOfBirth: body.placeOfBirth || "",
+        nationality: body.nationality || "",
+        currentAddress: body.currentAddress || "",
+        tcId: body.tcId || null,
+        lastValidDate: body.lastValidDate ? new Date(body.lastValidDate) : null,
+        titles: body.titles && Array.isArray(body.titles) ? JSON.stringify(body.titles) : JSON.stringify([]),
+        status: body.status === "inactive" ? "INACTIVE" : "ACTIVE",
+        membershipDate,
+        membershipKind: body.membershipKind, // Sprint 5: Required field
+        tags: tags, // Sprint 5: Optional tags
+        department: body.department || null,
+        graduationYear: body.graduationYear || null,
+        occupation: body.occupation || null,
+      },
+    });
+
+    const formattedMember = formatMember(member);
+
+    return NextResponse.json(formattedMember, { status: 201 });
   } catch (error) {
-    console.error('Error creating member:', error);
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+    
+    console.error("Error creating member:", error);
+
+    // Prisma unique constraint error (email)
+    if (error && typeof error === "object" && "code" in error && error.code === "P2002") {
+      return NextResponse.json(
+        { error: "Validation error", message: "Email already exists" },
+        { status: 400 }
+      );
+    }
+
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+
+    console.error("Error details:", errorDetails);
+
     return NextResponse.json(
-      { error: 'Failed to create member' },
+      {
+        error: "Failed to create member",
+        message: errorMessage,
+        ...(process.env.NODE_ENV === "development" && { details: errorDetails }),
+      },
       { status: 500 }
     );
   }

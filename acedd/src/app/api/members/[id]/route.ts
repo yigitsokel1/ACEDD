@@ -1,145 +1,327 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getMembersCollection } from '@/lib/mongodb';
-import { UpdateMemberData } from '@/lib/types/member';
-import { ObjectId } from 'mongodb';
+/**
+ * API Route: /api/members/[id]
+ * 
+ * GET /api/members/[id]
+ * - Returns: Member (single member by ID)
+ * 
+ * PUT /api/members/[id]
+ * - Body: Partial<UpdateMemberRequest>
+ * - Returns: Member (updated member)
+ * 
+ * DELETE /api/members/[id]
+ * - Returns: { message: string }
+ */
 
-interface RouteParams {
-  params: Promise<{
-    id: string;
-  }>;
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import type { Member } from "@/lib/types/member";
+import { requireRole, createAuthErrorResponse, getAdminFromRequest } from "@/lib/auth/adminAuth";
+import { validateMemberTags } from "@/lib/utils/memberHelpers";
+
+/**
+ * Helper function to parse JSON string to array
+ */
+function parseJsonArray(jsonString: string | null | undefined): string[] | null {
+  if (!jsonString) return null;
+  try {
+    const parsed = JSON.parse(jsonString);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Helper function to format Prisma Member to frontend Member
+ * Sprint 5: membershipKind ve tags eklendi
+ */
+function formatMember(prismaMember: {
+  id: string;
+  firstName: string;
+  lastName: string;
+  gender: string;
+  email: string;
+  phone: string | null;
+  birthDate: Date;
+  academicLevel: string;
+  maritalStatus: string;
+  hometown: string;
+  placeOfBirth: string;
+  nationality: string;
+  currentAddress: string;
+  tcId: string | null;
+  lastValidDate: Date | null;
+  titles: string;
+  status: string;
+  membershipDate: Date;
+  membershipKind: string;
+  tags: any; // JSON array
+  department: string | null;
+  graduationYear: number | null;
+  occupation: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}) {
+  const tags = prismaMember.tags ? (Array.isArray(prismaMember.tags) ? prismaMember.tags : JSON.parse(prismaMember.tags as string)) : [];
+  
+  return {
+    id: prismaMember.id,
+    firstName: prismaMember.firstName,
+    lastName: prismaMember.lastName,
+    gender: prismaMember.gender as "erkek" | "kadın",
+    email: prismaMember.email,
+    phone: prismaMember.phone || "",
+    birthDate: prismaMember.birthDate.toISOString(),
+    academicLevel: prismaMember.academicLevel as Member["academicLevel"],
+    maritalStatus: prismaMember.maritalStatus as Member["maritalStatus"],
+    hometown: prismaMember.hometown,
+    placeOfBirth: prismaMember.placeOfBirth,
+    nationality: prismaMember.nationality,
+    currentAddress: prismaMember.currentAddress,
+    tcId: prismaMember.tcId || undefined,
+    lastValidDate: prismaMember.lastValidDate?.toISOString() || undefined,
+    titles: parseJsonArray(prismaMember.titles) || [],
+    status: prismaMember.status.toLowerCase() as "active" | "inactive",
+    membershipDate: prismaMember.membershipDate.toISOString(),
+    membershipKind: prismaMember.membershipKind as "MEMBER" | "VOLUNTEER",
+    tags: tags as Member["tags"],
+    createdAt: prismaMember.createdAt.toISOString(),
+    updatedAt: prismaMember.updatedAt.toISOString(),
+  };
 }
 
 // GET - Belirli bir üyeyi getir
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const { id } = await params;
-    
-    if (!ObjectId.isValid(id)) {
-      return NextResponse.json(
-        { error: 'Invalid member ID' },
-        { status: 400 }
-      );
-    }
 
-    const collection = await getMembersCollection();
-    const member = await collection.findOne({ _id: new ObjectId(id) });
-    
+    const member = await prisma.member.findUnique({
+      where: { id },
+    });
+
     if (!member) {
       return NextResponse.json(
-        { error: 'Member not found' },
+        { error: "Member not found" },
         { status: 404 }
       );
     }
 
-    // MongoDB'nin _id'sini id'ye dönüştür
-    const formattedMember = {
-      ...member,
-      id: member._id.toString(),
-      _id: undefined
-    };
-    
+    const formattedMember = formatMember(member);
     return NextResponse.json(formattedMember);
   } catch (error) {
-    console.error('Error fetching member:', error);
+    console.error("Error fetching member:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch member' },
+      {
+        error: "Failed to fetch member",
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
 }
 
 // PUT - Üye bilgilerini güncelle
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const { id } = await params;
+    const body = await request.json();
     
-    if (!ObjectId.isValid(id)) {
-      return NextResponse.json(
-        { error: 'Invalid member ID' },
-        { status: 400 }
-      );
-    }
+    // Sprint 6: All member updates require SUPER_ADMIN
+    requireRole(request, ["SUPER_ADMIN"]);
 
-    const updateData: UpdateMemberData = await request.json();
-    
-    const collection = await getMembersCollection();
-    const result = await collection.updateOne(
-      { _id: new ObjectId(id) },
-      { 
-        $set: {
-          ...updateData,
-          updatedAt: new Date().toISOString()
-        }
+    // Prepare update data
+    const updateData: any = {};
+
+    if (body.firstName !== undefined) {
+      if (typeof body.firstName !== "string" || body.firstName.trim().length === 0) {
+        return NextResponse.json(
+          { error: "Validation error", message: "firstName must be a non-empty string" },
+          { status: 400 }
+        );
       }
-    );
-    
-    if (result.matchedCount === 0) {
-      return NextResponse.json(
-        { error: 'Member not found' },
-        { status: 404 }
-      );
+      updateData.firstName = body.firstName.trim();
     }
 
-    if (result.modifiedCount === 0) {
-      return NextResponse.json(
-        { error: 'No changes made' },
-        { status: 400 }
-      );
+    if (body.lastName !== undefined) {
+      if (typeof body.lastName !== "string" || body.lastName.trim().length === 0) {
+        return NextResponse.json(
+          { error: "Validation error", message: "lastName must be a non-empty string" },
+          { status: 400 }
+        );
+      }
+      updateData.lastName = body.lastName.trim();
     }
 
-    // Güncellenmiş üyeyi getir
-    const updatedMember = await collection.findOne({ _id: new ObjectId(id) });
-    
-    if (!updatedMember) {
-      return NextResponse.json(
-        { error: 'Member not found after update' },
-        { status: 404 }
-      );
+    if (body.email !== undefined) {
+      if (typeof body.email !== "string" || body.email.trim().length === 0) {
+        return NextResponse.json(
+          { error: "Validation error", message: "email must be a non-empty string" },
+          { status: 400 }
+        );
+      }
+      updateData.email = body.email.trim();
     }
-    
-    const formattedMember = {
-      ...updatedMember,
-      id: updatedMember._id.toString(),
-      _id: undefined
-    };
-    
+
+    if (body.phone !== undefined) {
+      updateData.phone = body.phone || null;
+    }
+
+    if (body.birthDate !== undefined) {
+      const birthDate = new Date(body.birthDate);
+      if (isNaN(birthDate.getTime())) {
+        return NextResponse.json(
+          { error: "Validation error", message: "birthDate must be a valid date" },
+          { status: 400 }
+        );
+      }
+      updateData.birthDate = birthDate;
+    }
+
+    if (body.membershipDate !== undefined) {
+      const membershipDate = new Date(body.membershipDate);
+      if (isNaN(membershipDate.getTime())) {
+        return NextResponse.json(
+          { error: "Validation error", message: "membershipDate must be a valid date" },
+          { status: 400 }
+        );
+      }
+      updateData.membershipDate = membershipDate;
+    }
+
+    if (body.gender !== undefined) updateData.gender = body.gender;
+    if (body.academicLevel !== undefined) updateData.academicLevel = body.academicLevel;
+    if (body.maritalStatus !== undefined) updateData.maritalStatus = body.maritalStatus;
+    if (body.hometown !== undefined) updateData.hometown = body.hometown;
+    if (body.placeOfBirth !== undefined) updateData.placeOfBirth = body.placeOfBirth;
+    if (body.nationality !== undefined) updateData.nationality = body.nationality;
+    if (body.currentAddress !== undefined) updateData.currentAddress = body.currentAddress;
+    if (body.tcId !== undefined) updateData.tcId = body.tcId || null;
+    if (body.lastValidDate !== undefined) {
+      updateData.lastValidDate = body.lastValidDate ? new Date(body.lastValidDate) : null;
+    }
+    if (body.titles !== undefined) {
+      updateData.titles = body.titles && Array.isArray(body.titles) ? JSON.stringify(body.titles) : JSON.stringify([]);
+    }
+    if (body.status !== undefined) {
+      updateData.status = body.status === "inactive" ? "INACTIVE" : "ACTIVE";
+    }
+    // Sprint 5: membershipKind update
+    if (body.membershipKind !== undefined) {
+      if (body.membershipKind !== "MEMBER" && body.membershipKind !== "VOLUNTEER") {
+        return NextResponse.json(
+          { error: "Validation error", message: "membershipKind must be 'MEMBER' or 'VOLUNTEER'" },
+          { status: 400 }
+        );
+      }
+      updateData.membershipKind = body.membershipKind;
+    }
+    // Sprint 6: tags update (using centralized validation helper)
+    if (body.tags !== undefined) {
+      if (Array.isArray(body.tags)) {
+        const validation = validateMemberTags(body.tags);
+        if (!validation.valid) {
+          return NextResponse.json(
+            { error: "Validation error", message: `Invalid tags: ${validation.invalidTags.join(", ")}` },
+            { status: 400 }
+          );
+        }
+        updateData.tags = body.tags.length > 0 ? body.tags : null;
+      } else {
+        return NextResponse.json(
+          { error: "Validation error", message: "tags must be an array" },
+          { status: 400 }
+        );
+      }
+    }
+    if (body.department !== undefined) updateData.department = body.department || null;
+    if (body.graduationYear !== undefined) updateData.graduationYear = body.graduationYear || null;
+    if (body.occupation !== undefined) updateData.occupation = body.occupation || null;
+
+    const updatedMember = await prisma.member.update({
+      where: { id },
+      data: updateData,
+    });
+
+    const formattedMember = formatMember(updatedMember);
     return NextResponse.json(formattedMember);
   } catch (error) {
-    console.error('Error updating member:', error);
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+    
+    // Prisma error handling
+    if (error && typeof error === "object" && "code" in error) {
+      if (error.code === "P2025") {
+        // Record not found
+        return NextResponse.json(
+          { error: "Member not found" },
+          { status: 404 }
+        );
+      }
+      if (error.code === "P2002") {
+        // Unique constraint violation (email)
+        return NextResponse.json(
+          { error: "Validation error", message: "Email already exists" },
+          { status: 400 }
+        );
+      }
+    }
+
+    console.error("Error updating member:", error);
     return NextResponse.json(
-      { error: 'Failed to update member' },
+      {
+        error: "Failed to update member",
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
 }
 
 // DELETE - Üyeyi sil
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    // Require SUPER_ADMIN role for deletion
+    requireRole(request, ["SUPER_ADMIN"]);
+    
     const { id } = await params;
-    
-    if (!ObjectId.isValid(id)) {
-      return NextResponse.json(
-        { error: 'Invalid member ID' },
-        { status: 400 }
-      );
-    }
 
-    const collection = await getMembersCollection();
-    const result = await collection.deleteOne({ _id: new ObjectId(id) });
+    await prisma.member.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ message: "Member deleted successfully" });
+  } catch (error) {
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
     
-    if (result.deletedCount === 0) {
+    // Prisma error handling
+    if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
+      // Record not found
       return NextResponse.json(
-        { error: 'Member not found' },
+        { error: "Member not found" },
         { status: 404 }
       );
     }
-    
-    return NextResponse.json({ message: 'Member deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting member:', error);
+
+    console.error("Error deleting member:", error);
     return NextResponse.json(
-      { error: 'Failed to delete member' },
+      {
+        error: "Failed to delete member",
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }

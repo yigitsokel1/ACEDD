@@ -1,13 +1,51 @@
 import { Users, FileText, Calendar, Megaphone, Settings, BarChart3, UserCheck, BookOpen } from "lucide-react";
+import type { AdminRole } from "@/lib/types/admin";
 
-export const ADMIN_NAVIGATION_ITEMS = [
-  { name: "Dashboard", href: "/admin", icon: BarChart3 },
-  { name: "Burs Başvuruları", href: "/admin/burs-basvurulari", icon: FileText },
-  { name: "Üyeler", href: "/admin/uyeler", icon: Users },
-  { name: "Etkinlikler", href: "/admin/etkinlikler", icon: Calendar },
-  { name: "Duyurular", href: "/admin/duyurular", icon: Megaphone },
-  { name: "Ayarlar", href: "/admin/ayarlar", icon: Settings },
-] as const;
+export type AdminNavItem = {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  roles: AdminRole[]; // Roles that can access this menu item
+};
+
+export const ADMIN_NAVIGATION_ITEMS: AdminNavItem[] = [
+  { 
+    name: "Dashboard", 
+    href: "/admin", 
+    icon: BarChart3,
+    roles: ["SUPER_ADMIN", "ADMIN"]
+  },
+  { 
+    name: "Duyurular", 
+    href: "/admin/duyurular", 
+    icon: Megaphone,
+    roles: ["SUPER_ADMIN", "ADMIN"]
+  },
+  { 
+    name: "Etkinlikler", 
+    href: "/admin/etkinlikler", 
+    icon: Calendar,
+    roles: ["SUPER_ADMIN", "ADMIN"]
+  },
+  { 
+    name: "Üyeler", 
+    href: "/admin/uyeler", 
+    icon: Users,
+    roles: ["SUPER_ADMIN", "ADMIN"]
+  },
+  { 
+    name: "Burs Başvuruları", 
+    href: "/admin/burs-basvurulari", 
+    icon: FileText,
+    roles: ["SUPER_ADMIN", "ADMIN"] // Read access for ADMIN, full access for SUPER_ADMIN
+  },
+  { 
+    name: "Ayarlar", 
+    href: "/admin/ayarlar", 
+    icon: Settings,
+    roles: ["SUPER_ADMIN"] // Only SUPER_ADMIN can access settings
+  },
+];
 
 export const DASHBOARD_STATS = [
   {

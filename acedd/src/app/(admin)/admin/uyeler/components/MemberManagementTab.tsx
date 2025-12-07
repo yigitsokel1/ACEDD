@@ -9,7 +9,8 @@ import { Select } from "@/components/ui";
 import { Badge } from "@/components/ui";
 import { Plus, Edit, Trash2, User, Mail, Phone, Calendar, MapPin, Search, Filter, ToggleLeft, ToggleRight, Eye } from "lucide-react";
 import { useMembers } from "@/contexts/MembersContext";
-import { Member, CreateMemberData, UpdateMemberData, CreateMemberFormData } from "@/lib/types/member";
+import { Member, CreateMemberData, UpdateMemberData, CreateMemberFormData, MembershipKind, MemberTag, BoardRole } from "@/lib/types/member";
+import { getBoardRoleLabel } from "@/lib/utils/memberHelpers";
 
 interface MemberModalProps {
   member: Member | null;
@@ -42,6 +43,9 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
     titles: member?.titles || [],
     status: member?.status || "",
     membershipDate: member?.membershipDate || "",
+    // Sprint 5: Yeni alanlar
+    membershipKind: member?.membershipKind || "MEMBER",
+    tags: member?.tags || [],
   });
 
   const genderOptions = [
@@ -84,6 +88,20 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
     { value: "inactive", label: "Pasif" },
   ];
 
+  // Sprint 5: MembershipKind options
+  const membershipKindOptions = [
+    { value: "MEMBER", label: "Üye" },
+    { value: "VOLUNTEER", label: "Gönüllü" },
+  ];
+
+  // Sprint 5: MemberTag options (etiketler)
+  const tagOptions: { value: MemberTag; label: string }[] = [
+    { value: "HONORARY_PRESIDENT", label: "Onursal Başkan" },
+    { value: "FOUNDING_PRESIDENT", label: "Kurucu Başkan" },
+    { value: "FOUNDING_MEMBER", label: "Kurucu Üye" },
+    { value: "PAST_PRESIDENT", label: "Önceki Başkan" },
+  ];
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -94,6 +112,9 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
       academicLevel: formData.academicLevel as 'ilkokul' | 'ortaokul' | 'lise' | 'onlisans' | 'lisans' | 'yukseklisans' | 'doktora',
       maritalStatus: formData.maritalStatus as 'bekar' | 'evli' | 'dul' | 'bosanmis',
       status: formData.status as 'active' | 'inactive',
+      // Sprint 5: membershipKind ve tags
+      membershipKind: (formData.membershipKind || "MEMBER") as MembershipKind,
+      tags: formData.tags || [],
     };
     
     onSave(memberData);
@@ -235,27 +256,37 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
                 required
               />
               
-              {/* Ünvan Seçimi */}
+              {/* Sprint 5: Üye Türü (membershipKind) */}
+              <Select
+                label="Üye Türü *"
+                value={formData.membershipKind || "MEMBER"}
+                onChange={(e) => setFormData(prev => ({ ...prev, membershipKind: e.target.value as MembershipKind }))}
+                options={membershipKindOptions}
+                required
+              />
+              
+              {/* Sprint 5: Etiketler (tags) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ünvanlar *
+                  Etiketler (İsteğe bağlı)
                 </label>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-                  {titleOptions.map((option) => (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {tagOptions.map((option) => (
                     <label key={option.value} className="flex items-center space-x-2 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={formData.titles.includes(option.value)}
+                        checked={formData.tags?.includes(option.value) || false}
                         onChange={(e) => {
+                          const currentTags = formData.tags || [];
                           if (e.target.checked) {
                             setFormData(prev => ({
                               ...prev,
-                              titles: [...prev.titles, option.value]
+                              tags: [...currentTags, option.value]
                             }));
                           } else {
                             setFormData(prev => ({
                               ...prev,
-                              titles: prev.titles.filter(title => title !== option.value)
+                              tags: currentTags.filter(tag => tag !== option.value)
                             }));
                           }
                         }}
@@ -265,9 +296,6 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
                     </label>
                   ))}
                 </div>
-                {formData.titles.length === 0 && (
-                  <p className="text-sm text-red-600 mt-1">En az bir ünvan seçmelisiniz</p>
-                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -305,7 +333,26 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
   );
 }
 
+// Sprint 5: Helper functions (shared between components)
+function getMembershipKindLabel(kind: MembershipKind | undefined): string {
+  return kind === "VOLUNTEER" ? "Gönüllü" : "Üye";
+}
+
+function getTagLabel(tag: MemberTag): string {
+  const tagMap: Record<MemberTag, string> = {
+    HONORARY_PRESIDENT: "Onursal Başkan",
+    FOUNDING_PRESIDENT: "Kurucu Başkan",
+    FOUNDING_MEMBER: "Kurucu Üye",
+    PAST_PRESIDENT: "Önceki Başkan",
+  };
+  return tagMap[tag] || tag;
+}
+
 function MemberDetailsModal({ member, onClose }: MemberDetailsModalProps) {
+  const { boardMembers } = useMembers();
+  
+  // Sprint 6: BoardRole'ü Türkçe'ye çevir - helper fonksiyon kullan
+  // getBoardRoleLabel helper fonksiyonu import edildi, doğrudan kullanılabilir
   if (!member) return null;
 
   return (
@@ -419,13 +466,53 @@ function MemberDetailsModal({ member, onClose }: MemberDetailsModalProps) {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Üyelik Bilgileri</h3>
                 <div className="space-y-4">
                   <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Üye Türü</label>
+                    <Badge variant={member.membershipKind === "VOLUNTEER" ? "default" : "success"} className="text-sm">
+                      {getMembershipKindLabel(member.membershipKind)}
+                    </Badge>
+                  </div>
+                  
+                  {member.tags && member.tags.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Etiketler</label>
+                      <div className="flex flex-wrap gap-2">
+                        {member.tags.map((tag, index) => (
+                          <Badge key={index} variant="default" className="text-sm font-semibold bg-purple-100 text-purple-800">
+                            {getTagLabel(tag)}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Ünvanlar</label>
                     <div className="flex flex-wrap gap-2">
-                      {member.titles.map((title, index) => (
-                        <Badge key={index} variant="default" className="text-sm font-semibold">
-                          {title}
-                        </Badge>
-                      ))}
+                      {/* Sprint 5: BoardMember rolü + member.titles */}
+                      {(() => {
+                        const boardMember = boardMembers.find(bm => bm.memberId === member.id);
+                        const boardRoleLabel = boardMember ? getBoardRoleLabel(boardMember.role) : null;
+                        const memberTitles = member.titles || [];
+                        
+                        if (!boardRoleLabel && memberTitles.length === 0) {
+                          return <span className="text-sm text-gray-400">Ünvan yok</span>;
+                        }
+                        
+                        return (
+                          <>
+                            {boardRoleLabel && (
+                              <Badge variant="default" className="text-sm font-semibold bg-indigo-100 text-indigo-800">
+                                {boardRoleLabel}
+                              </Badge>
+                            )}
+                            {memberTitles.map((title, index) => (
+                              <Badge key={index} variant="default" className="text-sm font-semibold">
+                                {title}
+                              </Badge>
+                            ))}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                   
@@ -460,25 +547,30 @@ function MemberDetailsModal({ member, onClose }: MemberDetailsModalProps) {
 }
 
 export default function MemberManagementTab() {
-  const { members, membersLoading, membersError, addMember, updateMember, deleteMember } = useMembers();
+  const { members, membersLoading, membersError, addMember, updateMember, deleteMember, boardMembers } = useMembers();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [viewingMember, setViewingMember] = useState<Member | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-  const [titleFilter, setTitleFilter] = useState<string>('all');
+  // Sprint 5: Eski titleFilter yerine membershipKind ve tag filtreleri
+  const [membershipKindFilter, setMembershipKindFilter] = useState<'all' | 'MEMBER' | 'VOLUNTEER'>('all');
+  const [tagFilter, setTagFilter] = useState<MemberTag | 'all'>('all');
 
-  const titleOptions = [
-    { value: "Onursal Başkan", label: "Onursal Başkan" },
-    { value: "Kurucu Başkan", label: "Kurucu Başkan" },
-    { value: "Önceki Başkan", label: "Önceki Başkan" },
-    { value: "Başkan", label: "Başkan" },
-    { value: "Kurucu Üye", label: "Kurucu Üye" },
-    { value: "Başkan Yardımcısı", label: "Başkan Yardımcısı" },
-    { value: "Sayman", label: "Sayman" },
-    { value: "Genel Sekreter", label: "Genel Sekreter" },
-    { value: "Üye", label: "Üye" },
-    { value: "Gönüllü", label: "Gönüllü" },
+  // Sprint 5: MembershipKind filter options
+  const membershipKindFilterOptions = [
+    { value: "all", label: "Tümü" },
+    { value: "MEMBER", label: "Üye" },
+    { value: "VOLUNTEER", label: "Gönüllü" },
+  ];
+
+  // Sprint 5: Tag filter options
+  const tagFilterOptions: { value: MemberTag | 'all'; label: string }[] = [
+    { value: "all", label: "Tümü" },
+    { value: "HONORARY_PRESIDENT", label: "Onursal Başkan" },
+    { value: "FOUNDING_PRESIDENT", label: "Kurucu Başkan" },
+    { value: "FOUNDING_MEMBER", label: "Kurucu Üye" },
+    { value: "PAST_PRESIDENT", label: "Önceki Başkan" },
   ];
 
   const handleSave = async (data: CreateMemberData | UpdateMemberData) => {
@@ -562,16 +654,53 @@ export default function MemberManagementTab() {
     }
   };
 
-  const getMemberTitlesBadges = (titles: string[]) => {
-    if (!titles || titles.length === 0) {
+
+  // Sprint 6: BoardRole'ü Türkçe'ye çevir - helper fonksiyon kullan
+  // getBoardRoleLabel helper fonksiyonu import edildi, doğrudan kullanılabilir
+
+  // Sprint 5: Ünvanları göster - BoardMember rolü + member.titles
+  const getMemberTitlesBadges = (member: Member) => {
+    // Önce BoardMember rolünü kontrol et
+    const boardMember = boardMembers.find(bm => bm.memberId === member.id);
+    const boardRoleLabel = boardMember ? getBoardRoleLabel(boardMember.role) : null;
+    
+    // Member'ın titles alanı
+    const memberTitles = member.titles || [];
+    
+    // Eğer ne BoardMember rolü ne de titles varsa
+    if (!boardRoleLabel && (!memberTitles || memberTitles.length === 0)) {
       return <Badge variant="secondary">Ünvan Yok</Badge>;
     }
     
     return (
       <div className="flex flex-wrap gap-1">
-        {titles.map((title, index) => (
+        {/* Sprint 5: BoardMember rolü öncelikli göster (varsa) */}
+        {boardRoleLabel && (
+          <Badge key="board-role" variant="default" className="text-xs font-semibold bg-indigo-100 text-indigo-800">
+            {boardRoleLabel}
+          </Badge>
+        )}
+        {/* Member'ın diğer ünvanları */}
+        {memberTitles.map((title, index) => (
           <Badge key={index} variant="default" className="text-xs font-semibold">
             {title}
+          </Badge>
+        ))}
+      </div>
+    );
+  };
+
+  // Sprint 5: Get tags badges
+  const getTagsBadges = (tags: MemberTag[] | undefined) => {
+    if (!tags || tags.length === 0) {
+      return null;
+    }
+    
+    return (
+      <div className="flex flex-wrap gap-1">
+        {tags.map((tag, index) => (
+          <Badge key={index} variant="default" className="text-xs font-semibold bg-purple-100 text-purple-800">
+            {getTagLabel(tag)}
           </Badge>
         ))}
       </div>
@@ -587,9 +716,13 @@ export default function MemberManagementTab() {
 
     const matchesStatus = statusFilter === 'all' || member.status === statusFilter;
     
-    const matchesTitle = titleFilter === 'all' || titleFilter === '' || member.titles.includes(titleFilter);
+    // Sprint 5: membershipKind filtreleme
+    const matchesMembershipKind = membershipKindFilter === 'all' || member.membershipKind === membershipKindFilter;
+    
+    // Sprint 5: tag filtreleme
+    const matchesTag = tagFilter === 'all' || (member.tags && member.tags.includes(tagFilter));
 
-    return matchesSearch && matchesStatus && matchesTitle;
+    return matchesSearch && matchesStatus && matchesMembershipKind && matchesTag;
   });
 
   if (membersLoading) {
@@ -631,7 +764,7 @@ export default function MemberManagementTab() {
       {/* Filters */}
       <div className="mb-6">
         <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             {/* Search */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Arama</label>
@@ -654,20 +787,32 @@ export default function MemberManagementTab() {
                 onChange={(e) => setStatusFilter(e.target.value as "active" | "inactive" | "all")}
                 placeholder="Tümü"
                 options={[
+                  { value: "all", label: "Tümü" },
                   { value: "active", label: "Aktif" },
                   { value: "inactive", label: "Pasif" },
                 ]}
               />
             </div>
             
-            {/* Title Filter */}
+            {/* Sprint 5: MembershipKind Filter */}
             <div className="space-y-2">
               <Select
-                label="Ünvan"
-                value={titleFilter}
-                onChange={(e) => setTitleFilter(e.target.value)}
+                label="Üye Türü"
+                value={membershipKindFilter}
+                onChange={(e) => setMembershipKindFilter(e.target.value as 'all' | 'MEMBER' | 'VOLUNTEER')}
                 placeholder="Tümü"
-                options={titleOptions}
+                options={membershipKindFilterOptions}
+              />
+            </div>
+            
+            {/* Sprint 5: Tag Filter */}
+            <div className="space-y-2">
+              <Select
+                label="Etiket"
+                value={tagFilter}
+                onChange={(e) => setTagFilter(e.target.value as MemberTag | 'all')}
+                placeholder="Tümü"
+                options={tagFilterOptions}
               />
             </div>
           </div>
@@ -701,9 +846,11 @@ export default function MemberManagementTab() {
           {/* Table Header */}
           <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
             <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700">
-              <div className="col-span-3">Ad Soyad</div>
-              <div className="col-span-3">İletişim</div>
-              <div className="col-span-4">Ünvanlar</div>
+              <div className="col-span-2">Ad Soyad</div>
+              <div className="col-span-2">İletişim</div>
+              <div className="col-span-1">Tür</div>
+              <div className="col-span-3">Etiketler</div>
+              <div className="col-span-2">Ünvanlar</div>
               <div className="col-span-1">Durum</div>
               <div className="col-span-1">İşlemler</div>
             </div>
@@ -715,18 +862,18 @@ export default function MemberManagementTab() {
               <div key={member.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
                 <div className="grid grid-cols-12 gap-4 items-center">
                   {/* Ad Soyad */}
-                  <div className="col-span-3">
+                  <div className="col-span-2">
                     <div className="font-medium text-gray-900">
                       {member.firstName} {member.lastName}
                     </div>
                   </div>
                   
                   {/* İletişim */}
-                  <div className="col-span-3">
+                  <div className="col-span-2">
                     <div className="space-y-1">
                       <div className="flex items-center text-sm text-gray-600">
                         <Mail className="w-3 h-3 mr-2 text-blue-500" />
-                        {member.email}
+                        <span className="truncate">{member.email}</span>
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <Phone className="w-3 h-3 mr-2 text-green-500" />
@@ -735,9 +882,21 @@ export default function MemberManagementTab() {
                     </div>
                   </div>
                   
-                  {/* Ünvanlar */}
-                  <div className="col-span-4">
-                    {getMemberTitlesBadges(member.titles)}
+                  {/* Sprint 5: Üye Türü */}
+                  <div className="col-span-1">
+                    <Badge variant={member.membershipKind === "VOLUNTEER" ? "default" : "success"} className="text-xs">
+                      {getMembershipKindLabel(member.membershipKind)}
+                    </Badge>
+                  </div>
+                  
+                  {/* Sprint 5: Etiketler */}
+                  <div className="col-span-3">
+                    {getTagsBadges(member.tags) || <span className="text-xs text-gray-400">Etiket yok</span>}
+                  </div>
+                  
+                  {/* Sprint 5: Ünvanlar - BoardMember rolü + member.titles */}
+                  <div className="col-span-2">
+                    {getMemberTitlesBadges(member)}
                   </div>
                   
                   {/* Durum */}

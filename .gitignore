@@ -208,3 +208,7 @@ tramp
 
 # Project specific
 # Add any project-specific files or directories to ignore here
+
+# Cursor IDE browser screenshots (otomatik oluşturulan)
+/assets/
+**/assets/browser-screenshot-*.png

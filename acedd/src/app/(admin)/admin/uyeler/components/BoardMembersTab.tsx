@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui";
 import { Input } from "@/components/ui";
-import { Textarea } from "@/components/ui";
 import { Select } from "@/components/ui";
-import { Plus, Edit, Trash2, Shield, User, Crown, Award, Users, CheckCircle } from "lucide-react";
+import { Badge } from "@/components/ui";
+import { Plus, Edit, Trash2, Shield, Search, CheckCircle } from "lucide-react";
 import { useMembers } from "@/contexts/MembersContext";
-import { BoardMember, CreateBoardMemberData } from "@/lib/types/member";
+import { BoardMember, CreateBoardMemberData, BoardRole, Member } from "@/lib/types/member";
+import { sortBoardMembersByRole, getBoardRoleLabel, getBoardMemberFullName } from "@/lib/utils/memberHelpers";
 
 interface BoardMemberModalProps {
   boardMember: BoardMember | null;
@@ -18,42 +18,56 @@ interface BoardMemberModalProps {
 }
 
 function BoardMemberModal({ boardMember, onClose, onSave, isEditing }: BoardMemberModalProps) {
+  const { members } = useMembers();
+  const [memberSearchTerm, setMemberSearchTerm] = useState("");
+  
+  // Sprint 5: Yeni form yapısı - memberId ve role (order ve isActive kaldırıldı)
   const [formData, setFormData] = useState<CreateBoardMemberData>({
-    name: boardMember?.name || "",
-    memberType: boardMember?.memberType || "boardMember",
-    bio: boardMember?.bio || "",
-    imageUrl: boardMember?.imageUrl || "",
-    order: boardMember?.order || 0,
-    isActive: boardMember?.isActive ?? true,
+    memberId: boardMember?.memberId || "",
+    role: boardMember?.role || "BOARD_MEMBER",
+    termStart: boardMember?.termStart || undefined,
+    termEnd: boardMember?.termEnd || undefined,
   });
 
-  const memberTypes = [
-    { value: "honoraryPresident", label: "Onursal Başkan" },
-    { value: "foundingPresident", label: "Kurucu Başkan" },
-    { value: "foundingMember", label: "Kurucu Üye" },
-    { value: "formerPresident", label: "Önceki Başkan" },
-    { value: "boardMember", label: "Yönetim Kurulu Üyesi" },
+  // Sprint 5: BoardRole options
+  const boardRoleOptions = [
+    { value: "PRESIDENT", label: "Başkan" },
+    { value: "VICE_PRESIDENT", label: "Başkan Yardımcısı" },
+    { value: "SECRETARY_GENERAL", label: "Genel Sekreter" },
+    { value: "TREASURER", label: "Sayman" },
+    { value: "BOARD_MEMBER", label: "Yönetim Kurulu Üyesi" },
   ];
+
+  // Sprint 5: Filter members for selection (active members only)
+  const filteredMembers = members
+    .filter(m => m.status === 'active')
+    .filter(m => {
+      const searchLower = memberSearchTerm.toLowerCase();
+      const fullName = `${m.firstName} ${m.lastName}`.toLowerCase();
+      return fullName.includes(searchLower) || 
+             m.email.toLowerCase().includes(searchLower);
+    })
+    .slice(0, 50); // Limit to 50 for performance
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation
+    if (!formData.memberId) {
+      alert("Lütfen bir üye seçin");
+      return;
+    }
+    
+    if (!formData.role) {
+      alert("Lütfen bir rol seçin");
+      return;
+    }
+    
     onSave(formData);
   };
 
-  const getMemberTypeIcon = (type: string) => {
-    switch (type) {
-      case "honoraryPresident":
-        return <Crown className="w-5 h-5 text-yellow-600" />;
-      case "foundingPresident":
-        return <Award className="w-5 h-5 text-blue-600" />;
-      case "foundingMember":
-        return <Users className="w-5 h-5 text-green-600" />;
-      case "formerPresident":
-        return <Shield className="w-5 h-5 text-purple-600" />;
-      default:
-        return <User className="w-5 h-5 text-gray-600" />;
-    }
-  };
+  // Sprint 5: Get selected member info
+  const selectedMember = members.find(m => m.id === formData.memberId);
 
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
@@ -74,54 +88,79 @@ function BoardMemberModal({ boardMember, onClose, onSave, isEditing }: BoardMemb
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label="Ad Soyad"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                required
-              />
+            {/* Sprint 5: Member Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Üye Seç * {selectedMember && `(${selectedMember.firstName} ${selectedMember.lastName})`}
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Üye ara (ad, soyad, email)..."
+                  value={memberSearchTerm}
+                  onChange={(e) => setMemberSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              {memberSearchTerm && (
+                <div className="mt-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg bg-white shadow-lg">
+                  {filteredMembers.length > 0 ? (
+                    filteredMembers.map((member) => (
+                      <button
+                        key={member.id}
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, memberId: member.id }));
+                          setMemberSearchTerm("");
+                        }}
+                        className={`w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors ${
+                          formData.memberId === member.id ? 'bg-blue-100' : ''
+                        }`}
+                      >
+                        <div className="font-medium text-gray-900">
+                          {member.firstName} {member.lastName}
+                        </div>
+                        <div className="text-sm text-gray-500">{member.email}</div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-4 py-2 text-sm text-gray-500">Üye bulunamadı</div>
+                  )}
+                </div>
+              )}
+              {formData.memberId && selectedMember && (
+                <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
+                  <div className="text-sm font-medium text-gray-900">
+                    Seçili: {selectedMember.firstName} {selectedMember.lastName}
+                  </div>
+                  <div className="text-xs text-gray-600">{selectedMember.email}</div>
+                </div>
+              )}
             </div>
 
+            {/* Sprint 5: BoardRole Selection */}
             <Select
-              label="Üye Türü"
-              value={formData.memberType}
-              onChange={(e) => setFormData(prev => ({ ...prev, memberType: e.target.value as "honoraryPresident" | "foundingPresident" | "foundingMember" | "formerPresident" | "boardMember" }))}
-              options={memberTypes}
+              label="Rol *"
+              value={formData.role}
+              onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value as BoardRole }))}
+              options={boardRoleOptions}
               required
             />
 
-            <Input
-              label="Sıralama (Düşük sayı önce görünür)"
-              type="number"
-              value={formData.order}
-              onChange={(e) => setFormData(prev => ({ ...prev, order: parseInt(e.target.value) || 0 }))}
-            />
-
-            <Input
-              label="Fotoğraf URL'si (İsteğe bağlı)"
-              value={formData.imageUrl}
-              onChange={(e) => setFormData(prev => ({ ...prev, imageUrl: e.target.value }))}
-            />
-
-            <Textarea
-              label="Biyografi (İsteğe bağlı)"
-              value={formData.bio}
-              onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
-              rows={3}
-            />
-
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="isActive"
-                checked={formData.isActive}
-                onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-                className="rounded"
+            {/* Sprint 5: Term Dates (Optional) */}
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Dönem Başlangıç (İsteğe bağlı)"
+                type="date"
+                value={formData.termStart ? formData.termStart.split('T')[0] : ""}
+                onChange={(e) => setFormData(prev => ({ ...prev, termStart: e.target.value ? new Date(e.target.value).toISOString() : undefined }))}
               />
-              <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
-                Aktif
-              </label>
+              <Input
+                label="Dönem Bitiş (İsteğe bağlı)"
+                type="date"
+                value={formData.termEnd ? formData.termEnd.split('T')[0] : ""}
+                onChange={(e) => setFormData(prev => ({ ...prev, termEnd: e.target.value ? new Date(e.target.value).toISOString() : undefined }))}
+              />
             </div>
 
             <div className="flex justify-end space-x-4">
@@ -148,8 +187,11 @@ function BoardMemberModal({ boardMember, onClose, onSave, isEditing }: BoardMemb
   );
 }
 
+// Sprint 6: Get role label in Turkish - helper fonksiyon kullan
+const getRoleLabel = getBoardRoleLabel;
+
 export default function BoardMembersTab() {
-  const { boardMembers, boardMembersLoading, boardMembersError, addBoardMember, updateBoardMember, deleteBoardMember } = useMembers();
+  const { boardMembers, boardMembersLoading, boardMembersError, addBoardMember, updateBoardMember, deleteBoardMember, members } = useMembers();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<BoardMember | null>(null);
 
@@ -185,36 +227,6 @@ export default function BoardMembersTab() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingMember(null);
-  };
-
-  const getMemberTypeIcon = (type: string) => {
-    switch (type) {
-      case "honoraryPresident":
-        return <Crown className="w-5 h-5 text-yellow-600" />;
-      case "foundingPresident":
-        return <Award className="w-5 h-5 text-blue-600" />;
-      case "foundingMember":
-        return <Users className="w-5 h-5 text-green-600" />;
-      case "formerPresident":
-        return <Shield className="w-5 h-5 text-purple-600" />;
-      default:
-        return <User className="w-5 h-5 text-gray-600" />;
-    }
-  };
-
-  const getMemberTypeLabel = (type: string) => {
-    switch (type) {
-      case "honoraryPresident":
-        return "Onursal Başkan";
-      case "foundingPresident":
-        return "Kurucu Başkan";
-      case "foundingMember":
-        return "Kurucu Üye";
-      case "formerPresident":
-        return "Önceki Başkan";
-      default:
-        return "Yönetim Kurulu Üyesi";
-    }
   };
 
   if (boardMembersLoading) {
@@ -253,6 +265,7 @@ export default function BoardMembersTab() {
         </Button>
       </div>
 
+      {/* Sprint 5: Tablo formatında listeleme */}
       {boardMembers.length === 0 ? (
         <div className="text-center py-12">
           <Shield className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -260,60 +273,65 @@ export default function BoardMembersTab() {
           <p className="text-gray-600">İlk üyeyi eklemek için yukarıdaki butona tıklayın.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {boardMembers
-            .filter(member => member.isActive)
-            .sort((a, b) => a.order - b.order)
-            .map((member) => (
-            <Card key={member.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg flex items-center">
-                      {getMemberTypeIcon(member.memberType)}
-                      <span className="ml-2">{member.name}</span>
-                    </CardTitle>
-                    <div className="mt-2">
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                        {getMemberTypeLabel(member.memberType)}
-                      </span>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          {/* Table Header */}
+          <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+            <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700">
+              <div className="col-span-5">Ad Soyad</div>
+              <div className="col-span-5">Rol</div>
+              <div className="col-span-2">İşlemler</div>
+            </div>
+          </div>
+          
+          {/* Table Body */}
+          <div className="divide-y divide-gray-200">
+            {sortBoardMembersByRole(boardMembers).map((boardMember) => {
+                const fullName = getBoardMemberFullName(boardMember);
+                const roleLabel = getRoleLabel(boardMember.role);
+                const member = boardMember.member;
+                
+                return (
+                  <div key={boardMember.id} className="px-6 py-4 hover:bg-gray-50 transition-colors">
+                    <div className="grid grid-cols-12 gap-4 items-center">
+                      {/* Ad Soyad */}
+                      <div className="col-span-5">
+                        <div className="font-medium text-gray-900">{fullName}</div>
+                        <div className="text-sm text-gray-500">{member.email}</div>
+                      </div>
+                      
+                      {/* Rol */}
+                      <div className="col-span-5">
+                        <Badge variant="default" className="text-sm">
+                          {roleLabel}
+                        </Badge>
+                      </div>
+                      
+                      {/* İşlemler */}
+                      <div className="col-span-2">
+                        <div className="flex space-x-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEdit(boardMember)}
+                            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDelete(boardMember.id)}
+                            className="text-red-600 border-red-200 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEdit(member)}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDelete(member.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {member.bio && (
-                  <p className="text-sm text-gray-600 line-clamp-3">{member.bio}</p>
-                )}
-                {member.imageUrl && (
-                  <div className="mt-4">
-                    <img
-                      src={member.imageUrl}
-                      alt={member.name}
-                      className="w-full h-32 object-cover rounded-lg"
-                    />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                );
+              })}
+          </div>
         </div>
       )}
 

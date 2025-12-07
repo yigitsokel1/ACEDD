@@ -30,6 +30,7 @@ import type {
   GetAnnouncementsQuery,
 } from "@/lib/types/announcement";
 import { isAnnouncementActive } from "@/lib/utils/isAnnouncementActive";
+import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
 
 /**
  * GET /api/announcements
@@ -105,6 +106,9 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Sprint 6: Announcements CRUD requires ADMIN or SUPER_ADMIN
+    requireRole(request, ["SUPER_ADMIN", "ADMIN"]);
+    
     const body: CreateAnnouncementRequest = await request.json();
 
     // Validate required fields
@@ -208,6 +212,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(formattedAnnouncement, { status: 201 });
   } catch (error) {
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+    
     console.error("Error creating announcement:", error);
     return NextResponse.json(
       {

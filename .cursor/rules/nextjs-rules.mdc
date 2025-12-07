@@ -13,7 +13,7 @@ Your goals:
 
 1. **Preserve** the existing architecture, routes, and domain language (Turkish field names, statuses, etc.).
 2. **Extend** the admin panel and public site in a consistent, maintainable way.
-3. **Guide** the gradual migration from **MongoDB** to **Prisma + MariaDB** without breaking existing features.
+3. **Use Prisma + MariaDB** as the single source of truth for all data operations (Sprint 6: MongoDB migration completed).
 
 ---
 
@@ -24,8 +24,8 @@ Your goals:
 - UI: **React 19** function components + hooks.
 - Styling: **Tailwind CSS v4** – prefer class utilities over inline styles.
 - Database:
-  - Legacy: `src/lib/mongodb.ts` + MongoDB collections.
-  - Primary (new): **Prisma + MariaDB** (`prisma/schema.prisma`, `src/lib/db.ts`).
+  - **Prisma + MariaDB** (`prisma/schema.prisma`, `src/lib/db.ts`) – **Single source of truth**
+  - MongoDB migration tamamlandı (Sprint 6: `src/lib/mongodb.ts` artık yok)
 - App segments:
   - Public site: `src/app/(pages)/**`
   - Admin panel: `src/app/(admin)/admin/**`
@@ -36,7 +36,7 @@ Always keep a **clear separation** between:
 
 - UI components
 - Data-fetching / API layer
-- Database access (Prisma or legacy Mongo)
+- Database access (Prisma + MariaDB)
 
 ---
 
@@ -65,17 +65,17 @@ Follow and extend the existing structure:
   - Reusable admin UI belongs in `admin/components/`.
 
 - **API routes** (`src/app/api`):
-  - `members`, `membership-applications`, `board-members`, `events`, `datasets`, `upload`, etc.
+  - `members`, `membership-applications`, `board-members`, `events`, `datasets`, `upload`, `scholarship-applications`, etc.
   - A debug route for Prisma: `api/debug/prisma-test/route.ts`.
 
 - **Shared modules**:
   - `src/contexts/*` – React Contexts (Members, Events, future Announcements).
-  - `src/lib/types/*` – domain types (Member, MembershipApplication, BoardMember, Event, Announcement, etc.).
+  - `src/lib/types/*` – domain types (Member, MembershipApplication, BoardMember, Event, Announcement, ScholarshipApplication, etc.).
   - `src/lib/constants/*` – global constants and configuration.
   - `src/lib/hooks/*` – shared hooks.
-  - `src/lib/utils/*` – helpers (e.g. `cn`).
-  - `src/lib/db.ts` – Prisma client (MariaDB).
-  - `src/lib/mongodb.ts` – legacy Mongo driver (do not extend).
+  - `src/lib/utils/*` – helpers (e.g. `cn`, `memberHelpers`, validation helpers).
+  - `src/lib/db.ts` – Prisma client (MariaDB) – **Single source of truth for database access**
+  - `src/lib/auth/*` – Admin authentication & authorization helpers (HMAC session, role-based access)
 
 - **Component organization** – **CRITICAL: Follow this structure strictly**
 
@@ -200,8 +200,27 @@ Assume the following workflow and keep diffs compatible with it:
 - Aim for:
   - ≥ 80% coverage overall,
   - ≥ 90% on critical modules (auth, payments/donations, admin actions).
+- **⚠️ CRITICAL: API Domain Testing Requirement (Sprint 6)**
+  - **Her yeni API domain'i için en az 1–2 Vitest testi zorunludur**
+  - **Her mutating endpoint için role testleri zorunludur** (Sprint 6)
+  - Test coverage:
+    - Happy path (successful operations)
+    - Validation errors (400)
+    - Authentication errors (401 - UNAUTHORIZED)
+    - Authorization errors (403 - FORBIDDEN)
+    - Database errors (500)
+    - Not found errors (404)
+  - Test dosyası: `src/app/api/<domain>/__tests__/route.test.ts` veya `src/app/api/<domain>/[id]/__tests__/route.test.ts`
+  - **Role Test Pattern:**
+    - ADMIN role ile erişim denemesi → 403 FORBIDDEN (SUPER_ADMIN gereken yerler için)
+    - UNAUTHORIZED (session yok) → 401
+    - SUPER_ADMIN role ile erişim → 200/201 başarılı
+  - **Do not:**
+    - ❌ Testsiz büyük API değişiklikleri yapma
+    - ❌ Yeni domain eklerken test yazmayı atlama
+    - ❌ Role testlerini atlama (Sprint 6)
 - When you add new APIs:
-  - Cover success, validation error, and generic failure paths.
+  - Cover success, validation error, authentication/authorization errors, and generic failure paths.
 
 ### 3.4. CI/CD expectations
 
@@ -229,28 +248,65 @@ Code you write should be ready to pass all of the above.
 
 ---
 
-## 4. Data layer rules (MongoDB → Prisma migration)
+### 3.6. Authentication & Authorization (Admin)
 
-The project is in a **gradual migration** from MongoDB to Prisma + MariaDB.
+**⚠️ CRITICAL: Admin Erişim Kuralları**
 
-### 4.1. Legacy MongoDB (keep stable)
+- **Admin authentication:** `AdminUser` modeli ve `AdminRole` enum'u kullanılır
+- **Admin roles:** `SUPER_ADMIN` ve `ADMIN` rolleri mevcuttur
+  - `SUPER_ADMIN`: Tüm modüllere tam erişim
+  - `ADMIN`: Modül bazlı erişim (rol bazlı izinler)
+- **Admin route protection:** Tüm `/admin/*` rotaları **her zaman** bir auth/role kontrolünden geçmeli
+  - API route'ları: Middleware veya route handler içinde auth kontrolü
+  - Page route'ları: Server Component veya middleware ile auth kontrolü
 
-- `src/lib/mongodb.ts` – legacy client and collection helpers.
-- Existing APIs under `src/app/api/**` that import from `lib/mongodb` must continue to work until fully migrated.
-- **Do not**:
-  - Add new collections or new logic to Mongo.
-  - Introduce new features that depend on Mongo.
+**⚠️ CRITICAL: Session Security (Sprint 6)**
 
-If you must touch Mongo-based routes:
+- **Session Management:** HMAC-SHA256 signed cookies kullanılır
+  - Cookie format: `base64(payload).hex(hmac)`
+  - Signature verification: Timing-safe comparison ile doğrulanır
+  - Session secret: `SESSION_SECRET` environment variable'dan alınır
+  - **ASLA** Base64-only encoding kullanma (güvenlik riski)
+  - **ASLA** session secret'i hardcode etme
+- **Session Helpers:**
+  - `src/lib/auth/adminSession.ts` – Session encryption/decryption (HMAC-SHA256)
+  - `src/lib/auth/adminAuth.ts` – `requireRole()`, `requireAuth()`, `getAdminFromRequest()`
+  - `src/middleware.ts` – Edge Runtime uyumlu session validation (Web Crypto API)
+- **Security Features:**
+  - HttpOnly cookies (JavaScript erişimi yok)
+  - Secure flag (production'da HTTPS zorunlu)
+  - SameSite=Lax (CSRF koruması)
+  - Timing-safe signature comparison (timing attack koruması)
 
-- Either keep behavior **as-is**, or
-- Plan a full migration for that feature:
-  1. Add/adjust Prisma models.
-  2. Write Prisma-backed API routes.
-  3. Update contexts/hooks to call the new API.
-  4. Ensure UI behavior stays the same.
+**⚠️ CRITICAL: Role-Based Access Control (Sprint 6)**
 
-### 4.2. Prisma + MariaDB (source of truth for new work)
+- **API Level Protection:**
+  - Tüm mutating API endpoint'leri (`POST`, `PUT`, `DELETE`) **MUTLAKA** `requireRole()` kullanmalı
+  - Role matrisi:
+    - **Members** (POST/PUT/DELETE): `SUPER_ADMIN` only
+    - **Membership Applications** (PUT/DELETE): `SUPER_ADMIN` only
+    - **Board Members** (POST/PUT/DELETE): `SUPER_ADMIN` only
+    - **Datasets** (POST/PUT/DELETE): `ADMIN` + `SUPER_ADMIN`
+    - **Announcements** (POST/PUT/DELETE): `ADMIN` + `SUPER_ADMIN`
+    - **Events** (POST/PUT/DELETE): `ADMIN` + `SUPER_ADMIN`
+    - **Scholarship Applications** (GET/PUT/DELETE): `ADMIN` + `SUPER_ADMIN` (POST is public for form submission)
+  - GET endpoint'leri genellikle public (admin paneli için middleware korumalı)
+- **UI Level Protection:**
+  - Admin menü öğeleri role bazlı filtreleme (`hasRole()` helper)
+  - Admin panel sayfaları middleware ile korumalı
+- **Do not:**
+  - ❌ Admin sayfalarını auth kontrolü olmadan bırakma
+  - ❌ "Hidden URL" güvenliği kullanma
+  - ❌ Role kontrolü olmadan admin işlemleri yapma
+  - ❌ API endpoint'lerini role kontrolü olmadan bırakma
+
+---
+
+## 4. Data layer rules (Prisma + MariaDB)
+
+**Sprint 6: MongoDB migration tamamlandı** – Artık tüm veri işlemleri Prisma + MariaDB kullanıyor.
+
+### 4.1. Prisma + MariaDB (Single Source of Truth)
 
 - `prisma/schema.prisma` defines models such as:
   - `AdminUser` + `AdminRole` enum
@@ -259,6 +315,7 @@ If you must touch Mongo-based routes:
   - `MembershipApplication`
   - `BoardMember`
   - `Event`
+  - `ScholarshipApplication` (Sprint 7)
   - and potential CMS models (`Page`, `ContentBlock`, etc.).
 - `src/lib/db.ts` must be the **only place** where `PrismaClient` is instantiated.
   - Use the MariaDB adapter.
@@ -272,7 +329,7 @@ If you must touch Mongo-based routes:
 3. UI components must not import `prisma` directly.
    - Use API routes (`src/app/api/**`) or server actions instead.
 
-**⚠️ Critical: Schema Change Workflow**
+**⚠️ Critical: Schema Change Workflow (Sprint 6 - Production Öncesi)**
 
 When adding new models or fields, **always follow this order:**
 
@@ -280,34 +337,56 @@ When adding new models or fields, **always follow this order:**
    - Add/modify models, fields, indexes, enums, etc.
    - `schema.prisma` is the **single source of truth**
 
-2. **Second:** Create and apply migration (local only):
+2. **Second:** Generate Prisma Client:
    ```bash
-   npx prisma migrate dev --name descriptive_name
+   npx prisma generate
    ```
-   This creates migration files and applies them to local DB.
+   This regenerates the Prisma Client with new schema types.
 
-3. **Third:** Update TypeScript types and API handlers
-   - Prisma Client is auto-regenerated after migration
+3. **Third:** Apply schema to database (Production Öncesi):
+   ```bash
+   npx prisma db push
+   ```
+   - ✅ Applies schema directly to database (no migration files)
+   - ✅ No shadow database required
+   - ❌ Migration files are NOT created (acceptable for pre-production)
+
+4. **Fourth:** Update TypeScript types and API handlers
+   - Prisma Client is already regenerated
    - Update `src/lib/types/*` if needed
    - Update API routes to use new schema
 
-4. **Fourth:** Commit migration files
-   - Always commit `prisma/migrations/` folder
-   - Production will use these migration files
+**⚠️ CRITICAL: Production Öncesi Strateji (Sprint 6)**
+- **SADECE** `prisma db push` kullan (migration dosyası üretilmez)
+- **ASLA** `prisma migrate dev` kullanma (shadow DB gerektirir, şu an kullanılmıyor)
+- **ASLA** `prisma migrate deploy` kullanma (migration dosyası yok)
 
 **Never:**
 - ❌ Modify database directly without updating `schema.prisma` first
-- ❌ Skip migration files (they are required for production)
+- ❌ Use `prisma migrate dev` in pre-production (shadow DB not available)
+- ❌ Use `prisma migrate deploy` in pre-production (no migration files)
 
-**Note:** `prisma db push` erken aşamada hızlı iterasyon için kabul edilebilir, ancak production-ready değişiklikler için `prisma migrate dev` kullan.
+**Note:** İlk prod release sonrası `prisma migrate dev` ve `prisma migrate deploy` kullanılacak, ancak şu an için sadece `prisma db push` kullan.
 
 ### 4.2.1. Prisma Migration Strategy
 
-**Şu Anki Durum (Sprint 0):**
+**⚠️ CRITICAL: Production Öncesi DB Stratejisi (Sprint 6)**
+
+**Şu Anki Durum (Production Öncesi):**
 - Tek DB kullanılıyor (geliştirme ve ilk yayın için)
-- Bu DB dev gibi davranıyor: `prisma migrate dev` kullanılabilir
-- Shadow DB: `.env`'de tanımlamaya gerek yok, Prisma otomatik oluşturmaya çalışır
-- `prisma db push` erken aşamada hızlı iterasyon için kabul edilebilir
+- **SADECE** `npx prisma db push` kullanılır (migration dosyası üretilmez, shadow DB gerekmez)
+- Schema değişiklikleri direkt DB'ye uygulanır
+- Test için: `npx prisma studio` ile tabloları kontrol edebilirsiniz
+
+**ASLA kullanma (Production Öncesi):**
+- ❌ `prisma migrate dev` (shadow DB gerektirir, şu an kullanılmıyor)
+- ❌ `prisma migrate deploy` (migration dosyası yok, şu an kullanılmıyor)
+
+**Workflow özeti (Production Öncesi):**
+1. Schema değişikliği: `prisma/schema.prisma` güncelle
+2. Prisma Client'ı güncelle: `npx prisma generate`
+3. DB'ye uygula: `npx prisma db push` (migration dosyası üretilmez, shadow DB gerekmez)
+4. Test: `prisma studio` veya test route
 
 **İlk Prod Release Sonrası:**
 - Şu anki DB prod sayılacak
@@ -352,11 +431,17 @@ When adding new models or fields, **always follow this order:**
 
 #### 🔹 Kural 3 – `prisma db push` (Şu Anki Strateji - Prod Release Öncesi)
 
-**Şu Anki Durum (Sprint 0):**
-- `prisma db push` kullanılır (migration dosyası üretilmez)
+**⚠️ CRITICAL: Production Öncesi DB Stratejisi**
+
+**Şu Anki Durum (Production Öncesi):**
+- **SADECE** `npx prisma db push` kullanılır (migration dosyası üretilmez)
 - Shadow DB'ye ihtiyaç duymaz
 - Schema değişiklikleri direkt DB'ye uygulanır
 - Test için: `npx prisma studio` ile tabloları kontrol edebilirsiniz
+
+**ASLA kullanma:**
+- ❌ `prisma migrate dev` (shadow DB gerektirir, şu an kullanılmıyor)
+- ❌ `prisma migrate deploy` (migration dosyası yok, şu an kullanılmıyor)
 
 **Prod Release Sonrası:**
 - `prisma db push` artık kullanılmayacak
@@ -364,17 +449,57 @@ When adding new models or fields, **always follow this order:**
 - Prod DB'de `prisma migrate deploy` kullanılacak
 - `db push` migration geçmişi oluşturmaz, prod release sonrası kabul edilemez
 
-**Workflow özeti (Şu An):**
+**Workflow özeti (Şu An - Production Öncesi):**
 1. Schema değişikliği: `prisma/schema.prisma` güncelle
-2. DB'ye uygula: `prisma db push`
+2. DB'ye uygula: `npx prisma db push` (migration dosyası üretilmez, shadow DB gerekmez)
 3. Test: `prisma studio` veya test route
+
+**⚠️ CRITICAL: Production Öncesi Strateji**
+- **ASLA** `prisma migrate dev` kullanma (shadow DB gerektirir, şu an kullanılmıyor)
+- **ASLA** `prisma migrate deploy` kullanma (migration dosyası yok)
+- **SADECE** `prisma db push` kullan (production öncesi için yeterli)
 
 **Workflow özeti (Prod Release Sonrası):**
 1. Dev DB'de: `prisma migrate dev` (shadow DB ile)
 2. Migration dosyalarını commit et
 3. Production deploy: `prisma migrate deploy` (shadow DB gerekmez)
 
-### 4.3. Announcements (Duyurular) as the first fully Prisma feature
+### 4.3. Scholarship Applications (Burs Başvuruları) - Sprint 7
+
+**Yeni Modül: ScholarshipApplication (Sprint 7)**
+
+- **API İsimlendirmesi:** `/api/scholarship-applications`
+- **Prisma Model:** `ScholarshipApplication` (kapsamlı alanlar: genel bilgi, banka, üniversite, sağlık, aile, JSON fields)
+- **TypeScript Types:** `src/lib/types/scholarship.ts`
+  - `ScholarshipApplicationStatus`: `"PENDING" | "APPROVED" | "REJECTED" | "UNDER_REVIEW"`
+  - `ScholarshipApplication` interface
+  - `CreateScholarshipApplicationRequest` interface
+  - `UpdateScholarshipApplicationStatusRequest` interface
+  - Nested types: `ScholarshipRelative`, `ScholarshipEducationHistory`, `ScholarshipReference`
+- **API Endpoints:**
+  - POST `/api/scholarship-applications` (Public - form submission)
+  - GET `/api/scholarship-applications` (Admin - list with filters)
+  - GET `/api/scholarship-applications/[id]` (Admin - detail)
+  - PUT `/api/scholarship-applications/[id]` (Admin - status update)
+  - DELETE `/api/scholarship-applications/[id]` (Admin - deletion)
+- **Admin Panel:** `src/app/(admin)/admin/burs-basvurulari/page.tsx`
+- **Public Form:** `src/app/(pages)/burs-basvuru/components/ScholarshipForm.tsx`
+- **RBAC:** GET/PUT/DELETE için `requireRole(["SUPER_ADMIN", "ADMIN"])`, POST public
+- **Test Pattern:** `src/app/api/scholarship-applications/__tests__/route.test.ts` ve `[id]/__tests__/route.test.ts`
+
+**Yeni Domain Ekleme Pattern'i (Sprint 7):**
+
+Yeni bir domain eklerken şu pattern'i takip et:
+
+1. **Prisma Model:** `prisma/schema.prisma` içinde model tanımla
+2. **TypeScript Types:** `src/lib/types/<domain>.ts` oluştur
+3. **API Routes:** `src/app/api/<domain>/route.ts` ve `[id]/route.ts` oluştur
+4. **Admin Panel:** `src/app/(admin)/admin/<domain>/page.tsx` oluştur
+5. **Tests:** `src/app/api/<domain>/__tests__/route.test.ts` ve `[id]/__tests__/route.test.ts` oluştur
+6. **RBAC:** Mutating endpoint'ler için `requireRole()` kullan
+7. **Error Handling:** 400, 401, 403, 404, 500 status codes için proper error handling
+
+### 4.4. Announcements (Duyurular) as the first fully Prisma feature
 
 **Prisma model (already exists conceptually):**
 

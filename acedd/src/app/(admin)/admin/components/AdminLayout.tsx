@@ -1,22 +1,73 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Menu, X, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ADMIN_NAVIGATION_ITEMS } from "../constants";
 import { MembersProvider } from "@/contexts/MembersContext";
+import type { AdminRole } from "@/lib/types/admin";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
+interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: AdminRole;
+}
+
 export function AdminLayout({ children }: AdminLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [currentAdmin, setCurrentAdmin] = useState<AdminUser | null>(null);
   const pathname = usePathname();
+  const router = useRouter();
+
+  // Fetch current admin user on mount
+  useEffect(() => {
+    const fetchAdmin = async () => {
+      try {
+        const response = await fetch("/api/admin/me");
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentAdmin(data.user);
+        } else {
+          // If not authenticated, redirect to login
+          router.push("/admin-login");
+        }
+      } catch (error) {
+        console.error("[Admin Layout] Error fetching admin:", error);
+      }
+    };
+    
+    fetchAdmin();
+  }, [router]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      const response = await fetch("/api/admin/logout", {
+        method: "POST",
+      });
+
+      if (response.ok) {
+        router.push("/admin-login");
+        router.refresh();
+      } else {
+        console.error("[Admin Layout] Logout failed");
+        setIsLoggingOut(false);
+      }
+    } catch (error) {
+      console.error("[Admin Layout] Logout error:", error);
+      setIsLoggingOut(false);
+    }
+  };
 
   return (
     <MembersProvider>
@@ -53,23 +104,32 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
         <nav className="mt-6 px-3">
           <ul className="space-y-2">
-            {ADMIN_NAVIGATION_ITEMS.map((item) => (
-              <li key={item.name}>
-                <Link
-                  href={item.href}
-                  className={cn(
-                    "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
-                    pathname === item.href
-                      ? "bg-blue-100 text-blue-700"
-                      : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                  )}
-                  onClick={() => setIsSidebarOpen(false)}
-                >
-                  <item.icon size={20} className="mr-3" />
-                  {item.name}
-                </Link>
-              </li>
-            ))}
+            {ADMIN_NAVIGATION_ITEMS
+              .filter((item) => {
+                // Filter menu items based on current admin role
+                if (!currentAdmin) return false;
+                // SUPER_ADMIN can see everything
+                if (currentAdmin.role === "SUPER_ADMIN") return true;
+                // Check if current role is in allowed roles
+                return item.roles.includes(currentAdmin.role);
+              })
+              .map((item) => (
+                <li key={item.name}>
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      "flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors",
+                      pathname === item.href
+                        ? "bg-blue-100 text-blue-700"
+                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    )}
+                    onClick={() => setIsSidebarOpen(false)}
+                  >
+                    <item.icon size={20} className="mr-3" />
+                    {item.name}
+                  </Link>
+                </li>
+              ))}
           </ul>
         </nav>
 
@@ -81,13 +141,18 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
-                Admin User
+                {currentAdmin?.name || "Yükleniyor..."}
               </p>
               <p className="text-xs text-gray-500 truncate">
-                admin@acedd.org
+                {currentAdmin?.email || ""}
               </p>
             </div>
-            <button className="p-1 text-gray-400 hover:text-gray-600">
+            <button
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+              title="Çıkış Yap"
+            >
               <LogOut size={16} />
             </button>
           </div>

@@ -11,6 +11,23 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 /**
+ * Load .env file if DATABASE_URL is not set (for scripts)
+ * In Next.js, environment variables are automatically loaded, but scripts need this.
+ */
+if (!process.env.DATABASE_URL) {
+  try {
+    // Only load dotenv if not in Next.js environment
+    if (typeof window === "undefined" && !process.env.NEXT_RUNTIME) {
+      const { config } = require("dotenv");
+      const { resolve } = require("path");
+      config({ path: resolve(process.cwd(), ".env") });
+    }
+  } catch (error) {
+    // dotenv might not be available, that's okay
+  }
+}
+
+/**
  * Validates that DATABASE_URL is set.
  * Throws an error if missing to fail fast during initialization.
  */

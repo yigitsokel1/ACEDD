@@ -14,6 +14,9 @@ ACEDD (Araştırma, Çevre ve Doğa Derneği) web sitesi ve yönetim paneli.
 - ✅ **Announcements (Duyurular)** - Fully migrated to Prisma
 - ✅ **Events (Etkinlikler)** - Fully migrated to Prisma
 - ✅ **Datasets (Görsel/Dosya Yönetimi)** - Fully migrated to Prisma
+- ✅ **Members (Üyeler)** - Fully migrated to Prisma
+- ✅ **MembershipApplications (Üyelik Başvuruları)** - Fully migrated to Prisma
+- ✅ **BoardMembers (Yönetim Kurulu)** - Fully migrated to Prisma
 - ⏳ Other domains - Still using MongoDB (migration planned)
 
 ## Getting Started
@@ -59,7 +62,39 @@ npx prisma db push
 npx prisma studio
 ```
 
-5. Start the development server:
+5. Create your first admin user:
+```bash
+# Install tsx if not already installed
+npm install --save-dev tsx
+
+# Create admin user
+npm run create-admin <email> <password> <name> [role]
+
+# Example:
+npm run create-admin admin@acedd.org "secure-password-123" "Admin User" SUPER_ADMIN
+
+# Or use npx tsx directly:
+npx tsx scripts/create-admin.ts admin@acedd.org "secure-password-123" "Admin User" SUPER_ADMIN
+```
+
+**Note:** Role is optional and defaults to `SUPER_ADMIN`. Use `ADMIN` for regular admin users.
+
+6. Generate and set session secret (Sprint 6: Required for secure session management):
+```bash
+# Generate a secure random session secret
+npm run generate-session-secret
+
+# Copy the output and add it to your .env file:
+# SESSION_SECRET="<generated-secret-here>"
+```
+
+**Important:**
+- The session secret is used to sign admin session cookies (HMAC-SHA256)
+- Use different secrets for development and production
+- Never commit the secret to git (it should be in `.env`, which is in `.gitignore`)
+- If you change the secret, all existing admin sessions will be invalidated
+
+7. Start the development server:
 ```bash
 npm run dev
 ```
@@ -146,6 +181,7 @@ acedd/
 - `npm run lint` - Run ESLint
 - `npm test` - Run tests with Vitest (watch mode)
 - `npm test -- --run` - Run tests once and exit
+- `npm run create-admin` - Create a new admin user (see usage above)
 
 ### Database Schema Changes (Şu Anki Durum - Prod Release Öncesi)
 
@@ -196,3 +232,4 @@ See test examples in `src/lib/utils/__tests__/isAnnouncementActive.test.ts`.
 - [Prisma Documentation](https://www.prisma.io/docs)
 - [Project Rules](./.cursor/rules/nextjs-rules.mdc) - Development guidelines and conventions
 - [Sprint 2 Completion Report](./docs/sprint-2-completion.md) - Events & Datasets migration details
+- [Sprint 3 Completion Report](./docs/sprint-3-completion.md) - Members, Applications & BoardMembers migration details

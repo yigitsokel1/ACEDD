@@ -16,7 +16,7 @@ export async function GET(
     const { id } = await params;
     
     // Prisma ile dataset'i getir
-    const dataset = await (prisma as any).dataset.findUnique({
+    const dataset = await prisma.dataset.findUnique({
       where: { id },
     });
     

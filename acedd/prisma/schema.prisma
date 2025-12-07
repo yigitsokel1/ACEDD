@@ -27,8 +27,8 @@ model AdminUser {
 }
 
 enum AdminRole {
+  SUPER_ADMIN
   ADMIN
-  EDITOR
 }
 
 // ============================================================================
@@ -62,7 +62,7 @@ model Member {
   lastName      String
   gender        MemberGender
   email         String         @unique
-  phone         String
+  phone         String?
   birthDate     DateTime
   academicLevel MemberAcademicLevel
   maritalStatus MemberMaritalStatus
@@ -75,12 +75,23 @@ model Member {
   titles        String         @db.Text // JSON array olarak saklanacak
   status        MemberStatus   @default(ACTIVE)
   membershipDate DateTime
+  // Yeni alanlar (opsiyonel)
+  department    String?        // Bölüm
+  graduationYear Int?           // Mezuniyet yılı
+  occupation    String?        // Meslek
+  // Sprint 5: Üye türü ve etiketler
+  membershipKind MembershipKind @default(MEMBER)
+  tags          Json?          // MemberTag array: ["HONORARY_PRESIDENT", "FOUNDING_PRESIDENT", etc.]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+
+  // Relations
+  boardMemberships BoardMember[]
 
   @@index([email])
   @@index([status])
   @@index([membershipDate])
+  @@index([membershipKind])
 }
 
 enum MemberGender {
@@ -110,6 +121,11 @@ enum MemberStatus {
   INACTIVE
 }
 
+enum MembershipKind {
+  MEMBER
+  VOLUNTEER
+}
+
 // ============================================================================
 // Membership Applications (Üyelik Başvuruları)
 // ============================================================================
@@ -135,6 +151,9 @@ model MembershipApplication {
   reviewedAt    DateTime?
   reviewedBy    String?                   // AdminUser ID
   notes         String?                   @db.Text
+  // Yeni alanlar (opsiyonel)
+  department    String?                   // Bölüm
+  reason        String?                    @db.Text // Başvuru nedeni
   createdAt     DateTime                  @default(now())
   updatedAt     DateTime                  @updatedAt
 
@@ -153,28 +172,28 @@ enum ApplicationStatus {
 // Board Members (Yönetim Kurulu Üyeleri)
 // ============================================================================
 
-model BoardMember {
-  id         String            @id @default(uuid())
-  name       String
-  memberType BoardMemberType
-  bio        String?           @db.Text
-  imageUrl   String?
-  order      Int               @default(0)
-  isActive   Boolean           @default(true)
-  createdAt  DateTime          @default(now())
-  updatedAt  DateTime          @updatedAt
-
-  @@index([memberType])
-  @@index([isActive])
-  @@index([order])
+enum BoardRole {
+  PRESIDENT
+  VICE_PRESIDENT
+  SECRETARY_GENERAL
+  TREASURER
+  BOARD_MEMBER
 }
 
-enum BoardMemberType {
-  honoraryPresident
-  foundingPresident
-  foundingMember
-  formerPresident
-  boardMember
+model BoardMember {
+  id        String      @id @default(uuid())
+  memberId String
+  member   Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  
+  role      BoardRole
+  termStart DateTime?
+  termEnd   DateTime?
+  
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([memberId])
+  @@index([role])
 }
 
 // ============================================================================
@@ -205,26 +224,59 @@ model Event {
 // ============================================================================
 
 model ScholarshipApplication {
-  id             String                      @id @default(uuid())
-  applicantName  String
-  applicantEmail String
-  applicantPhone String
-  schoolName     String
-  grade          String
-  gpa            Float
-  familyIncome   Float
-  familyMembers  Int
-  address        String                      @db.Text
-  motivation     String                      @db.Text
-  status         ScholarshipApplicationStatus @default(PENDING)
-  documents      String                      @db.Text // JSON array olarak saklanacak
-  notes          String?                     @db.Text
-  createdAt      DateTime                    @default(now())
-  updatedAt      DateTime                    @updatedAt
+  id                      String                      @id @default(uuid())
+  // Genel Bilgi
+  fullName                String                      // name + surname birleştirilmiş
+  email                   String                      @unique
+  phone                   String
+  alternativePhone        String?
+  birthDate               DateTime
+  birthPlace              String
+  tcNumber                String
+  idIssuePlace            String
+  idIssueDate             DateTime
+  gender                  String                      // "Erkek" | "Kadın"
+  maritalStatus           String                      // "Bekar" | "Evli" | "Boşanmış" | "Dul"
+  hometown                String
+  permanentAddress        String                      @db.Text
+  currentAccommodation    String                      @db.Text
+  // Banka Bilgileri
+  bankAccount             String
+  ibanNumber              String
+  // Üniversite Bilgileri
+  university              String
+  faculty                 String
+  department              String?
+  grade                   String                      // Sınıf bilgisi
+  turkeyRanking           Int?                        // Türkiye sıralaması
+  // Sağlık ve Engellilik
+  physicalDisability      String                      // "Hayır" | "Evet"
+  healthProblem           String                      // "Hayır" | "Evet"
+  // Aile Bilgileri
+  familyMonthlyIncome     Float
+  familyMonthlyExpenses   Float
+  scholarshipIncome       String                      // "Hayır" | "Evet"
+  // Ek Bilgiler
+  interests               String?                     @db.Text
+  selfIntroduction        String                      @db.Text
+  // İlişkili Veriler (JSON)
+  relatives               Json?                       // relatives array
+  educationHistory        Json?                       // educationHistory array
+  references              Json?                       // references array
+  documents               Json?                       // documents array (Dataset ID'leri)
+  // Durum ve İnceleme
+  status                  ScholarshipApplicationStatus @default(PENDING)
+  reviewedBy              String?                     // AdminUser ID
+  reviewedAt              DateTime?
+  reviewNotes             String?                     @db.Text
+  // Metadata
+  createdAt               DateTime                    @default(now())
+  updatedAt               DateTime                    @updatedAt
 
-  @@index([applicantEmail])
+  @@index([email])
   @@index([status])
   @@index([createdAt])
+  @@index([tcNumber])
 }
 
 enum ScholarshipApplicationStatus {

@@ -24,6 +24,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import type { Event } from "@/app/(pages)/etkinlikler/constants";
+import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
 
 /**
  * Helper function to parse JSON string to array
@@ -217,6 +218,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(formattedEvent, { status: 201 });
   } catch (error) {
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+    
     console.error("Error creating event:", error);
     return NextResponse.json(
       {

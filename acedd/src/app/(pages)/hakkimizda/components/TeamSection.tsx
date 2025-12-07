@@ -1,8 +1,116 @@
-import React from "react";
 import { Users, Users2, HandHeart, Shield, Crown, UserCheck, History, User } from "lucide-react";
 import { ORGANIZATION_STRUCTURE, ORGANIZATION_MEMBERS } from "../constants";
+import { prisma } from "@/lib/db";
+import {
+  parseTags,
+  groupByTag,
+  sortBoardMembersByRole,
+  getBoardMemberFullName,
+  getBoardRoleLabel,
+} from "@/lib/utils/memberHelpers";
+import type { BoardMember, Member } from "@/lib/types/member";
 
-export function TeamSection() {
+// Sprint 5: Fetch board members (BoardMember modelinden, Member ile ilişkili)
+// Sprint 6: isActive ve order alanları Prisma modelinde yok, TS tipinde de yok (tutarlılık sağlandı)
+async function fetchBoardMembers(): Promise<BoardMember[]> {
+  try {
+    const boardMembers = await prisma.boardMember.findMany({
+      include: {
+        member: true, // Sprint 5: Member bilgilerini de getir
+      },
+      orderBy: [
+        { role: "asc" }, // Sprint 5: BoardRole enum sırasına göre sıralama
+        { member: { firstName: "asc" } }, // Sonra alfabetik (ad)
+        { member: { lastName: "asc" } }, // Sonra alfabetik (soyad)
+      ],
+    });
+    
+    // Sprint 6: Format Prisma results to BoardMember type
+    return boardMembers.map((bm) => ({
+      id: bm.id,
+      memberId: bm.memberId,
+      member: {
+        id: bm.member.id,
+        firstName: bm.member.firstName,
+        lastName: bm.member.lastName,
+        email: bm.member.email,
+        phone: bm.member.phone || undefined,
+        tags: parseTags(bm.member.tags),
+        // Diğer Member alanları gerekirse buraya eklenebilir
+      } as any,
+      role: bm.role as any,
+      termStart: bm.termStart?.toISOString(),
+      termEnd: bm.termEnd?.toISOString(),
+      createdAt: bm.createdAt.toISOString(),
+      updatedAt: bm.updatedAt.toISOString(),
+    }));
+  } catch (error) {
+    console.error("Error fetching board members:", error);
+    return [];
+  }
+}
+
+export async function TeamSection() {
+  // Sprint 5: Fetch members by tags (Member modelinden)
+  // Not: MariaDB'de JSON array contains için Prisma'nın doğru syntax'ını kullanmalıyız
+  // Alternatif: Raw query veya tüm aktif üyeleri çekip filtreleme
+  const [allActiveMembersRaw, boardMembers] = await Promise.all([
+    prisma.member.findMany({
+      where: { 
+        status: "ACTIVE",
+      },
+      orderBy: {
+        membershipDate: "asc",
+      },
+    }),
+    fetchBoardMembers(),
+  ]);
+
+  // Sprint 6: Prisma sonuçlarını TypeScript Member tipine dönüştür
+  const allActiveMembers: Member[] = allActiveMembersRaw.map(m => ({
+    id: m.id,
+    firstName: m.firstName,
+    lastName: m.lastName,
+    gender: m.gender as 'erkek' | 'kadın',
+    email: m.email,
+    phone: m.phone || "", // Prisma'dan null gelebilir, string'e çevir
+    birthDate: m.birthDate.toISOString(),
+    academicLevel: m.academicLevel as any,
+    maritalStatus: m.maritalStatus as any,
+    hometown: m.hometown,
+    placeOfBirth: m.placeOfBirth,
+    nationality: m.nationality,
+    currentAddress: m.currentAddress,
+    tcId: m.tcId || undefined,
+    lastValidDate: m.lastValidDate?.toISOString(),
+    titles: m.titles ? (Array.isArray(m.titles) ? m.titles : JSON.parse(m.titles)) : [],
+    status: (m.status === "ACTIVE" ? "active" : "inactive") as 'active' | 'inactive',
+    membershipDate: m.membershipDate.toISOString(),
+    membershipKind: m.membershipKind as any,
+    tags: parseTags(m.tags),
+    createdAt: m.createdAt.toISOString(),
+    updatedAt: m.updatedAt.toISOString(),
+  })) as Member[];
+
+  // Sprint 6: Tags'e göre filtreleme - helper fonksiyonları kullan
+  const honoraryPresidents = groupByTag(allActiveMembers, "HONORARY_PRESIDENT");
+  const foundingPresidents = groupByTag(allActiveMembers, "FOUNDING_PRESIDENT");
+  const foundingMembers = groupByTag(allActiveMembers, "FOUNDING_MEMBER");
+  const formerPresidents = groupByTag(allActiveMembers, "PAST_PRESIDENT");
+  
+  // Sprint 6: Board members'ı helper fonksiyonla sırala
+  const sortedBoardMembers = sortBoardMembersByRole(boardMembers);
+  
+  // Debug: Log member counts
+  if (process.env.NODE_ENV === "development") {
+    console.log("[TeamSection] Fetched members:", {
+      honoraryPresidents: honoraryPresidents.length,
+      foundingPresidents: foundingPresidents.length,
+      foundingMembers: foundingMembers.length,
+      formerPresidents: formerPresidents.length,
+      boardMembers: sortedBoardMembers.length,
+    });
+  }
   const getLevelColor = (level: number) => {
     switch (level) {
       case 1: return "from-purple-500 to-purple-600";
@@ -217,65 +325,95 @@ export function TeamSection() {
           
           <div className="grid md:grid-cols-2 gap-8">
             {/* Onursal Başkan */}
-            <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-6 rounded-2xl border border-yellow-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-xl flex items-center justify-center">
-                  <Crown className="w-5 h-5 text-white" />
+            {honoraryPresidents.length > 0 && (
+              <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-6 rounded-2xl border border-yellow-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-amber-600 rounded-xl flex items-center justify-center">
+                    <Crown className="w-5 h-5 text-white" />
+                  </div>
+                  <h4 className="text-lg font-bold text-gray-900">ONURSAL BAŞKANIMIZ</h4>
                 </div>
-                <h4 className="text-lg font-bold text-gray-900">{ORGANIZATION_MEMBERS.honoraryPresident.title}</h4>
+                <div className="space-y-2">
+                  {honoraryPresidents.map((member) => (
+                    <div key={member.id} className="text-gray-700 font-medium">
+                      {member.firstName} {member.lastName}
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="space-y-2">
-                {ORGANIZATION_MEMBERS.honoraryPresident.members.map((member, index) => (
-                  <div key={index} className="text-gray-700 font-medium">{member.name}</div>
-                ))}
-              </div>
-            </div>
+            )}
 
             {/* Kurucu Başkan */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-                  <UserCheck className="w-5 h-5 text-white" />
+            {foundingPresidents.length > 0 && (
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                    <UserCheck className="w-5 h-5 text-white" />
+                  </div>
+                  <h4 className="text-lg font-bold text-gray-900">KURUCU BAŞKANIMIZ</h4>
                 </div>
-                <h4 className="text-lg font-bold text-gray-900">{ORGANIZATION_MEMBERS.foundingPresident.title}</h4>
+                <div className="space-y-2">
+                  {foundingPresidents.map((member) => (
+                    <div key={member.id} className="text-gray-700 font-medium">
+                      {member.firstName} {member.lastName}
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="space-y-2">
-                {ORGANIZATION_MEMBERS.foundingPresident.members.map((member, index) => (
-                  <div key={index} className="text-gray-700 font-medium">{member.name}</div>
-                ))}
-              </div>
-            </div>
+            )}
 
             {/* Kurucu Üyeler */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-2xl border border-green-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                  <Users className="w-5 h-5 text-white" />
+            {foundingMembers.length > 0 && (
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-6 rounded-2xl border border-green-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                    <Users className="w-5 h-5 text-white" />
+                  </div>
+                  <h4 className="text-lg font-bold text-gray-900">KURUCU ÜYELERİMİZ</h4>
                 </div>
-                <h4 className="text-lg font-bold text-gray-900">{ORGANIZATION_MEMBERS.foundingMembers.title}</h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {foundingMembers.map((member) => (
+                    <div key={member.id} className="text-gray-700 font-medium text-sm">
+                      {member.firstName} {member.lastName}
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {ORGANIZATION_MEMBERS.foundingMembers.members.map((member, index) => (
-                  <div key={index} className="text-gray-700 font-medium text-sm">{member.name}</div>
-                ))}
-              </div>
-            </div>
+            )}
 
             {/* Önceki Başkanlar */}
-            <div className="bg-gradient-to-br from-purple-50 to-violet-50 p-6 rounded-2xl border border-purple-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="flex items-center space-x-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center">
-                  <History className="w-5 h-5 text-white" />
+            {formerPresidents.length > 0 && (
+              <div className="bg-gradient-to-br from-purple-50 to-violet-50 p-6 rounded-2xl border border-purple-200 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl flex items-center justify-center">
+                    <History className="w-5 h-5 text-white" />
+                  </div>
+                  <h4 className="text-lg font-bold text-gray-900">ÖNCEKİ BAŞKANLARIMIZ</h4>
                 </div>
-                <h4 className="text-lg font-bold text-gray-900">{ORGANIZATION_MEMBERS.formerPresidents.title}</h4>
+                <div className="space-y-2">
+                  {formerPresidents.map((member) => (
+                    <div key={member.id} className="text-gray-700 font-medium">
+                      {member.firstName} {member.lastName}
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="space-y-2">
-                {ORGANIZATION_MEMBERS.formerPresidents.members.map((member, index) => (
-                  <div key={index} className="text-gray-700 font-medium">{member.name}</div>
-                ))}
+            )}
+          </div>
+
+          {/* Eğer hiç üye yoksa boş durum mesajı */}
+          {honoraryPresidents.length === 0 && 
+           foundingPresidents.length === 0 && 
+           foundingMembers.length === 0 && 
+           formerPresidents.length === 0 && (
+            <div className="text-center py-8">
+              <div className="text-gray-500">
+                <Users className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                <p className="text-lg font-medium">Henüz üye eklenmemiş</p>
+                <p className="text-sm mt-2">Üyeler admin panelden eklenebilir.</p>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Yönetim Kurulu */}
           <div className="mt-8">
@@ -287,19 +425,36 @@ export function TeamSection() {
                 <h4 className="text-2xl font-bold text-gray-900">{ORGANIZATION_MEMBERS.boardOfDirectors.title}</h4>
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {ORGANIZATION_MEMBERS.boardOfDirectors.members.map((member, index) => (
-                  <div key={index} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg flex items-center justify-center">
-                        <User className="w-4 h-4 text-white" />
+                {sortedBoardMembers.length > 0 ? (
+                  // Sprint 6: Helper fonksiyonlarla sıralanmış board members
+                  sortedBoardMembers.map((boardMember) => {
+                    const fullName = getBoardMemberFullName(boardMember);
+                    const roleLabel = getBoardRoleLabel(boardMember.role);
+                    
+                    return (
+                      <div key={boardMember.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg flex items-center justify-center">
+                            <User className="w-5 h-5 text-white" />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-gray-900">{fullName}</div>
+                            <div className="text-sm text-gray-600">{roleLabel}</div>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="font-semibold text-gray-900">{member.name}</div>
-                        <div className="text-sm text-gray-600">{member.position}</div>
-                      </div>
+                    );
+                  })
+                ) : (
+                  // Show empty state if no board members in database
+                  <div className="col-span-full text-center py-8">
+                    <div className="text-gray-500">
+                      <Shield className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                      <p className="text-lg font-medium">Henüz yönetim kurulu üyesi eklenmemiş</p>
+                      <p className="text-sm mt-2">Yönetim kurulu üyeleri admin panelden eklenebilir.</p>
                     </div>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>

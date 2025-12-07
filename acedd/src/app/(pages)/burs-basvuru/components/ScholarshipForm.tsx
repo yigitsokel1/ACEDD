@@ -86,6 +86,7 @@ export function ScholarshipForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
     register,
@@ -156,13 +157,48 @@ export function ScholarshipForm() {
 
   const onSubmit = async (data: ScholarshipFormData) => {
     setIsSubmitting(true);
+    setSubmitError(null);
+
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      console.log("Form data:", data);
+      const response = await fetch("/api/scholarship-applications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        // Parse error response
+        let errorMessage = "Başvuru gönderilirken bir hata oluştu. Lütfen tekrar deneyin.";
+        
+        try {
+          const errorData = await response.json();
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch {
+          // If JSON parsing fails, use default message
+        }
+
+        setSubmitError(errorMessage);
+        return;
+      }
+
+      // Success
+      const result = await response.json();
       setIsSubmitted(true);
     } catch (error) {
-      console.error("Error submitting form:", error);
+      console.error("Error submitting scholarship application:", error);
+      
+      // Network error or other unexpected errors
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        setSubmitError("Bağlantı hatası. İnternet bağlantınızı kontrol edin ve tekrar deneyin.");
+      } else {
+        setSubmitError("Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -181,7 +217,7 @@ export function ScholarshipForm() {
             Başvurunuz Başarıyla Gönderildi!
           </h3>
           <p className="text-gray-600 mb-4">
-            Başvurunuz değerlendirilmeye alınmıştır. Sonuçlar size e-posta ile bildirilecektir.
+            Burs başvurunuz alınmıştır. Başvurunuz değerlendirilmeye alınacak ve sonuçlar size e-posta ile bildirilecektir.
           </p>
           <Button onClick={() => {
             setIsSubmitted(false);
@@ -804,6 +840,31 @@ export function ScholarshipForm() {
 
         <form onSubmit={handleSubmit(onSubmit)}>
           {renderStepContent()}
+
+          {/* Error Message */}
+          {submitError && (
+            <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="text-sm text-red-800">{submitError}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSubmitError(null)}
+                  className="ml-auto flex-shrink-0 text-red-400 hover:text-red-600"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-between mt-8">
             <Button
