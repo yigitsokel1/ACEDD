@@ -343,3 +343,18 @@ model Dataset {
   @@index([eventId])
   @@index([createdAt])
 }
+
+// ============================================================================
+// Settings (Site Ayarları)
+// ============================================================================
+
+model Setting {
+  id        String   @id @default(uuid())
+  key       String   @unique // Dot notation: site.name, contact.email, social.instagram, etc.
+  value     Json?    // Flexible value storage (string, object, array)
+  updatedAt DateTime @updatedAt
+  updatedBy String?  // AdminUser ID
+
+  @@index([key])
+  @@index([updatedAt])
+}

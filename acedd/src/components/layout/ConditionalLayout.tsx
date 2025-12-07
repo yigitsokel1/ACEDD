@@ -1,26 +1,43 @@
-"use client";
-
 import React from "react";
-import { usePathname } from "next/navigation";
+import { headers } from "next/headers";
 import { Header, Footer } from "./index";
+import { getSiteName, getLogoUrl } from "@/lib/settings";
 
 interface ConditionalLayoutProps {
   children: React.ReactNode;
 }
 
-export function ConditionalLayout({ children }: ConditionalLayoutProps) {
-  const pathname = usePathname();
+/**
+ * Server Component: ConditionalLayout
+ * 
+ * Renders Header and Footer for public pages only.
+ * Admin pages use their own layout, so this component checks the pathname
+ * and only renders Header/Footer for non-admin pages.
+ * Fetches settings from database and passes to Header.
+ */
+export async function ConditionalLayout({ children }: ConditionalLayoutProps) {
+  // Get pathname from headers (set by middleware)
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") || "";
   
-  // Admin sayfaları için header ve footer'ı gizle
-  const isAdminPage = pathname.startsWith("/admin");
+  // Check if this is an admin page
+  // Admin pages have their own layout, so we don't render Header/Footer for them
+  const isAdminPage = pathname.startsWith("/admin") && pathname !== "/admin-login";
   
+  // For admin pages, just return children (they have their own layout)
   if (isAdminPage) {
     return <>{children}</>;
   }
+
+  // Fetch site name and logo from settings
+  const [siteName, logoUrl] = await Promise.all([
+    getSiteName(),
+    getLogoUrl(),
+  ]);
   
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      <Header siteName={siteName} logoUrl={logoUrl} />
       <main className="flex-1">
         {children}
       </main>

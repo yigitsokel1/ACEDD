@@ -2,10 +2,18 @@
 
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import { CONTACT_INFO } from "../constants";
+import { CONTACT_INFO as FALLBACK_CONTACT_INFO } from "@/lib/constants";
 import { Phone, Mail, MapPin } from "lucide-react";
 
-export function ContactInfoSection() {
+interface ContactInfoSectionProps {
+  contactInfo?: {
+    email?: string;
+    phone?: string;
+    address?: string;
+  };
+}
+
+export function ContactInfoSection({ contactInfo }: ContactInfoSectionProps) {
   const handleContactClick = (type: string, value: string) => {
     if (type === "Telefon") {
       window.open(`tel:${value}`, '_self');
@@ -13,6 +21,32 @@ export function ContactInfoSection() {
       window.open(`mailto:${value}`, '_self');
     }
   };
+
+  // Use settings if available, otherwise fallback to constants
+  const displayAddress = contactInfo?.address || FALLBACK_CONTACT_INFO.address;
+  const displayPhone = contactInfo?.phone || FALLBACK_CONTACT_INFO.phone;
+  const displayEmail = contactInfo?.email || FALLBACK_CONTACT_INFO.email;
+
+  const contactInfoArray = [
+    {
+      title: "Adres",
+      value: displayAddress,
+      icon: MapPin,
+      description: "Dernek merkezimiz Acıpayam'da bulunmaktadır",
+    },
+    {
+      title: "Telefon",
+      value: displayPhone,
+      icon: Phone,
+      description: "Bizimle iletişime geçin",
+    },
+    {
+      title: "E-posta",
+      value: displayEmail,
+      icon: Mail,
+      description: "E-posta ile iletişime geçin",
+    },
+  ];
 
   return (
     <section className="py-20 bg-white">
@@ -26,7 +60,7 @@ export function ContactInfoSection() {
           </p>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {CONTACT_INFO.map((info, index) => (
+          {contactInfoArray.map((info, index) => (
             <Card 
               key={index} 
               className={`text-center hover:shadow-lg transition-all duration-300 ${

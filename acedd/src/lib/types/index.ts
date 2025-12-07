@@ -41,3 +41,6 @@ export * from "./scholarship";
 
 // Contact types (Sprint 8)
 export * from "./contact";
+
+// Settings types (Sprint 10)
+export * from "./setting";

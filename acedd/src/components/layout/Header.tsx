@@ -7,7 +7,12 @@ import { Menu, X, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAVIGATION_ITEMS, SITE_CONFIG } from "@/lib/constants";
 
-export function Header() {
+interface HeaderProps {
+  siteName?: string;
+  logoUrl?: string | null;
+}
+
+export function Header({ siteName, logoUrl }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isJoinDropdownOpen, setIsJoinDropdownOpen] = useState(false);
   const pathname = usePathname();
@@ -30,17 +35,36 @@ export function Header() {
     };
   }, []);
 
+  // Use siteName from props if provided, otherwise fallback to constant
+  const displayName = siteName || SITE_CONFIG.shortName;
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            {logoUrl && logoUrl.trim() ? (
+              <img 
+                src={logoUrl} 
+                alt={displayName} 
+                className="h-8 w-auto object-contain max-w-[200px]"
+                onError={(e) => {
+                  // Fallback to default logo if image fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const fallback = target.nextElementSibling as HTMLElement;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div 
+              className={`w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center ${logoUrl && logoUrl.trim() ? 'hidden' : ''}`}
+            >
               <span className="text-white font-bold text-sm">A</span>
             </div>
             <span className="font-bold text-xl text-gray-900">
-              {SITE_CONFIG.shortName}
+              {displayName}
             </span>
           </Link>
 

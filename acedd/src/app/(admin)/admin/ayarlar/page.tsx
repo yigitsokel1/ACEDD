@@ -1,41 +1,78 @@
-import React from "react";
-import { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Ayarlar - Admin",
-  description: "Sistem ayarlarını yönetin",
-};
+import React, { useState } from "react";
+import { Metadata } from "next";
+import { Globe, Mail, Share2 } from "lucide-react";
+
+// Components
+import SiteInfoTab from "./components/SiteInfoTab";
+import ContactInfoTab from "./components/ContactInfoTab";
+import SocialMediaTab from "./components/SocialMediaTab";
 
 export default function SettingsPage() {
+  const [activeTab, setActiveTab] = useState<'site' | 'contact' | 'social'>('site');
+
+  const tabs = [
+    {
+      id: 'site' as const,
+      label: 'Genel Site Bilgileri',
+      icon: Globe,
+      description: 'Site adı, açıklama, logo ve footer ayarları'
+    },
+    {
+      id: 'contact' as const,
+      label: 'İletişim Bilgileri',
+      icon: Mail,
+      description: 'E-posta, telefon, adres ve harita bilgileri'
+    },
+    {
+      id: 'social' as const,
+      label: 'Sosyal Medya',
+      icon: Share2,
+      description: 'Sosyal medya platform linkleri'
+    }
+  ];
+
   return (
     <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Ayarlar</h1>
-          <p className="text-gray-600">
-            Sistem ayarlarını görüntüleyin ve yönetin.
-          </p>
-        </div>
-
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Sistem Ayarları
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Bu sayfa geliştirilme aşamasındadır. Yakında sistem 
-              ayarlarını yapılandırabilir ve güncelleyebilirsiniz.
-            </p>
-            <div className="text-sm text-gray-500">
-              Özellikler: Genel Ayarlar, E-posta Ayarları, Bildirim Ayarları, Güvenlik Ayarları
-            </div>
-          </div>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Ayarlar</h1>
+        <p className="text-gray-600">
+          Sistem ayarlarını görüntüleyin ve yönetin.
+        </p>
       </div>
+
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`group inline-flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Icon className={`mr-2 h-5 w-5 ${
+                  activeTab === tab.id ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
+                }`} />
+                {tab.label}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      <div className="bg-white rounded-lg shadow">
+        {activeTab === 'site' && <SiteInfoTab />}
+        {activeTab === 'contact' && <ContactInfoTab />}
+        {activeTab === 'social' && <SocialMediaTab />}
+      </div>
+    </div>
   );
 }

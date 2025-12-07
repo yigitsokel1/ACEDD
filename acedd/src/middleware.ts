@@ -152,7 +152,10 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith("/admin")) {
     // Allow /admin-login to be accessible
     if (pathname === "/admin-login") {
-      return NextResponse.next();
+      // Add pathname to header for ConditionalLayout
+      const response = NextResponse.next();
+      response.headers.set("x-pathname", pathname);
+      return response;
     }
 
     // Check for session cookie
@@ -167,7 +170,10 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  // Add pathname to header for ConditionalLayout (for all routes)
+  const response = NextResponse.next();
+  response.headers.set("x-pathname", pathname);
+  return response;
 }
 
 export const config = {
