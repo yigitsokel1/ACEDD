@@ -113,7 +113,7 @@ describe("GET /api/dashboard", () => {
     vi.mocked(requireRole).mockReturnValue(mockSession);
 
     const now = new Date("2024-01-15T12:00:00Z");
-    
+
     // Use fake timers to control Date in getDashboardStats
     vi.useFakeTimers();
     vi.setSystemTime(now);

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { FileText } from "lucide-react";
-import { FormData, MEMBERSHIP_CONTENT, FORM_FIELDS } from "../constants";
+import { FormData, FORM_FIELDS } from "../constants";
 
 export function MembershipForm() {
   const [formData, setFormData] = useState<FormData>({

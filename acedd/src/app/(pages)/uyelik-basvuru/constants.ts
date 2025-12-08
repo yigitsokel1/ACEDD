@@ -15,21 +15,12 @@ export interface FormData {
   lastValidDate: string;
 }
 
-export const MEMBERSHIP_CONTENT = {
-  hero: {
-    title: "Üyelik Başvurusu",
-    description: "Aşağıdaki formu doldurarak bize gönderdiğiniz takdirde mümkün olan en kısa sürede size geri dönüş yapacağız."
-  },
-  form: {
-    title: "Üyelik Başvuru Formu",
-    description: "Tüm alanları doldurarak başvurunuzu tamamlayın"
-  },
-  additionalInfo: {
-    title: "Başvuru Hakkında",
-    description: "Üyelik başvurunuz değerlendirildikten sonra size e-posta veya telefon ile geri dönüş yapılacaktır. Sorularınız için bizimle iletişime geçebilirsiniz.",
-    email: "Acedd@acipayam.org"
-  }
-};
+/**
+ * Sprint 11: MEMBERSHIP_CONTENT moved to settings
+ * Content is now managed via Admin UI (content.membership.*)
+ * 
+ * FORM_FIELDS remains here as technical configuration (form field definitions)
+ */
 
 export const FORM_FIELDS = {
   gender: [

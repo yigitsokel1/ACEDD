@@ -2,10 +2,12 @@
  * Convenience Functions for Settings
  * 
  * Sprint 10: High-level convenience functions for common settings
+ * Sprint 11: Content & SEO convenience functions added
  */
 
 import { getSetting, getSettings, getSettingValue } from "./getSetting";
 import { SITE_CONFIG, CONTACT_INFO } from "../constants";
+import type { PageIdentifier, PageContent, PageSEO } from "../types/setting";
 
 /**
  * Get site name from settings (with fallback)
@@ -145,5 +147,138 @@ export async function getFaviconUrlWithTimestamp(): Promise<{ url: string | null
     console.error('[getFaviconUrlWithTimestamp] Error:', error);
     return { url: null, timestamp: null };
   }
+}
+
+/**
+ * Page name mappings for SEO fallbacks
+ * Sprint 11: Page names for SEO title generation
+ */
+const PAGE_NAMES: Record<PageIdentifier, string> = {
+  home: "Ana Sayfa",
+  scholarship: "Burs Başvurusu",
+  membership: "Üyelik Başvurusu",
+  contact: "İletişim",
+  about: "Hakkımızda",
+  events: "Etkinlikler",
+  donation: "Bağış Yap",
+};
+
+/**
+ * Page description fallbacks for SEO
+ * Sprint 11: Default SEO descriptions for each page
+ */
+const PAGE_DESCRIPTIONS: Record<PageIdentifier, string> = {
+  home: "Acıpayam ve çevresindeki öğrencilerin eğitimlerini desteklemek için kurulmuş dernek",
+  scholarship: "Burs başvurusu yapmak için gerekli bilgiler ve başvuru formu",
+  membership: "Derneğimize üye olmak için başvuru formu ve bilgiler",
+  contact: "Bizimle iletişime geçmek için iletişim bilgileri ve form",
+  about: "Derneğimiz hakkında bilgiler, misyonumuz ve vizyonumuz",
+  events: "Derneğimizin düzenlediği etkinlikler, toplantılar ve organizasyonlar",
+  donation: "Derneğimize bağış yaparak öğrencilerin eğitimlerine destek olun",
+};
+
+/**
+ * Get page content from settings
+ * Sprint 11: Fetch content settings for a specific page
+ * 
+ * @param pageKey - Page identifier (home, scholarship, membership, contact, about, events, donation)
+ * @returns PageContent object with all available content fields for that page
+ * 
+ * @example
+ * const content = await getPageContent("home");
+ * // Returns: { heroTitle?: string, intro?: string, stats?: Array, missions?: Array, ... }
+ */
+export async function getPageContent(pageKey: PageIdentifier): Promise<PageContent> {
+  const prefix = `content.${pageKey}`;
+  const settings = await getSettings(prefix);
+
+  // Build content object dynamically from all available settings
+  const content: PageContent = {};
+
+  // Get all settings for this page prefix
+  for (const key in settings) {
+    if (key.startsWith(`${prefix}.`)) {
+      const fieldKey = key.replace(`${prefix}.`, "");
+      const value = settings[key];
+
+      // Skip null/undefined
+      if (value === null || value === undefined) {
+        continue;
+      }
+
+      // Handle arrays first (Array.isArray check must come before typeof === "object" because arrays are also objects)
+      if (Array.isArray(value)) {
+        // Only include non-empty arrays
+        if (value.length > 0) {
+          content[fieldKey] = value;
+        }
+        continue;
+      }
+      // Handle strings (trim empty strings - empty strings are excluded so fallback can be used)
+      else if (typeof value === "string") {
+        if (value.trim()) {
+          content[fieldKey] = value;
+        }
+        continue;
+      }
+      // Handle objects (JSON fields)
+      else if (typeof value === "object") {
+        // Check if it's an object that should be converted to array (e.g., {"0": {...}, "1": {...}})
+        // This happens when JSON is saved as object instead of array
+        if (fieldKey === "jobDescriptions" || fieldKey === "requirements" || fieldKey === "applicationSteps") {
+          const keys = Object.keys(value);
+          // If all keys are numeric strings, convert to array
+          if (keys.length > 0 && keys.every(key => /^\d+$/.test(key))) {
+            const arrayValue = keys
+              .map(key => parseInt(key, 10))
+              .sort((a, b) => a - b)
+              .map(key => value[String(key)]);
+            if (arrayValue.length > 0) {
+              content[fieldKey] = arrayValue;
+              continue;
+            }
+          }
+        }
+        // Regular object (not array-like)
+        content[fieldKey] = value;
+      }
+    }
+  }
+
+  return content;
+}
+
+/**
+ * Get page SEO settings from settings
+ * Sprint 11: Fetch SEO settings for a specific page with fallbacks
+ * 
+ * @param pageKey - Page identifier (home, scholarship, membership, contact, about)
+ * @returns PageSEO object with title and description (with fallbacks)
+ * 
+ * Fallbacks:
+ * - title: site.name + " | " + page name
+ * - description: Hard-coded page description
+ * 
+ * @example
+ * const seo = await getPageSeo("home");
+ * // Returns: { title: "ACEDD | Ana Sayfa", description: "..." }
+ */
+export async function getPageSeo(pageKey: PageIdentifier): Promise<PageSEO> {
+  const prefix = `seo.${pageKey}`;
+  const settings = await getSettings(prefix);
+
+  // Get site name for title fallback
+  const siteName = await getSiteName();
+
+  // Fallback title: site.name + " | " + page name
+  const fallbackTitle = `${siteName} | ${PAGE_NAMES[pageKey]}`;
+
+  // Fallback description: Hard-coded page description
+  const fallbackDescription = PAGE_DESCRIPTIONS[pageKey];
+
+  return {
+    title: getSettingValue(settings, `${prefix}.title`, fallbackTitle) as string,
+    description: getSettingValue(settings, `${prefix}.description`, fallbackDescription) as string,
+  };
 }
 

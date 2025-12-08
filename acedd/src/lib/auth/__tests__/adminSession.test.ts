@@ -189,13 +189,13 @@ describe("Admin Session Security (Sprint 6)", () => {
           enumerable: true,
           configurable: true,
         });
-        
-        // Dynamic import to get fresh module with new NODE_ENV
-        const { createSession } = await import("../adminSession");
-        await createSession(mockSession);
+      
+      // Dynamic import to get fresh module with new NODE_ENV
+      const { createSession } = await import("../adminSession");
+      await createSession(mockSession);
 
-        const options = (mockCookieStore.set as any).mock.calls[0][2];
-        expect(options.secure).toBe(true);
+      const options = (mockCookieStore.set as any).mock.calls[0][2];
+      expect(options.secure).toBe(true);
       } catch (error) {
         // If Object.defineProperty fails, skip this test in CI environments
         // where process.env is more restricted
@@ -205,7 +205,7 @@ describe("Admin Session Security (Sprint 6)", () => {
         }
         throw error;
       } finally {
-        // Restore original env
+      // Restore original env
         if (originalEnv !== undefined) {
           try {
             Object.defineProperty(process.env, "NODE_ENV", {

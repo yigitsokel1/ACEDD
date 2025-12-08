@@ -1,13 +1,18 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
-import { useHomeData } from "../hooks/useHomeData";
-import TrustIndicator from "./TrustIndicator";
+import { getPageContent } from "@/lib/settings/convenience";
 import { ROUTES } from "@/lib/constants";
+import TrustIndicator from "./TrustIndicator";
 
-export function CTASection() {
-  const { trustIndicators } = useHomeData();
+export async function CTASection() {
+  const content = await getPageContent("home");
+  
+  // Get CTA data from settings with minimal fallbacks
+  const ctaTitle = content.ctaTitle || "Hayırseverlerin ve Eğitim Gönüllülerinin Desteğiyle";
+  const ctaDescription = content.ctaDescription || "Acıpayam ve çevresindeki gençlerin daha iyi bir eğitim almalarına ve geleceğe umutla bakmalarına yardımcı olmayı hedefliyoruz. Siz de bu hayırlı işe katkıda bulunun.";
+  const ctaPrimaryButtonText = content.ctaPrimaryButtonText || "Burs Başvurusu Yap";
+  const ctaSecondaryButtonText = content.ctaSecondaryButtonText || "Destek Ol";
+  const trustIndicators = content.trustIndicators || [];
 
   return (
     <div className="py-24 bg-gradient-to-br from-blue-600 to-indigo-700 relative overflow-hidden">
@@ -22,11 +27,10 @@ export function CTASection() {
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Hayırseverlerin ve Eğitim Gönüllülerinin Desteğiyle
+            {ctaTitle}
           </h2>
           <p className="text-xl text-white/90 mb-12 max-w-4xl mx-auto leading-relaxed">
-            Acıpayam ve çevresindeki gençlerin daha iyi bir eğitim almalarına ve geleceğe umutla bakmalarına yardımcı olmayı hedefliyoruz. 
-            Siz de bu hayırlı işe katkıda bulunun.
+            {ctaDescription}
           </p>
           
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
@@ -37,7 +41,7 @@ export function CTASection() {
               <svg className="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Burs Başvurusu Yap
+              {ctaPrimaryButtonText}
             </Link>
             <Link
               href="/bagis-yap"
@@ -46,13 +50,13 @@ export function CTASection() {
               <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
-              Destek Ol
+              {ctaSecondaryButtonText}
             </Link>
           </div>
           
           {/* Trust Indicators */}
           <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 max-w-3xl mx-auto">
-            {trustIndicators.map((indicator) => (
+            {trustIndicators.map((indicator: any) => (
               <TrustIndicator key={indicator.id} data={indicator} />
             ))}
           </div>

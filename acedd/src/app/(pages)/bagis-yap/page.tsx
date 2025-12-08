@@ -1,11 +1,20 @@
 import React from "react";
 import { Metadata } from "next";
 import { HeroSection, BankAccountsSection, ThankYouSection } from "./components";
+import { getPageSeo } from "@/lib/settings";
 
-export const metadata: Metadata = {
-  title: "Bağış Yap",
-  description: "Acıpayam ve Çevresi Eğitimi Destekleme Derneği'ne bağış yapın. Banka havale ve EFT ile TL, USD, EURO hesaplarımıza bağışta bulunabilirsiniz.",
-};
+// Disable caching to ensure fresh content from settings
+export const revalidate = 0;
+export const dynamic = 'force-dynamic';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("donation");
+  
+  return {
+    title: seo.title,
+    description: seo.description,
+  };
+}
 
 export default function DonationPage() {
   return (

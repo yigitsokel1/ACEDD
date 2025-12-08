@@ -22,17 +22,13 @@ export interface Event {
   updatedAt: string; // ISO 8601 string (DateTime in Prisma)
 }
 
-// Dummy veriler kaldırıldı - artık Context API kullanılıyor
-
-export const CTA_CONTENT = {
-  title: "Etkinliklerimize Katılmak İster misiniz?",
-  subtitle: "Güncel etkinliklerimizi takip edin ve size uygun olanlara katılın.",
-  primaryButton: {
-    text: "Etkinlikleri Görüntüle",
-    href: "#events",
-  },
-  secondaryButton: {
-    text: "İletişime Geç",
-    href: "/iletisim",
-  },
+/**
+ * Sprint 11: CTA_CONTENT text fields moved to settings
+ * Content is now managed via Admin UI (content.events.ctaTitle, content.events.ctaSubtitle, etc.)
+ * 
+ * Button hrefs remain here as technical data (routing configuration)
+ */
+export const CTA_BUTTON_HREFS = {
+  primary: "#events",
+  secondary: "/iletisim",
 } as const;

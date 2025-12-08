@@ -20,14 +20,7 @@ export function AnnouncementStrip({ announcements }: AnnouncementStripProps) {
     })
     .slice(0, 5); // Show max 5 announcements
 
-  // Debug: Log to see what's happening
-  if (typeof window !== "undefined") {
-    console.log("AnnouncementStrip - Total announcements:", announcements.length);
-    console.log("AnnouncementStrip - Active announcements:", activeAnnouncements.length);
-  }
-
   if (activeAnnouncements.length === 0) {
-    // Show a message instead of returning null for debugging
     return (
       <div className="bg-orange-50 border-y border-orange-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">

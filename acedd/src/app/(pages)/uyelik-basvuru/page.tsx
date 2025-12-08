@@ -1,11 +1,20 @@
 import React from "react";
 import { Metadata } from "next";
 import { HeroSection, MembershipForm, AdditionalInfoSection } from "./components";
+import { getPageSeo } from "@/lib/settings";
 
-export const metadata: Metadata = {
-  title: "Üyelik Başvurusu",
-  description: "Acıpayam ve Çevresi Eğitimi Destekleme Derneği üyelik başvurusu. Formu doldurarak derneğimize üye olabilirsiniz.",
-};
+// Disable caching to ensure fresh content from settings
+export const revalidate = 0;
+export const dynamic = 'force-dynamic';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("membership");
+  
+  return {
+    title: seo.title,
+    description: seo.description,
+  };
+}
 
 export default function MembershipApplicationPage() {
   return (

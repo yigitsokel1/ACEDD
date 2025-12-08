@@ -11,9 +11,13 @@ interface ContactInfoSectionProps {
     phone?: string;
     address?: string;
   };
+  content?: {
+    infoSectionTitle?: string;
+    infoSectionDescription?: string;
+  };
 }
 
-export function ContactInfoSection({ contactInfo }: ContactInfoSectionProps) {
+export function ContactInfoSection({ contactInfo, content }: ContactInfoSectionProps) {
   const handleContactClick = (type: string, value: string) => {
     if (type === "Telefon") {
       window.open(`tel:${value}`, '_self');
@@ -26,6 +30,10 @@ export function ContactInfoSection({ contactInfo }: ContactInfoSectionProps) {
   const displayAddress = contactInfo?.address || FALLBACK_CONTACT_INFO.address;
   const displayPhone = contactInfo?.phone || FALLBACK_CONTACT_INFO.phone;
   const displayEmail = contactInfo?.email || FALLBACK_CONTACT_INFO.email;
+  
+  // Get section title and description from settings
+  const sectionTitle = content?.infoSectionTitle || "İletişim Bilgileri";
+  const sectionDescription = content?.infoSectionDescription || "Size en uygun yöntemle bizimle iletişime geçebilirsiniz";
 
   const contactInfoArray = [
     {
@@ -53,11 +61,13 @@ export function ContactInfoSection({ contactInfo }: ContactInfoSectionProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            İletişim Bilgileri
+            {sectionTitle}
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Size en uygun yöntemle bizimle iletişime geçebilirsiniz
-          </p>
+          {sectionDescription && (
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              {sectionDescription}
+            </p>
+          )}
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {contactInfoArray.map((info, index) => (

@@ -1,26 +1,10 @@
-import { Phone, Mail, MapPin } from "lucide-react";
-import { CONTACT_INFO as GLOBAL_CONTACT_INFO } from "@/lib/constants";
-
-export const CONTACT_INFO = [
-  {
-    title: "Adres",
-    value: GLOBAL_CONTACT_INFO.address,
-    icon: MapPin,
-    description: "Dernek merkezimiz Acıpayam'da bulunmaktadır",
-  },
-  {
-    title: "Telefon",
-    value: GLOBAL_CONTACT_INFO.phone,
-    icon: Phone,
-    description: "Bizimle iletişime geçin",
-  },
-  {
-    title: "E-posta",
-    value: GLOBAL_CONTACT_INFO.email,
-    icon: Mail,
-    description: "E-posta ile iletişime geçin",
-  },
-] as const;
+/**
+ * Contact Page Constants
+ * 
+ * Sprint 11: Content data moved to settings (content.contact.*)
+ * 
+ * CONTACT_FORM_FIELDS remains here as technical configuration (form field definitions)
+ */
 
 export const CONTACT_FORM_FIELDS = {
   name: {
@@ -49,26 +33,3 @@ export const CONTACT_FORM_FIELDS = {
     required: true,
   },
 } as const;
-
-export const SOCIAL_MEDIA = [
-  {
-    name: "Facebook",
-    url: "https://facebook.com/acedd",
-    icon: "facebook",
-  },
-  {
-    name: "Twitter",
-    url: "https://twitter.com/acedd",
-    icon: "twitter",
-  },
-  {
-    name: "Instagram",
-    url: "https://instagram.com/acedd",
-    icon: "instagram",
-  },
-  {
-    name: "LinkedIn",
-    url: "https://linkedin.com/company/acedd",
-    icon: "linkedin",
-  },
-] as const;

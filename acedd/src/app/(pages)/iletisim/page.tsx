@@ -1,27 +1,30 @@
 import React from "react";
 import { Metadata } from "next";
 import { HeroSection, ContactInfoSection, ContactForm } from "./components";
-import { getContactInfo, getSiteName } from "@/lib/settings";
-import { SITE_CONFIG } from "@/lib/constants";
+import { getContactInfo, getPageContent, getPageSeo } from "@/lib/settings";
+
+// Disable caching to ensure fresh content from settings
+export const revalidate = 0;
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const siteName = await getSiteName();
-  const displayName = siteName || SITE_CONFIG.name;
+  const seo = await getPageSeo("contact");
   
   return {
-    title: "İletişim",
-    description: `${displayName} ile iletişime geçin. Sorularınız, önerileriniz ve destek talepleriniz için bizimle iletişime geçin.`,
+    title: seo.title,
+    description: seo.description,
   };
 }
 
 export default async function ContactPage() {
-  // Fetch contact info from settings
+  // Fetch contact info and content from settings
   const contactInfo = await getContactInfo();
-  
+  const content = await getPageContent("contact");
+
   return (
     <div className="min-h-screen">
       <HeroSection />
-      <ContactInfoSection contactInfo={contactInfo} />
+      <ContactInfoSection contactInfo={contactInfo} content={content} />
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ContactForm />

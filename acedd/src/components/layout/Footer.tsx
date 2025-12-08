@@ -6,7 +6,7 @@ import { getSiteName, getSiteDescription, getSocialLinks, getContactInfo, getFoo
 
 export async function Footer() {
   const currentYear = new Date().getFullYear();
-  
+
   // Fetch settings from database
   const [siteName, siteDescription, socialLinks, contactInfo, footerText] = await Promise.all([
     getSiteName(),
@@ -56,9 +56,9 @@ export async function Footer() {
               <span className="font-bold text-xl">{displayName}</span>
             </div>
             {displayDescription && (
-              <p className="text-gray-300 text-sm leading-relaxed">
+            <p className="text-gray-300 text-sm leading-relaxed">
                 {displayDescription}
-              </p>
+            </p>
             )}
             {/* Sosyal Medya Linkleri */}
             {socialLinksArray.length > 0 && (
@@ -136,32 +136,32 @@ export async function Footer() {
             <h3 className="text-lg font-semibold">İletişim</h3>
             <div className="space-y-3">
               {displayAddress && (
-                <div className="flex items-start space-x-3">
-                  <MapPin size={16} className="text-blue-400 mt-1 flex-shrink-0" />
+              <div className="flex items-start space-x-3">
+                <MapPin size={16} className="text-blue-400 mt-1 flex-shrink-0" />
                   <span className="text-gray-300 text-sm">{displayAddress}</span>
-                </div>
+              </div>
               )}
               {displayPhone && (
-                <div className="flex items-center space-x-3">
-                  <Phone size={16} className="text-blue-400 flex-shrink-0" />
-                  <a
+              <div className="flex items-center space-x-3">
+                <Phone size={16} className="text-blue-400 flex-shrink-0" />
+                <a
                     href={`tel:${displayPhone}`}
-                    className="text-gray-300 hover:text-white transition-colors text-sm"
-                  >
+                  className="text-gray-300 hover:text-white transition-colors text-sm"
+                >
                     {displayPhone}
-                  </a>
-                </div>
+                </a>
+              </div>
               )}
               {displayEmail && (
-                <div className="flex items-center space-x-3">
-                  <Mail size={16} className="text-blue-400 flex-shrink-0" />
-                  <a
+              <div className="flex items-center space-x-3">
+                <Mail size={16} className="text-blue-400 flex-shrink-0" />
+                <a
                     href={`mailto:${displayEmail}`}
-                    className="text-gray-300 hover:text-white transition-colors text-sm"
-                  >
+                  className="text-gray-300 hover:text-white transition-colors text-sm"
+                >
                     {displayEmail}
-                  </a>
-                </div>
+                </a>
+              </div>
               )}
             </div>
           </div>

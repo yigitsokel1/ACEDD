@@ -2,6 +2,7 @@
  * Settings Module
  * 
  * Sprint 10: Settings helper functions and convenience wrappers
+ * Sprint 11: Content & SEO convenience functions added
  * 
  * Core functions:
  *   - getSetting(key) - Get single setting
@@ -16,6 +17,8 @@
  *   - getFooterText() - Get footer text
  *   - getLogoUrl() - Get logo URL with fallback
  *   - getFaviconUrl() - Get favicon URL with fallback
+ *   - getPageContent(pageKey) - Get page content (Sprint 11)
+ *   - getPageSeo(pageKey) - Get page SEO settings (Sprint 11)
  */
 
 // Core functions
@@ -38,5 +41,14 @@ export {
   getLogoUrl,
   getFaviconUrl,
   getFaviconUrlWithTimestamp,
+  getPageContent,
+  getPageSeo,
 } from "./convenience";
+
+// Types (re-export from types)
+export type {
+  PageIdentifier,
+  PageContent,
+  PageSEO,
+} from "../types/setting";
 

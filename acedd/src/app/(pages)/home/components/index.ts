@@ -1,5 +1,5 @@
 export { HeroSection } from "./HeroSection";
-export { MissionSection } from "./ServicesSection";
+export { MissionSection } from "./MissionSection";
 export { CTASection } from "./CTASection";
 export { AnnouncementStripSection } from "./AnnouncementStripSection";
 export { AnnouncementStrip } from "./AnnouncementStrip";

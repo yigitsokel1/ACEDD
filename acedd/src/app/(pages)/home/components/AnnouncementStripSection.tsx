@@ -29,11 +29,6 @@ async function fetchActiveAnnouncements(): Promise<Announcement[]> {
       updatedAt: announcement.updatedAt.toISOString(),
     }));
 
-    // Debug: Log in server (will appear in terminal, not browser console)
-    console.log(`[AnnouncementStripSection] Fetched ${formattedAnnouncements.length} announcements from DB`);
-
-    // Don't filter here - let AnnouncementStrip component filter by active status
-    // This way we can show a message if there are announcements but none are active
     return formattedAnnouncements;
   } catch (error) {
     console.error("Error fetching announcements:", error);

@@ -1,11 +1,20 @@
 import React from "react";
 import { Metadata } from "next";
 import { HeroSection, EventsGrid, CTASection } from "./components";
+import { getPageSeo } from "@/lib/settings";
 
-export const metadata: Metadata = {
-  title: "Etkinlikler",
-  description: "Acıpayam ve Çevresi Eğitimi Destekleme Derneği etkinlikleri. Eğitim seminerleri, sosyal sorumluluk projeleri, motivasyon etkinlikleri ve daha fazlası.",
-};
+// Disable caching to ensure fresh content from settings
+export const revalidate = 0;
+export const dynamic = 'force-dynamic';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("events");
+  
+  return {
+    title: seo.title,
+    description: seo.description,
+  };
+}
 
 export default function EventsPage() {
   return (

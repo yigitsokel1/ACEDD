@@ -2,15 +2,17 @@
 
 import React, { useState } from "react";
 import { Metadata } from "next";
-import { Globe, Mail, Share2 } from "lucide-react";
+import { Globe, Mail, Share2, FileText, Search } from "lucide-react";
 
 // Components
 import SiteInfoTab from "./components/SiteInfoTab";
 import ContactInfoTab from "./components/ContactInfoTab";
 import SocialMediaTab from "./components/SocialMediaTab";
+import ContentTab from "./components/ContentTab";
+import SEOTab from "./components/SEOTab";
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<'site' | 'contact' | 'social'>('site');
+  const [activeTab, setActiveTab] = useState<'site' | 'contact' | 'social' | 'content' | 'seo'>('site');
 
   const tabs = [
     {
@@ -30,6 +32,18 @@ export default function SettingsPage() {
       label: 'Sosyal Medya',
       icon: Share2,
       description: 'Sosyal medya platform linkleri'
+    },
+    {
+      id: 'content' as const,
+      label: 'İçerik',
+      icon: FileText,
+      description: 'Sayfa içerikleri (hero başlık, alt başlık, açıklama)'
+    },
+    {
+      id: 'seo' as const,
+      label: 'SEO',
+      icon: Search,
+      description: 'SEO ayarları (başlık ve açıklama)'
     }
   ];
 
@@ -72,6 +86,8 @@ export default function SettingsPage() {
         {activeTab === 'site' && <SiteInfoTab />}
         {activeTab === 'contact' && <ContactInfoTab />}
         {activeTab === 'social' && <SocialMediaTab />}
+        {activeTab === 'content' && <ContentTab />}
+        {activeTab === 'seo' && <SEOTab />}
       </div>
     </div>
   );

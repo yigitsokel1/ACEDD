@@ -301,36 +301,9 @@ export const SCHOLARSHIP_FORM_FIELDS = {
   },
 } as const;
 
-export const SCHOLARSHIP_REQUIREMENTS = [
-  "Acıpayam ve çevresinde ikamet etmek",
-  "Lise veya üniversite öğrencisi olmak",
-  "Not ortalaması 2.5 ve üzeri olmak",
-  "Maddi ihtiyaç durumu belgesi sunmak",
-  "Aile gelir durumu belgesi sunmak",
-  "Kimlik belgesi fotokopisi",
-  "Öğrenci belgesi",
-  "Son dönem not dökümü",
-] as const;
-
-export const APPLICATION_STEPS = [
-  {
-    step: 1,
-    title: "Form Doldurma",
-    description: "Başvuru formunu eksiksiz doldurun",
-  },
-  {
-    step: 2,
-    title: "Belge Yükleme",
-    description: "Gerekli belgeleri yükleyin",
-  },
-  {
-    step: 3,
-    title: "Değerlendirme",
-    description: "Başvurunuz değerlendirilir",
-  },
-  {
-    step: 4,
-    title: "Sonuç",
-    description: "Sonuç size bildirilir",
-  },
-] as const;
+/**
+ * Sprint 11: SCHOLARSHIP_REQUIREMENTS and APPLICATION_STEPS moved to settings
+ * These are now managed via Admin UI (content.scholarship.requirements, content.scholarship.applicationSteps)
+ * 
+ * Form field definitions (SCHOLARSHIP_FORM_FIELDS) remain here as they are technical configuration.
+ */
