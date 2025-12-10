@@ -1,7 +1,7 @@
 # Sprint 4: Admin Auth + Role Bazlı Erişim + Yönetim Kurulu İncelemesi - Verification Checklist
 
-**Sprint Tarihi:** [Tamamlanma Tarihi]  
-**Doğrulama Tarihi:** [Doğrulama Tarihi]  
+**Sprint Tarihi:** 02.12.2025
+**Doğrulama Tarihi:** 02.12.2025
 **Durum:** ✅ Doğrulandı
 
 ## 1. Login Flow Checklist

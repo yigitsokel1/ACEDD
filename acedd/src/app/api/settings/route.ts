@@ -73,12 +73,14 @@ export async function GET(request: NextRequest) {
       return createAuthErrorResponse(error.message);
     }
 
-    console.error("Error fetching settings:", error);
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][SETTINGS][GET]", error);
+    console.error("[ERROR][API][SETTINGS][GET] Details:", errorDetails);
 
     return NextResponse.json(
       {
-        error: "Failed to fetch settings",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Ayarlar yüklenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -100,8 +102,7 @@ export async function PUT(request: NextRequest) {
     if (!body.key || typeof body.key !== "string" || body.key.trim().length === 0) {
       return NextResponse.json(
         {
-          error: "Validation error",
-          message: "key is required and must be a non-empty string",
+          error: "Ayar anahtarı zorunludur",
         },
         { status: 400 }
       );
@@ -110,8 +111,7 @@ export async function PUT(request: NextRequest) {
     if (body.value === undefined) {
       return NextResponse.json(
         {
-          error: "Validation error",
-          message: "value is required",
+          error: "Ayar değeri zorunludur",
         },
         { status: 400 }
       );
@@ -122,8 +122,7 @@ export async function PUT(request: NextRequest) {
     if (!key.includes(".")) {
       return NextResponse.json(
         {
-          error: "Validation error",
-          message: "key must use dot notation (e.g., 'site.name', 'contact.email')",
+          error: "Ayar anahtarı geçersiz format",
         },
         { status: 400 }
       );
@@ -165,23 +164,24 @@ export async function PUT(request: NextRequest) {
       return createAuthErrorResponse(error.message);
     }
 
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][SETTINGS][PUT]", error);
+    console.error("[ERROR][API][SETTINGS][PUT] Details:", errorDetails);
+
     // Prisma unique constraint error (shouldn't happen with upsert, but handle anyway)
     if (error instanceof Error && error.message.includes("Unique constraint")) {
       return NextResponse.json(
         {
-          error: "Validation error",
-          message: "A setting with this key already exists",
+          error: "Bu ayar zaten mevcut",
         },
         { status: 400 }
       );
     }
 
-    console.error("Error upserting setting:", error);
-
     return NextResponse.json(
       {
-        error: "Failed to upsert setting",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Ayar kaydedilirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );

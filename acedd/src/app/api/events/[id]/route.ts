@@ -82,7 +82,7 @@ export async function GET(
 
     if (!event) {
       return NextResponse.json(
-        { error: "Event not found" },
+        { error: "Etkinlik bulunamadı" },
         { status: 404 }
       );
     }
@@ -90,11 +90,19 @@ export async function GET(
     const formattedEvent = formatEvent(event);
     return NextResponse.json(formattedEvent);
   } catch (error) {
-    console.error("Error fetching event:", error);
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][EVENTS][GET_BY_ID]", error);
+    console.error("[ERROR][API][EVENTS][GET_BY_ID] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to fetch event",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Etkinlik yüklenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -123,7 +131,7 @@ export async function PUT(
 
     if (!existingEvent) {
       return NextResponse.json(
-        { error: "Event not found" },
+        { error: "Etkinlik bulunamadı" },
         { status: 404 }
       );
     }
@@ -134,10 +142,7 @@ export async function PUT(
     if (body.title !== undefined) {
       if (typeof body.title !== "string" || body.title.trim().length === 0) {
         return NextResponse.json(
-          {
-            error: "Validation error",
-            message: "title must be a non-empty string",
-          },
+          { error: "Başlık boş olamaz" },
           { status: 400 }
         );
       }
@@ -147,10 +152,7 @@ export async function PUT(
     if (body.description !== undefined) {
       if (typeof body.description !== "string" || body.description.trim().length === 0) {
         return NextResponse.json(
-          {
-            error: "Validation error",
-            message: "description must be a non-empty string",
-          },
+          { error: "Açıklama boş olamaz" },
           { status: 400 }
         );
       }
@@ -160,10 +162,7 @@ export async function PUT(
     if (body.shortDescription !== undefined) {
       if (typeof body.shortDescription !== "string" || body.shortDescription.trim().length === 0) {
         return NextResponse.json(
-          {
-            error: "Validation error",
-            message: "shortDescription must be a non-empty string",
-          },
+          { error: "Kısa açıklama boş olamaz" },
           { status: 400 }
         );
       }
@@ -173,10 +172,7 @@ export async function PUT(
     if (body.date !== undefined) {
       if (typeof body.date !== "string") {
         return NextResponse.json(
-          {
-            error: "Validation error",
-            message: "date must be a valid ISO 8601 date string",
-          },
+          { error: "Geçerli bir tarih giriniz" },
           { status: 400 }
         );
       }
@@ -280,20 +276,27 @@ export async function PUT(
     const formattedEvent = formatEvent(updatedEvent);
     return NextResponse.json(formattedEvent);
   } catch (error) {
-    console.error("Error updating event:", error);
-    
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+
     // Handle Prisma not found error
-    if (error instanceof Error && error.message.includes("Record to update not found")) {
+    if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
       return NextResponse.json(
-        { error: "Event not found" },
+        { error: "Etkinlik bulunamadı" },
         { status: 404 }
       );
     }
 
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][EVENTS][UPDATE]", error);
+    console.error("[ERROR][API][EVENTS][UPDATE] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to update event",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Etkinlik güncellenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -321,7 +324,7 @@ export async function DELETE(
 
     if (!existingEvent) {
       return NextResponse.json(
-        { error: "Event not found" },
+        { error: "Etkinlik bulunamadı" },
         { status: 404 }
       );
     }
@@ -331,27 +334,29 @@ export async function DELETE(
       where: { id },
     });
 
-    return NextResponse.json({ message: "Event deleted successfully" });
+    return NextResponse.json({ message: "Etkinlik başarıyla silindi" });
   } catch (error) {
     // Auth error handling
     if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
       return createAuthErrorResponse(error.message);
     }
-    
-    console.error("Error deleting event:", error);
-    
+
     // Handle Prisma not found error
-    if (error instanceof Error && error.message.includes("Record to delete does not exist")) {
+    if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
       return NextResponse.json(
-        { error: "Event not found" },
+        { error: "Etkinlik bulunamadı" },
         { status: 404 }
       );
     }
 
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][EVENTS][DELETE]", error);
+    console.error("[ERROR][API][EVENTS][DELETE] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to delete event",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Etkinlik silinirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );

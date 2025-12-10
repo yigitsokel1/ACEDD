@@ -93,14 +93,17 @@ export function EventDetail({ eventId }: EventDetailProps) {
       .split('\n')
       .map((line, index) => {
         // Başlıklar
+        // Sprint 14.7: H1/H2 render CSS ayarları - layout bozulmasını önle, responsive ayarlar
         if (line.startsWith('### ')) {
           return <h3 key={index} className="text-xl font-bold mt-8 mb-4 text-gray-900">{line.substring(4)}</h3>;
         }
         if (line.startsWith('## ')) {
-          return <h2 key={index} className="text-2xl font-bold mt-10 mb-6 text-gray-900">{line.substring(3)}</h2>;
+          // Sprint 14.7: H2 için tutarlı spacing ve responsive ayarlar
+          return <h2 key={index} className="text-2xl md:text-3xl font-bold mt-8 md:mt-10 mb-4 md:mb-6 text-gray-900 leading-tight">{line.substring(3)}</h2>;
         }
         if (line.startsWith('# ')) {
-          return <h1 key={index} className="text-3xl font-bold mt-12 mb-8 text-gray-900">{line.substring(2)}</h1>;
+          // Sprint 14.7: H1 için layout bozulmasını önleyen responsive ayarlar
+          return <h1 key={index} className="text-2xl md:text-3xl lg:text-4xl font-bold mt-6 md:mt-8 lg:mt-10 mb-4 md:mb-6 lg:mb-8 text-gray-900 leading-tight break-words">{line.substring(2)}</h1>;
         }
         
         // Yatay çizgi

@@ -194,8 +194,8 @@ describe("GET /api/settings", () => {
     const data = await response.json();
 
     expect(response.status).toBe(500);
-    expect(data.error).toBe("Failed to fetch settings");
-    expect(data.message).toBe("Database connection error");
+    expect(data.error).toBe("Ayarlar yüklenirken bir hata oluştu");
+    expect(data.message).toBe("Lütfen daha sonra tekrar deneyin");
   });
 });
 
@@ -279,8 +279,7 @@ describe("PUT /api/settings", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data.error).toBe("Validation error");
-    expect(data.message).toContain("key is required");
+    expect(data.error).toBe("Ayar anahtarı zorunludur");
     expect(prisma.setting.upsert).not.toHaveBeenCalled();
   });
 
@@ -308,8 +307,7 @@ describe("PUT /api/settings", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data.error).toBe("Validation error");
-    expect(data.message).toContain("value is required");
+    expect(data.error).toBe("Ayar değeri zorunludur");
     expect(prisma.setting.upsert).not.toHaveBeenCalled();
   });
 
@@ -338,8 +336,7 @@ describe("PUT /api/settings", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data.error).toBe("Validation error");
-    expect(data.message).toContain("dot notation");
+    expect(data.error).toBe("Ayar anahtarı geçersiz format");
     expect(prisma.setting.upsert).not.toHaveBeenCalled();
   });
 
@@ -555,8 +552,8 @@ describe("PUT /api/settings", () => {
     const data = await response.json();
 
     expect(response.status).toBe(500);
-    expect(data.error).toBe("Failed to upsert setting");
-    expect(data.message).toBe("Database connection error");
+    expect(data.error).toBe("Ayar kaydedilirken bir hata oluştu");
+    expect(data.message).toBe("Lütfen daha sonra tekrar deneyin");
   });
 });
 

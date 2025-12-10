@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui";
 import { CheckCircle, XCircle, Eye, User, Mail, Phone, Calendar, FileText } from "lucide-react";
 import { useMembers } from "@/contexts/MembersContext";
 import { MembershipApplication } from "@/lib/types/member";
+import { formatDateOnly } from "@/lib/utils/dateHelpers";
+import { getGenderLabel } from "@/lib/utils/genderHelpers";
 
 interface ApplicationModalProps {
   application: MembershipApplication | null;
@@ -59,11 +61,11 @@ function ApplicationModal({ application, onClose, onApprove, onReject }: Applica
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Cinsiyet</label>
-                  <p className="text-gray-900 capitalize">{application.gender}</p>
+                  <p className="text-gray-900">{getGenderLabel(application.gender)}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Doğum Tarihi</label>
-                  <p className="text-gray-900">{new Date(application.birthDate).toLocaleDateString('tr-TR')}</p>
+                  <p className="text-gray-900">{formatDateOnly(application.birthDate)}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Akademik Seviye</label>
@@ -118,7 +120,7 @@ function ApplicationModal({ application, onClose, onApprove, onReject }: Applica
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Başvuru Tarihi</label>
-                <p className="text-gray-900">{new Date(application.applicationDate).toLocaleDateString('tr-TR')}</p>
+                <p className="text-gray-900">{formatDateOnly(application.applicationDate)}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Durum</label>
@@ -129,7 +131,7 @@ function ApplicationModal({ application, onClose, onApprove, onReject }: Applica
               {application.reviewedAt && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700">İncelenme Tarihi</label>
-                  <p className="text-gray-900">{new Date(application.reviewedAt).toLocaleDateString('tr-TR')}</p>
+                  <p className="text-gray-900">{formatDateOnly(application.reviewedAt)}</p>
                 </div>
               )}
             </div>
@@ -319,11 +321,11 @@ export default function MembershipApplicationsTab() {
                   </div>
                   <div className="flex items-center">
                     <Calendar className="w-4 h-4 mr-2" />
-                    <span>{new Date(application.applicationDate).toLocaleDateString('tr-TR')}</span>
+                    <span>{formatDateOnly(application.applicationDate)}</span>
                   </div>
                   <div className="flex items-center">
                     <User className="w-4 h-4 mr-2" />
-                    <span className="capitalize">{application.gender} • {application.academicLevel}</span>
+                    <span>{getGenderLabel(application.gender)} • {application.academicLevel}</span>
                   </div>
                 </div>
                 <div className="flex justify-end space-x-2 mt-4">

@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
-import { Mail, Phone, MapPin, Instagram, Twitter, Facebook, Linkedin, Youtube, Github } from "lucide-react";
-import { SITE_CONFIG, CONTACT_INFO } from "@/lib/constants";
+import { Mail, Phone, MapPin, Instagram, Twitter, Facebook, Linkedin, Youtube } from "lucide-react";
+import { SITE_CONFIG } from "@/lib/constants";
 import { getSiteName, getSiteDescription, getSocialLinks, getContactInfo, getFooterText } from "@/lib/settings";
 
 export async function Footer() {
@@ -19,18 +19,17 @@ export async function Footer() {
   // Use settings if available, otherwise fallback to constants
   const displayName = siteName || SITE_CONFIG.shortName;
   const displayDescription = siteDescription || SITE_CONFIG.description;
-  const displayAddress = contactInfo.address || CONTACT_INFO.address;
-  const displayPhone = contactInfo.phone || CONTACT_INFO.phone;
-  const displayEmail = contactInfo.email || CONTACT_INFO.email;
+  // Use settings only (getContactInfo() already has fallback)
+  const displayAddress = contactInfo.address || "";
+  const displayPhone = contactInfo.phone || "";
+  const displayEmail = contactInfo.email || "";
 
-  // Social media icons mapping
   const socialIcons = {
     instagram: Instagram,
     twitter: Twitter,
     facebook: Facebook,
     linkedin: Linkedin,
     youtube: Youtube,
-    github: Github,
   };
 
   // Build social links array
@@ -40,7 +39,6 @@ export async function Footer() {
     { key: "facebook", url: socialLinks.facebook, name: "Facebook" },
     { key: "linkedin", url: socialLinks.linkedin, name: "LinkedIn" },
     { key: "youtube", url: socialLinks.youtube, name: "YouTube" },
-    { key: "github", url: socialLinks.github, name: "GitHub" },
   ].filter((link) => link.url); // Only include links that exist
 
   return (
@@ -144,23 +142,19 @@ export async function Footer() {
               {displayPhone && (
               <div className="flex items-center space-x-3">
                 <Phone size={16} className="text-blue-400 flex-shrink-0" />
-                <a
-                    href={`tel:${displayPhone}`}
-                  className="text-gray-300 hover:text-white transition-colors text-sm"
-                >
+                {/* Sprint 14.3: Clickable link kaldırıldı - sadece text gösteriliyor */}
+                <span className="text-gray-300 text-sm">
                     {displayPhone}
-                </a>
+                </span>
               </div>
               )}
               {displayEmail && (
               <div className="flex items-center space-x-3">
                 <Mail size={16} className="text-blue-400 flex-shrink-0" />
-                <a
-                    href={`mailto:${displayEmail}`}
-                  className="text-gray-300 hover:text-white transition-colors text-sm"
-                >
+                {/* Sprint 14.3: Clickable link kaldırıldı - sadece text gösteriliyor */}
+                <span className="text-gray-300 text-sm">
                     {displayEmail}
-                </a>
+                </span>
               </div>
               )}
             </div>

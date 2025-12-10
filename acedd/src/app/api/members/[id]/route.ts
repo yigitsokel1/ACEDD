@@ -96,6 +96,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Sprint 14.7: Members GET requires ADMIN or SUPER_ADMIN (admin sayfasında kullanılıyor)
+    requireRole(request, ["SUPER_ADMIN", "ADMIN"]);
+    
     const { id } = await params;
 
     const member = await prisma.member.findUnique({
@@ -104,7 +107,7 @@ export async function GET(
 
     if (!member) {
       return NextResponse.json(
-        { error: "Member not found" },
+        { error: "Üye bulunamadı" },
         { status: 404 }
       );
     }
@@ -112,11 +115,19 @@ export async function GET(
     const formattedMember = formatMember(member);
     return NextResponse.json(formattedMember);
   } catch (error) {
-    console.error("Error fetching member:", error);
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][MEMBERS][GET_BY_ID]", error);
+    console.error("[ERROR][API][MEMBERS][GET_BY_ID] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to fetch member",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Üye yüklenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -141,7 +152,7 @@ export async function PUT(
     if (body.firstName !== undefined) {
       if (typeof body.firstName !== "string" || body.firstName.trim().length === 0) {
         return NextResponse.json(
-          { error: "Validation error", message: "firstName must be a non-empty string" },
+          { error: "Ad alanı boş olamaz" },
           { status: 400 }
         );
       }
@@ -151,7 +162,7 @@ export async function PUT(
     if (body.lastName !== undefined) {
       if (typeof body.lastName !== "string" || body.lastName.trim().length === 0) {
         return NextResponse.json(
-          { error: "Validation error", message: "lastName must be a non-empty string" },
+          { error: "Soyad alanı boş olamaz" },
           { status: 400 }
         );
       }
@@ -161,7 +172,7 @@ export async function PUT(
     if (body.email !== undefined) {
       if (typeof body.email !== "string" || body.email.trim().length === 0) {
         return NextResponse.json(
-          { error: "Validation error", message: "email must be a non-empty string" },
+          { error: "E-posta adresi boş olamaz" },
           { status: 400 }
         );
       }
@@ -176,7 +187,7 @@ export async function PUT(
       const birthDate = new Date(body.birthDate);
       if (isNaN(birthDate.getTime())) {
         return NextResponse.json(
-          { error: "Validation error", message: "birthDate must be a valid date" },
+          { error: "Geçerli bir doğum tarihi giriniz" },
           { status: 400 }
         );
       }
@@ -187,7 +198,7 @@ export async function PUT(
       const membershipDate = new Date(body.membershipDate);
       if (isNaN(membershipDate.getTime())) {
         return NextResponse.json(
-          { error: "Validation error", message: "membershipDate must be a valid date" },
+          { error: "Geçerli bir üyelik tarihi giriniz" },
           { status: 400 }
         );
       }
@@ -215,7 +226,7 @@ export async function PUT(
     if (body.membershipKind !== undefined) {
       if (body.membershipKind !== "MEMBER" && body.membershipKind !== "VOLUNTEER") {
         return NextResponse.json(
-          { error: "Validation error", message: "membershipKind must be 'MEMBER' or 'VOLUNTEER'" },
+          { error: "Üyelik türü MEMBER veya VOLUNTEER olmalıdır" },
           { status: 400 }
         );
       }
@@ -227,14 +238,14 @@ export async function PUT(
         const validation = validateMemberTags(body.tags);
         if (!validation.valid) {
           return NextResponse.json(
-            { error: "Validation error", message: `Invalid tags: ${validation.invalidTags.join(", ")}` },
+            { error: `Geçersiz etiketler: ${validation.invalidTags.join(", ")}` },
             { status: 400 }
           );
         }
         updateData.tags = body.tags.length > 0 ? body.tags : null;
       } else {
         return NextResponse.json(
-          { error: "Validation error", message: "tags must be an array" },
+          { error: "Etiketler dizi formatında olmalıdır" },
           { status: 400 }
         );
       }
@@ -257,28 +268,36 @@ export async function PUT(
     }
     
     // Prisma error handling
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+
     if (error && typeof error === "object" && "code" in error) {
       if (error.code === "P2025") {
         // Record not found
         return NextResponse.json(
-          { error: "Member not found" },
+          { error: "Üye bulunamadı" },
           { status: 404 }
         );
       }
       if (error.code === "P2002") {
         // Unique constraint violation (email)
         return NextResponse.json(
-          { error: "Validation error", message: "Email already exists" },
+          { error: "Bu e-posta adresi zaten kullanılıyor" },
           { status: 400 }
         );
       }
     }
 
-    console.error("Error updating member:", error);
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][MEMBERS][UPDATE]", error);
+    console.error("[ERROR][API][MEMBERS][UPDATE] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to update member",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Üye güncellenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -300,7 +319,7 @@ export async function DELETE(
       where: { id },
     });
 
-    return NextResponse.json({ message: "Member deleted successfully" });
+    return NextResponse.json({ message: "Üye başarıyla silindi" });
   } catch (error) {
     // Auth error handling
     if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
@@ -311,16 +330,19 @@ export async function DELETE(
     if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
       // Record not found
       return NextResponse.json(
-        { error: "Member not found" },
+        { error: "Üye bulunamadı" },
         { status: 404 }
       );
     }
 
-    console.error("Error deleting member:", error);
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][MEMBERS][DELETE]", error);
+    console.error("[ERROR][API][MEMBERS][DELETE] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to delete member",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Üye silinirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );

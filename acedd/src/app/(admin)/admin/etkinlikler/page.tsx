@@ -96,35 +96,35 @@ export default function EventsAdminPage() {
     }
   };
 
-  // Basit markdown renderer
+  // Basit markdown renderer - Sprint 14.4: EventDetail ile tutarlı CSS class'ları
   const renderMarkdown = (text: string) => {
     return text
       .split('\n')
       .map((line, index) => {
-        // Başlıklar
+        // Başlıklar - Sprint 14.4: H1/H2/H3 EventDetail ile aynı stil
         if (line.startsWith('### ')) {
-          return <h3 key={index} className="text-lg font-semibold mt-4 mb-2">{line.substring(4)}</h3>;
+          return <h3 key={index} className="text-xl font-bold mt-8 mb-4 text-gray-900">{line.substring(4)}</h3>;
         }
         if (line.startsWith('## ')) {
-          return <h2 key={index} className="text-xl font-bold mt-6 mb-3">{line.substring(3)}</h2>;
+          return <h2 key={index} className="text-2xl font-bold mt-10 mb-6 text-gray-900">{line.substring(3)}</h2>;
         }
         if (line.startsWith('# ')) {
-          return <h1 key={index} className="text-2xl font-bold mt-8 mb-4">{line.substring(2)}</h1>;
+          return <h1 key={index} className="text-3xl font-bold mt-12 mb-8 text-gray-900">{line.substring(2)}</h1>;
         }
         
         // Yatay çizgi
         if (line.trim() === '---') {
-          return <hr key={index} className="my-4 border-gray-300" />;
+          return <hr key={index} className="my-8 border-gray-300" />;
         }
         
         // Alıntı
         if (line.startsWith('> ')) {
-          return <blockquote key={index} className="border-l-4 border-gray-300 pl-4 italic text-gray-600 my-2">{line.substring(2)}</blockquote>;
+          return <blockquote key={index} className="border-l-4 border-blue-500 pl-6 italic text-gray-700 my-6 bg-blue-50 py-4 rounded-r-lg">{line.substring(2)}</blockquote>;
         }
         
         // Liste
         if (line.startsWith('- ')) {
-          return <li key={index} className="ml-4">{line.substring(2)}</li>;
+          return <li key={index} className="ml-6 mb-2 text-gray-700">{line.substring(2)}</li>;
         }
         
         // Boş satır
@@ -134,10 +134,10 @@ export default function EventsAdminPage() {
         
         // Normal paragraf (kalın ve italik formatlaması)
         const formattedLine = line
-          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-          .replace(/\*(.*?)\*/g, '<em>$1</em>');
+          .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-gray-900">$1</strong>')
+          .replace(/\*(.*?)\*/g, '<em class="italic text-gray-600">$1</em>');
         
-        return <p key={index} className="mb-2" dangerouslySetInnerHTML={{ __html: formattedLine }} />;
+        return <p key={index} className="mb-4 text-lg text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: formattedLine }} />;
       });
   };
 
@@ -315,7 +315,7 @@ export default function EventsAdminPage() {
                 </label>
                 <div className="border border-gray-300 rounded-lg overflow-hidden">
                   {/* Toolbar */}
-                  <div className="bg-gray-50 border-b border-gray-200 p-3 flex items-center space-x-2">
+                  <div className="bg-gray-50 border-b border-gray-200 p-3 flex items-center space-x-2 flex-wrap gap-2">
                     <button
                       type="button"
                       className="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-100"
@@ -330,10 +330,28 @@ export default function EventsAdminPage() {
                     >
                       <em>I</em>
                     </button>
+                    {/* Sprint 14.4: H1/H2 heading butonları eklendi */}
                     <button
                       type="button"
                       className="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-100"
-                      onClick={() => insertText('### ', '')}
+                      onClick={() => insertText('# ', '\n')}
+                      title="H1 Başlık"
+                    >
+                      H1
+                    </button>
+                    <button
+                      type="button"
+                      className="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-100"
+                      onClick={() => insertText('## ', '\n')}
+                      title="H2 Başlık"
+                    >
+                      H2
+                    </button>
+                    <button
+                      type="button"
+                      className="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-100"
+                      onClick={() => insertText('### ', '\n')}
+                      title="H3 Başlık"
                     >
                       H3
                     </button>
@@ -375,8 +393,9 @@ export default function EventsAdminPage() {
                 {/* Preview */}
                 <div className="mt-4">
                   <h4 className="text-sm font-medium text-gray-700 mb-2">Önizleme:</h4>
-                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 max-h-64 overflow-y-auto">
-                    <div className="prose prose-sm max-w-none">
+                  <div className="border border-gray-200 rounded-lg p-4 bg-white max-h-64 overflow-y-auto">
+                    {/* Sprint 14.4: EventDetail ile aynı container styling */}
+                    <div className="prose prose-lg max-w-none">
                       {renderMarkdown(formData.description)}
                     </div>
                   </div>

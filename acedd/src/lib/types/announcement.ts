@@ -10,6 +10,25 @@ export type AnnouncementCategory =
   | string; // Allow future/custom categories
 
 /**
+ * Turkish labels for announcement categories.
+ * Sprint 14.3: Merkezi kategori label yönetimi
+ */
+export const ANNOUNCEMENT_CATEGORY_LABELS: Record<string, string> = {
+  general: "Genel",
+  scholarship: "Burs",
+  event: "Etkinlik",
+  system: "Sistem",
+} as const;
+
+/**
+ * Get Turkish label for an announcement category.
+ * Falls back to the category key if no label is found.
+ */
+export function getAnnouncementCategoryLabel(category: string): string {
+  return ANNOUNCEMENT_CATEGORY_LABELS[category.toLowerCase()] || category;
+}
+
+/**
  * Announcement interface matching Prisma model.
  * Dates are represented as ISO 8601 strings for frontend compatibility.
  */

@@ -123,7 +123,7 @@ describe("GET /api/scholarship-applications/[id]", () => {
     const data = await response.json();
 
     expect(response.status).toBe(404);
-    expect(data).toHaveProperty("error", "Application not found");
+    expect(data).toHaveProperty("error", "Başvuru bulunamadı");
   });
 
   it("should return 401 when UNAUTHORIZED", async () => {
@@ -392,8 +392,7 @@ describe("PUT /api/scholarship-applications/[id] - Status Update", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("status");
+    expect(data).toHaveProperty("error", "Geçersiz durum değeri");
     expect(prisma.scholarshipApplication.update).not.toHaveBeenCalled();
   });
 
@@ -520,7 +519,7 @@ describe("PUT /api/scholarship-applications/[id] - Status Update", () => {
     const data = await response.json();
 
     expect(response.status).toBe(404);
-    expect(data).toHaveProperty("error", "Application not found");
+    expect(data).toHaveProperty("error", "Başvuru bulunamadı");
   });
 
   it("should handle database errors gracefully", async () => {
@@ -543,8 +542,8 @@ describe("PUT /api/scholarship-applications/[id] - Status Update", () => {
     const data = await response.json();
 
     expect(response.status).toBe(500);
-    expect(data).toHaveProperty("error", "Failed to update scholarship application");
-    expect(data).toHaveProperty("message");
+    expect(data).toHaveProperty("error", "Başvuru güncellenirken bir hata oluştu");
+    expect(data).toHaveProperty("message", "Lütfen daha sonra tekrar deneyin");
   });
 });
 
@@ -572,7 +571,7 @@ describe("DELETE /api/scholarship-applications/[id]", () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data).toHaveProperty("message", "Scholarship application deleted successfully");
+    expect(data).toHaveProperty("message", "Başvuru başarıyla silindi");
     expect(prisma.scholarshipApplication.delete).toHaveBeenCalledWith({
       where: { id: "app-1" },
     });
@@ -611,7 +610,7 @@ describe("DELETE /api/scholarship-applications/[id]", () => {
     const data = await response.json();
 
     expect(response.status).toBe(404);
-    expect(data).toHaveProperty("error", "Application not found");
+    expect(data).toHaveProperty("error", "Başvuru bulunamadı");
   });
 
   it("should handle database errors gracefully", async () => {
@@ -626,7 +625,7 @@ describe("DELETE /api/scholarship-applications/[id]", () => {
     const data = await response.json();
 
     expect(response.status).toBe(500);
-    expect(data).toHaveProperty("error", "Failed to delete scholarship application");
-    expect(data).toHaveProperty("message");
+    expect(data).toHaveProperty("error", "Başvuru silinirken bir hata oluştu");
+    expect(data).toHaveProperty("message", "Lütfen daha sonra tekrar deneyin");
   });
 });

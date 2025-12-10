@@ -84,18 +84,14 @@ export async function GET(
       return createAuthErrorResponse(error.message);
     }
 
-    console.error("Error fetching contact message:", error);
-
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const errorDetails = error instanceof Error ? error.stack : String(error);
-
-    console.error("Error details:", errorDetails);
+    console.error("[ERROR][API][CONTACT][GET_BY_ID]", error);
+    console.error("[ERROR][API][CONTACT][GET_BY_ID] Details:", errorDetails);
 
     return NextResponse.json(
       {
-        error: "Failed to fetch contact message",
-        message: errorMessage,
-        ...(process.env.NODE_ENV === "development" && { details: errorDetails }),
+        error: "Mesaj yüklenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -117,7 +113,7 @@ export async function PUT(
     // Validation
     if (!body.status || !["READ", "ARCHIVED"].includes(body.status)) {
       return NextResponse.json(
-        { error: "Validation error", message: 'status must be "READ" or "ARCHIVED"' },
+        { error: "Geçersiz durum değeri" },
         { status: 400 }
       );
     }
@@ -151,23 +147,19 @@ export async function PUT(
     // Prisma not found error
     if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
       return NextResponse.json(
-        { error: "Message not found" },
+        { error: "Mesaj bulunamadı" },
         { status: 404 }
       );
     }
 
-    console.error("Error updating contact message:", error);
-
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const errorDetails = error instanceof Error ? error.stack : String(error);
-
-    console.error("Error details:", errorDetails);
+    console.error("[ERROR][API][CONTACT][UPDATE]", error);
+    console.error("[ERROR][API][CONTACT][UPDATE] Details:", errorDetails);
 
     return NextResponse.json(
       {
-        error: "Failed to update contact message",
-        message: errorMessage,
-        ...(process.env.NODE_ENV === "development" && { details: errorDetails }),
+        error: "Mesaj güncellenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -190,7 +182,7 @@ export async function DELETE(
     });
 
     return NextResponse.json(
-      { message: "Contact message deleted successfully" },
+      { message: "Mesaj başarıyla silindi" },
       { status: 200 }
     );
   } catch (error) {
@@ -202,23 +194,19 @@ export async function DELETE(
     // Prisma not found error
     if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
       return NextResponse.json(
-        { error: "Message not found" },
+        { error: "Mesaj bulunamadı" },
         { status: 404 }
       );
     }
 
-    console.error("Error deleting contact message:", error);
-
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const errorDetails = error instanceof Error ? error.stack : String(error);
-
-    console.error("Error details:", errorDetails);
+    console.error("[ERROR][API][CONTACT][DELETE]", error);
+    console.error("[ERROR][API][CONTACT][DELETE] Details:", errorDetails);
 
     return NextResponse.json(
       {
-        error: "Failed to delete contact message",
-        message: errorMessage,
-        ...(process.env.NODE_ENV === "development" && { details: errorDetails }),
+        error: "Mesaj silinirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );

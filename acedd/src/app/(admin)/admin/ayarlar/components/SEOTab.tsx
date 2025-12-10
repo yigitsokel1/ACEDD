@@ -5,6 +5,7 @@ import { Button, Input, Textarea } from "@/components/ui";
 import { Save, Loader2 } from "lucide-react";
 import type { Setting } from "@/lib/types/setting";
 import type { PageIdentifier } from "@/lib/types/setting";
+import { getSeoPrefix, getSeoKey } from "@/lib/settings/keys";
 
 const PAGES: Array<{ key: PageIdentifier; label: string }> = [
   { key: "home", label: "Ana Sayfa" },
@@ -32,7 +33,9 @@ export default function SEOTab() {
   const fetchSettings = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/settings");
+      // Use prefix parameter to fetch only relevant settings for selected page
+      const prefix = getSeoPrefix(selectedPage);
+      const response = await fetch(`/api/settings?prefix=${encodeURIComponent(prefix)}`);
       if (!response.ok) {
         throw new Error("Failed to fetch settings");
       }
@@ -48,10 +51,9 @@ export default function SEOTab() {
       });
 
       // Populate form with existing settings for selected page
-      const prefix = `seo.${selectedPage}`;
       setFormData({
-        title: settingsMap[`${prefix}.title`] || "",
-        description: settingsMap[`${prefix}.description`] || "",
+        title: settingsMap[getSeoKey(selectedPage, "title")] || "",
+        description: settingsMap[getSeoKey(selectedPage, "description")] || "",
       });
     } catch (error) {
       console.error("Error fetching settings:", error);
@@ -81,10 +83,9 @@ export default function SEOTab() {
     setErrors({});
 
     try {
-      const prefix = `seo.${selectedPage}`;
       const settingsToUpdate = [
-        { key: `${prefix}.title`, value: formData.title || null },
-        { key: `${prefix}.description`, value: formData.description || null },
+        { key: getSeoKey(selectedPage, "title"), value: formData.title || null },
+        { key: getSeoKey(selectedPage, "description"), value: formData.description || null },
       ];
 
       // Update all settings in parallel

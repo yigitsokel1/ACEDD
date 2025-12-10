@@ -207,8 +207,8 @@ describe("GET /api/scholarship-applications", () => {
     const data = await response.json();
 
     expect(response.status).toBe(500);
-    expect(data).toHaveProperty("error", "Failed to fetch scholarship applications");
-    expect(data).toHaveProperty("message");
+    expect(data).toHaveProperty("error", "Başvurular yüklenirken bir hata oluştu");
+    expect(data).toHaveProperty("message", "Lütfen daha sonra tekrar deneyin");
   });
 });
 
@@ -381,8 +381,7 @@ describe("POST /api/scholarship-applications", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("name is required");
+    expect(data).toHaveProperty("error", "Ad alanı zorunludur");
     expect(prisma.scholarshipApplication.create).not.toHaveBeenCalled();
   });
 
@@ -405,8 +404,7 @@ describe("POST /api/scholarship-applications", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("email is required");
+    expect(data).toHaveProperty("error", "E-posta adresi zorunludur");
   });
 
   it("should reject application without required fields (university)", async () => {
@@ -435,8 +433,7 @@ describe("POST /api/scholarship-applications", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("university is required");
+    expect(data).toHaveProperty("error", "Üniversite bilgisi zorunludur");
   });
 
   it("should reject application without required arrays (relatives)", async () => {
@@ -466,8 +463,7 @@ describe("POST /api/scholarship-applications", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("relatives is required");
+    expect(data).toHaveProperty("error", "Aile üyeleri bilgisi zorunludur");
   });
 
   it("should reject application with duplicate email", async () => {
@@ -503,8 +499,7 @@ describe("POST /api/scholarship-applications", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("email already exists");
+    expect(data).toHaveProperty("error", "Bu e-posta adresi ile daha önce başvuru yapılmış");
   });
 
   it("should handle database errors gracefully", async () => {
@@ -539,7 +534,7 @@ describe("POST /api/scholarship-applications", () => {
     const data = await response.json();
 
     expect(response.status).toBe(500);
-    expect(data).toHaveProperty("error", "Failed to create scholarship application");
-    expect(data).toHaveProperty("message");
+    expect(data).toHaveProperty("error", "Başvuru kaydedilirken bir hata oluştu");
+    expect(data).toHaveProperty("message", "Lütfen bilgilerinizi kontrol edip tekrar deneyin");
   });
 });

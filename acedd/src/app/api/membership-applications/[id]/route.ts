@@ -78,6 +78,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Sprint 14.7: Membership Applications GET requires ADMIN or SUPER_ADMIN (admin sayfasında kullanılıyor)
+    requireRole(request, ["SUPER_ADMIN", "ADMIN"]);
+    
     const { id } = await params;
 
     const application = await prisma.membershipApplication.findUnique({
@@ -86,7 +89,7 @@ export async function GET(
 
     if (!application) {
       return NextResponse.json(
-        { error: "Application not found" },
+        { error: "Başvuru bulunamadı" },
         { status: 404 }
       );
     }
@@ -94,11 +97,19 @@ export async function GET(
     const formattedApplication = formatApplication(application);
     return NextResponse.json(formattedApplication);
   } catch (error) {
-    console.error("Error fetching application:", error);
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][MEMBERSHIP][GET_BY_ID]", error);
+    console.error("[ERROR][API][MEMBERSHIP][GET_BY_ID] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to fetch application",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Başvuru yüklenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -120,7 +131,7 @@ export async function PUT(
     // Validation
     if (!body.status || !["approved", "rejected"].includes(body.status)) {
       return NextResponse.json(
-        { error: "Validation error", message: 'status must be "approved" or "rejected"' },
+        { error: "Geçersiz durum değeri (approved veya rejected olmalı)" },
         { status: 400 }
       );
     }
@@ -163,16 +174,19 @@ export async function PUT(
     if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
       // Record not found
       return NextResponse.json(
-        { error: "Application not found" },
+        { error: "Başvuru bulunamadı" },
         { status: 404 }
       );
     }
 
-    console.error("Error updating application:", error);
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][MEMBERSHIP][UPDATE]", error);
+    console.error("[ERROR][API][MEMBERSHIP][UPDATE] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to update application",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Başvuru güncellenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -194,7 +208,7 @@ export async function DELETE(
       where: { id },
     });
 
-    return NextResponse.json({ message: "Application deleted successfully" });
+    return NextResponse.json({ message: "Başvuru başarıyla silindi" });
   } catch (error) {
     // Auth error handling
     if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
@@ -205,16 +219,19 @@ export async function DELETE(
     if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
       // Record not found
       return NextResponse.json(
-        { error: "Application not found" },
+        { error: "Başvuru bulunamadı" },
         { status: 404 }
       );
     }
 
-    console.error("Error deleting application:", error);
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][MEMBERSHIP][DELETE]", error);
+    console.error("[ERROR][API][MEMBERSHIP][DELETE] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to delete application",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Başvuru silinirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );

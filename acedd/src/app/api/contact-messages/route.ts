@@ -64,15 +64,24 @@ export async function GET(request: NextRequest) {
     const where: any = {};
 
     if (statusParam) {
-      // Map frontend status to Prisma enum
+      // Sprint 14.6: Support comma-separated status values (e.g., "new,read")
       const statusMap: Record<string, string> = {
         new: "NEW",
         read: "READ",
         archived: "ARCHIVED",
       };
-      const prismaStatus = statusMap[statusParam.toLowerCase()];
-      if (prismaStatus) {
-        where.status = prismaStatus;
+      
+      const statusValues = statusParam.toLowerCase().split(",").map(s => s.trim());
+      const prismaStatuses = statusValues
+        .map(s => statusMap[s])
+        .filter(Boolean) as string[];
+      
+      if (prismaStatuses.length > 0) {
+        if (prismaStatuses.length === 1) {
+          where.status = prismaStatuses[0];
+        } else {
+          where.status = { in: prismaStatuses };
+        }
       }
     }
 
@@ -104,18 +113,14 @@ export async function GET(request: NextRequest) {
       return createAuthErrorResponse(error.message);
     }
 
-    console.error("Error fetching contact messages:", error);
-
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const errorDetails = error instanceof Error ? error.stack : String(error);
-
-    console.error("Error details:", errorDetails);
+    console.error("[ERROR][API][CONTACT][GET]", error);
+    console.error("[ERROR][API][CONTACT][GET] Details:", errorDetails);
 
     return NextResponse.json(
       {
-        error: "Failed to fetch contact messages",
-        message: errorMessage,
-        ...(process.env.NODE_ENV === "development" && { details: errorDetails }),
+        error: "Mesajlar yüklenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -130,28 +135,28 @@ export async function POST(request: NextRequest) {
     // Validation
     if (!body.name || typeof body.name !== "string" || body.name.trim().length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "name is required" },
+        { error: "Ad Soyad alanı zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.email || typeof body.email !== "string" || body.email.trim().length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "email is required" },
+        { error: "E-posta adresi zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.subject || typeof body.subject !== "string" || body.subject.trim().length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "subject is required" },
+        { error: "Konu alanı zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.message || typeof body.message !== "string" || body.message.trim().length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "message is required" },
+        { error: "Mesaj alanı zorunludur" },
         { status: 400 }
       );
     }
@@ -180,18 +185,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(formattedMessage, { status: 201 });
   } catch (error) {
-    console.error("Error creating contact message:", error);
-
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const errorDetails = error instanceof Error ? error.stack : String(error);
-
-    console.error("Error details:", errorDetails);
+    console.error("[ERROR][API][CONTACT][CREATE]", error);
+    console.error("[ERROR][API][CONTACT][CREATE] Details:", errorDetails);
 
     return NextResponse.json(
       {
-        error: "Failed to create contact message",
-        message: errorMessage,
-        ...(process.env.NODE_ENV === "development" && { details: errorDetails }),
+        error: "Mesajınız gönderilirken bir hata oluştu",
+        message: "Lütfen bilgilerinizi kontrol edip tekrar deneyin",
       },
       { status: 500 }
     );

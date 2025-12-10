@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useTransition } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui";
 import { Input } from "@/components/ui";
@@ -556,6 +556,10 @@ export default function MemberManagementTab() {
   // Sprint 5: Eski titleFilter yerine membershipKind ve tag filtreleri
   const [membershipKindFilter, setMembershipKindFilter] = useState<'all' | 'MEMBER' | 'VOLUNTEER'>('all');
   const [tagFilter, setTagFilter] = useState<MemberTag | 'all'>('all');
+  // Sprint 14.5: useTransition ile smooth filtre güncellemeleri
+  const [isPending, startTransition] = useTransition();
+  // Sprint 14.7: Scroll pozisyonunu korumak için ref
+  const tableContainerRef = React.useRef<HTMLDivElement>(null);
 
   // Sprint 5: MembershipKind filter options
   const membershipKindFilterOptions = [
@@ -707,23 +711,26 @@ export default function MemberManagementTab() {
     );
   };
 
-  const filteredMembers = members.filter(member => {
-    const matchesSearch = 
-      `${member.firstName} ${member.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.phone.includes(searchTerm) ||
-      member.hometown.toLowerCase().includes(searchTerm.toLowerCase());
+  // Sprint 14.7: useMemo ile filtreleme optimizasyonu - flash effect'i önlemek için
+  const filteredMembers = React.useMemo(() => {
+    return members.filter(member => {
+      const matchesSearch = 
+        `${member.firstName} ${member.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.phone.includes(searchTerm) ||
+        member.hometown.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesStatus = statusFilter === 'all' || member.status === statusFilter;
-    
-    // Sprint 5: membershipKind filtreleme
-    const matchesMembershipKind = membershipKindFilter === 'all' || member.membershipKind === membershipKindFilter;
-    
-    // Sprint 5: tag filtreleme
-    const matchesTag = tagFilter === 'all' || (member.tags && member.tags.includes(tagFilter));
+      const matchesStatus = statusFilter === 'all' || member.status === statusFilter;
+      
+      // Sprint 5: membershipKind filtreleme
+      const matchesMembershipKind = membershipKindFilter === 'all' || member.membershipKind === membershipKindFilter;
+      
+      // Sprint 5: tag filtreleme
+      const matchesTag = tagFilter === 'all' || (member.tags && member.tags.includes(tagFilter));
 
-    return matchesSearch && matchesStatus && matchesMembershipKind && matchesTag;
-  });
+      return matchesSearch && matchesStatus && matchesMembershipKind && matchesTag;
+    });
+  }, [members, searchTerm, statusFilter, membershipKindFilter, tagFilter]);
 
   if (membersLoading) {
     return (
@@ -773,7 +780,12 @@ export default function MemberManagementTab() {
                 <Input
                   placeholder="Ad, email, telefon, memleket..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    // Sprint 14.5: useTransition ile smooth update
+                    startTransition(() => {
+                      setSearchTerm(e.target.value);
+                    });
+                  }}
                   className="pl-10"
                 />
               </div>
@@ -784,8 +796,12 @@ export default function MemberManagementTab() {
               <Select
                 label="Durum"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as "active" | "inactive" | "all")}
-                placeholder="Tümü"
+                onChange={(e) => {
+                  // Sprint 14.5: useTransition ile smooth update
+                  startTransition(() => {
+                    setStatusFilter(e.target.value as "active" | "inactive" | "all");
+                  });
+                }}
                 options={[
                   { value: "all", label: "Tümü" },
                   { value: "active", label: "Aktif" },
@@ -799,8 +815,12 @@ export default function MemberManagementTab() {
               <Select
                 label="Üye Türü"
                 value={membershipKindFilter}
-                onChange={(e) => setMembershipKindFilter(e.target.value as 'all' | 'MEMBER' | 'VOLUNTEER')}
-                placeholder="Tümü"
+                onChange={(e) => {
+                  // Sprint 14.5: useTransition ile smooth update
+                  startTransition(() => {
+                    setMembershipKindFilter(e.target.value as 'all' | 'MEMBER' | 'VOLUNTEER');
+                  });
+                }}
                 options={membershipKindFilterOptions}
               />
             </div>
@@ -810,8 +830,12 @@ export default function MemberManagementTab() {
               <Select
                 label="Etiket"
                 value={tagFilter}
-                onChange={(e) => setTagFilter(e.target.value as MemberTag | 'all')}
-                placeholder="Tümü"
+                onChange={(e) => {
+                  // Sprint 14.5: useTransition ile smooth update
+                  startTransition(() => {
+                    setTagFilter(e.target.value as MemberTag | 'all');
+                  });
+                }}
                 options={tagFilterOptions}
               />
             </div>
@@ -842,7 +866,7 @@ export default function MemberManagementTab() {
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" ref={tableContainerRef}>
           {/* Table Header */}
           <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
             <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-700">

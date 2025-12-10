@@ -56,46 +56,40 @@ export function RecentApplications({ data }: RecentApplicationsProps) {
             <p className="text-sm text-gray-500">Henüz başvuru bulunmuyor</p>
           </div>
         ) : (
-          <>
-            <div className="space-y-4">
-              {applications.map((application) => (
-                <div
-                  key={application.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center space-x-4 flex-1 min-w-0">
-                    <div className="flex-shrink-0">
-                      <Clock className="h-4 w-4 text-yellow-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {application.fullName}
-                      </p>
-                      <p className="text-sm text-gray-500 truncate">
-                        {application.university}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {formatDate(application.createdAt)}
-                      </p>
-                    </div>
-                  </div>
-                  <Link href={`/admin/burs-basvurulari`}>
-                    <Button variant="outline" size="sm">
-                      <Eye className="h-4 w-4 mr-1" />
-                      Görüntüle
-                    </Button>
-                  </Link>
+          <div className="space-y-3">
+            {applications.slice(0, 3).map((application) => (
+              <Link
+                key={application.id}
+                href={`/admin/burs-basvurulari?highlight=${application.id}`}
+                className="flex items-center space-x-4 p-3 border rounded-lg hover:bg-gray-50 transition-colors group min-h-[80px]"
+              >
+                <div className="flex-shrink-0">
+                  <Clock className="h-5 w-5 text-yellow-600" />
                 </div>
-              ))}
-            </div>
-            <div className="mt-4">
-              <Link href="/admin/burs-basvurulari">
-                <Button variant="outline" className="w-full">
-                  Tüm Başvuruları Görüntüle
-                </Button>
+                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                  <p className="text-sm font-medium text-gray-900 truncate group-hover:text-blue-600">
+                    {application.fullName}
+                  </p>
+                  <p className="text-sm text-gray-500 truncate">
+                    {application.university}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {formatDate(application.createdAt)}
+                  </p>
+                </div>
+                <Eye className="h-4 w-4 text-gray-400 group-hover:text-blue-600 flex-shrink-0" />
               </Link>
-            </div>
-          </>
+            ))}
+            {applications.length > 3 && (
+              <div className="pt-2">
+                <Button variant="outline" className="w-full" asChild>
+                  <Link href="/admin/burs-basvurulari">
+                    Tüm Başvuruları Görüntüle
+                  </Link>
+                </Button>
+              </div>
+            )}
+          </div>
         )}
       </CardContent>
     </Card>

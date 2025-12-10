@@ -91,20 +91,19 @@ export async function GET() {
 
     return NextResponse.json(formattedEvents);
   } catch (error) {
-    console.error("Error fetching events:", error);
-    
-    // Provide more detailed error information
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+
     const errorDetails = error instanceof Error ? error.stack : String(error);
-    
-    console.error("Error details:", errorDetails);
-    
+    console.error("[ERROR][API][EVENTS][GET]", error);
+    console.error("[ERROR][API][EVENTS][GET] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to fetch events",
-        message: errorMessage,
-        // Only include details in development
-        ...(process.env.NODE_ENV === "development" && { details: errorDetails }),
+        error: "Etkinlikler yüklenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -117,45 +116,36 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Sprint 14.7: Events CRUD requires ADMIN or SUPER_ADMIN
+    requireRole(request, ["SUPER_ADMIN", "ADMIN"]);
+    
     const body = await request.json();
 
     // Validate required fields
     if (!body.title || typeof body.title !== "string" || body.title.trim().length === 0) {
       return NextResponse.json(
-        {
-          error: "Validation error",
-          message: "title is required and must be a non-empty string",
-        },
+        { error: "Başlık zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.description || typeof body.description !== "string" || body.description.trim().length === 0) {
       return NextResponse.json(
-        {
-          error: "Validation error",
-          message: "description is required and must be a non-empty string",
-        },
+        { error: "Açıklama zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.shortDescription || typeof body.shortDescription !== "string" || body.shortDescription.trim().length === 0) {
       return NextResponse.json(
-        {
-          error: "Validation error",
-          message: "shortDescription is required and must be a non-empty string",
-        },
+        { error: "Kısa açıklama zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.date || typeof body.date !== "string") {
       return NextResponse.json(
-        {
-          error: "Validation error",
-          message: "date is required and must be a valid ISO 8601 date string",
-        },
+        { error: "Tarih zorunludur" },
         { status: 400 }
       );
     }
@@ -164,20 +154,14 @@ export async function POST(request: NextRequest) {
     const eventDate = new Date(body.date);
     if (isNaN(eventDate.getTime())) {
       return NextResponse.json(
-        {
-          error: "Validation error",
-          message: "date must be a valid ISO 8601 date string",
-        },
+        { error: "Geçerli bir tarih giriniz" },
         { status: 400 }
       );
     }
 
     if (!body.location || typeof body.location !== "string" || body.location.trim().length === 0) {
       return NextResponse.json(
-        {
-          error: "Validation error",
-          message: "location is required and must be a non-empty string",
-        },
+        { error: "Konum zorunludur" },
         { status: 400 }
       );
     }
@@ -222,12 +206,15 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
       return createAuthErrorResponse(error.message);
     }
-    
-    console.error("Error creating event:", error);
+
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][EVENTS][CREATE]", error);
+    console.error("[ERROR][API][EVENTS][CREATE] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to create event",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Etkinlik kaydedilirken bir hata oluştu",
+        message: "Lütfen bilgilerinizi kontrol edip tekrar deneyin",
       },
       { status: 500 }
     );

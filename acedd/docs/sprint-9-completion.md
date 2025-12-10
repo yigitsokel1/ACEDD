@@ -1,6 +1,6 @@
 # Sprint 9: Admin Dashboard & Raporlama Sprint'i - Completion Report
 
-**Sprint Tarihi:** [Tamamlanma Tarihi]  
+**Sprint Tarihi:** 07.12.2025  
 **Durum:** ✅ Tamamlandı  
 **Doğrulama:** ✅ Beklenen Durum Sağlandı (bkz. `docs/sprint-9-verification.md`)
 

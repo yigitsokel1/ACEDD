@@ -79,7 +79,7 @@ export async function GET(
 
     if (!boardMember) {
       return NextResponse.json(
-        { error: "Board member not found" },
+        { error: "Yönetim kurulu üyesi bulunamadı" },
         { status: 404 }
       );
     }
@@ -87,11 +87,19 @@ export async function GET(
     const formattedBoardMember = formatBoardMember(boardMember);
     return NextResponse.json(formattedBoardMember);
   } catch (error) {
-    console.error("Error fetching board member:", error);
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][BOARD_MEMBERS][GET_BY_ID]", error);
+    console.error("[ERROR][API][BOARD_MEMBERS][GET_BY_ID] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to fetch board member",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Yönetim kurulu üyesi yüklenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -114,15 +122,23 @@ export async function PUT(
     const updateData: any = {};
 
     if (body.memberId !== undefined) {
-      // Member değiştirme - yeni Member'ın var olduğunu kontrol et
+      // Member değiştirme - yeni Member'ın var olduğunu ve aktif olduğunu kontrol et
+      // Sprint 14: Yönetim kurulunda sadece aktif üyeler olabilir
       const member = await prisma.member.findUnique({
         where: { id: body.memberId },
       });
       
       if (!member) {
         return NextResponse.json(
-          { error: "Validation error", message: "Member not found" },
+          { error: "Üye bulunamadı" },
           { status: 404 }
+        );
+      }
+
+      if (member.status !== "ACTIVE") {
+        return NextResponse.json(
+          { error: "Pasif üyeler yönetim kuruluna eklenemez" },
+          { status: 400 }
         );
       }
       
@@ -161,16 +177,19 @@ export async function PUT(
     if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
       // Record not found
       return NextResponse.json(
-        { error: "Board member not found" },
+        { error: "Yönetim kurulu üyesi bulunamadı" },
         { status: 404 }
       );
     }
 
-    console.error("Error updating board member:", error);
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][BOARD_MEMBERS][UPDATE]", error);
+    console.error("[ERROR][API][BOARD_MEMBERS][UPDATE] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to update board member",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Yönetim kurulu üyesi güncellenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -192,7 +211,7 @@ export async function DELETE(
       where: { id },
     });
 
-    return NextResponse.json({ message: "Board member deleted successfully" });
+    return NextResponse.json({ message: "Yönetim kurulu üyesi başarıyla silindi" });
   } catch (error) {
     // Auth error handling
     if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
@@ -203,16 +222,19 @@ export async function DELETE(
     if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
       // Record not found
       return NextResponse.json(
-        { error: "Board member not found" },
+        { error: "Yönetim kurulu üyesi bulunamadı" },
         { status: 404 }
       );
     }
 
-    console.error("Error deleting board member:", error);
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][BOARD_MEMBERS][DELETE]", error);
+    console.error("[ERROR][API][BOARD_MEMBERS][DELETE] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to delete board member",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Yönetim kurulu üyesi silinirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );

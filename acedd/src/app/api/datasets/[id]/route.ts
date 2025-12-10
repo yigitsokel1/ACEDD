@@ -84,7 +84,7 @@ export async function GET(
     
     if (!dataset) {
       return NextResponse.json(
-        { error: 'Dataset not found' },
+        { error: 'Veri seti bulunamadı' },
         { status: 404 }
       );
     }
@@ -92,11 +92,19 @@ export async function GET(
     const formattedDataset = formatDataset(dataset);
     return NextResponse.json(formattedDataset);
   } catch (error) {
-    console.error('Error fetching dataset:', error);
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][DATASETS][GET_BY_ID]", error);
+    console.error("[ERROR][API][DATASETS][GET_BY_ID] Details:", errorDetails);
+
     return NextResponse.json(
-      { 
-        error: 'Failed to fetch dataset',
-        message: error instanceof Error ? error.message : 'Unknown error',
+      {
+        error: "Veri seti yüklenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -142,20 +150,28 @@ export async function PUT(
     const formattedDataset = formatDataset(updatedDataset);
     return NextResponse.json(formattedDataset);
   } catch (error) {
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+
     // Prisma error handling
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
       // Record not found
       return NextResponse.json(
-        { error: 'Dataset not found' },
+        { error: 'Veri seti bulunamadı' },
         { status: 404 }
       );
     }
-    
-    console.error('Error updating dataset:', error);
+
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][DATASETS][UPDATE]", error);
+    console.error("[ERROR][API][DATASETS][UPDATE] Details:", errorDetails);
+
     return NextResponse.json(
-      { 
-        error: 'Failed to update dataset',
-        message: error instanceof Error ? error.message : 'Unknown error',
+      {
+        error: "Veri seti güncellenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -177,7 +193,7 @@ export async function DELETE(
       where: { id },
     });
     
-    return NextResponse.json({ message: 'Dataset deleted successfully' });
+    return NextResponse.json({ message: 'Veri seti başarıyla silindi' });
   } catch (error) {
     // Auth error handling
     if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
@@ -188,16 +204,19 @@ export async function DELETE(
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
       // Record not found
       return NextResponse.json(
-        { error: 'Dataset not found' },
+        { error: 'Veri seti bulunamadı' },
         { status: 404 }
       );
     }
-    
-    console.error('Error deleting dataset:', error);
+
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][DATASETS][DELETE]", error);
+    console.error("[ERROR][API][DATASETS][DELETE] Details:", errorDetails);
+
     return NextResponse.json(
-      { 
-        error: 'Failed to delete dataset',
-        message: error instanceof Error ? error.message : 'Unknown error',
+      {
+        error: "Veri seti silinirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );

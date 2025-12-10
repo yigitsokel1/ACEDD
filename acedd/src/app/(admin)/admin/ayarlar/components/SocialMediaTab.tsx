@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Button, Input } from "@/components/ui";
-import { Save, Loader2, Instagram, Twitter, Facebook, Linkedin, Youtube, Github } from "lucide-react";
+import { Save, Loader2, Instagram, Twitter, Facebook, Linkedin, Youtube } from "lucide-react";
 import type { Setting } from "@/lib/types/setting";
 
 export default function SocialMediaTab() {
@@ -17,7 +17,6 @@ export default function SocialMediaTab() {
     facebook: "",
     linkedin: "",
     youtube: "",
-    github: "",
   });
 
   // Fetch settings on mount
@@ -50,7 +49,6 @@ export default function SocialMediaTab() {
         facebook: settingsMap["social.facebook"] || "",
         linkedin: settingsMap["social.linkedin"] || "",
         youtube: settingsMap["social.youtube"] || "",
-        github: settingsMap["social.github"] || "",
       });
     } catch (error) {
       console.error("Error fetching settings:", error);
@@ -83,7 +81,6 @@ export default function SocialMediaTab() {
         { key: "social.facebook", value: formData.facebook },
         { key: "social.linkedin", value: formData.linkedin },
         { key: "social.youtube", value: formData.youtube },
-        { key: "social.github", value: formData.github },
       ];
 
       // Update all settings in parallel
@@ -167,12 +164,6 @@ export default function SocialMediaTab() {
       label: "YouTube",
       icon: Youtube,
       placeholder: "https://youtube.com/@acedd",
-    },
-    {
-      key: "github" as const,
-      label: "GitHub",
-      icon: Github,
-      placeholder: "https://github.com/acedd",
     },
   ];
 

@@ -183,8 +183,7 @@ describe("POST /api/contact-messages", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data).toHaveProperty("message", "name is required");
+    expect(data).toHaveProperty("error", "Ad Soyad alanı zorunludur");
     expect(prisma.contactMessage.create).not.toHaveBeenCalled();
   });
 
@@ -207,8 +206,7 @@ describe("POST /api/contact-messages", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data).toHaveProperty("message", "email is required");
+    expect(data).toHaveProperty("error", "E-posta adresi zorunludur");
     expect(prisma.contactMessage.create).not.toHaveBeenCalled();
   });
 
@@ -231,8 +229,7 @@ describe("POST /api/contact-messages", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data).toHaveProperty("message", "subject is required");
+    expect(data).toHaveProperty("error", "Konu alanı zorunludur");
     expect(prisma.contactMessage.create).not.toHaveBeenCalled();
   });
 
@@ -255,8 +252,7 @@ describe("POST /api/contact-messages", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data).toHaveProperty("message", "message is required");
+    expect(data).toHaveProperty("error", "Mesaj alanı zorunludur");
     expect(prisma.contactMessage.create).not.toHaveBeenCalled();
   });
 
@@ -280,8 +276,7 @@ describe("POST /api/contact-messages", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data).toHaveProperty("message", "name is required");
+    expect(data).toHaveProperty("error", "Ad Soyad alanı zorunludur");
   });
 });
 

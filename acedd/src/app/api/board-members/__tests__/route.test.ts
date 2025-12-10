@@ -38,7 +38,11 @@ describe("GET /api/board-members", () => {
     expect(response.status).toBe(200);
     expect(data).toEqual([]);
     expect(prisma.boardMember.findMany).toHaveBeenCalledWith({
-      where: {},
+      where: {
+        member: {
+          status: "ACTIVE", // Sprint 14: Sadece aktif üyeler yönetim kurulunda olabilir
+        },
+      },
       include: {
         member: true,
       },
@@ -100,6 +104,9 @@ describe("GET /api/board-members", () => {
 
     expect(prisma.boardMember.findMany).toHaveBeenCalledWith({
       where: {
+        member: {
+          status: "ACTIVE", // Sprint 14: Sadece aktif üyeler yönetim kurulunda olabilir
+        },
         role: "PRESIDENT",
       },
       include: {
@@ -152,6 +159,7 @@ describe("POST /api/board-members", () => {
       firstName: "John",
       lastName: "Doe",
       email: "john@example.com",
+      status: "ACTIVE" as const, // Sprint 14: Sadece aktif üyeler yönetim kurulunda olabilir
     };
 
     const mockBoardMember = {
@@ -220,8 +228,7 @@ describe("POST /api/board-members", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("memberId");
+    expect(data).toHaveProperty("error", "Üye ID zorunludur");
     expect(prisma.boardMember.create).not.toHaveBeenCalled();
   });
 
@@ -242,8 +249,7 @@ describe("POST /api/board-members", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("role");
+    expect(data).toHaveProperty("error", "Rol zorunludur");
     expect(prisma.boardMember.create).not.toHaveBeenCalled();
   });
 
@@ -267,8 +273,7 @@ describe("POST /api/board-members", () => {
     const data = await response.json();
 
     expect(response.status).toBe(404);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("Member not found");
+    expect(data).toHaveProperty("error", "Üye bulunamadı");
     expect(prisma.boardMember.create).not.toHaveBeenCalled();
   });
 
@@ -278,6 +283,7 @@ describe("POST /api/board-members", () => {
       firstName: "John",
       lastName: "Doe",
       email: "john@example.com",
+      status: "ACTIVE" as const, // Sprint 14: Sadece aktif üyeler yönetim kurulunda olabilir
     };
 
     const mockBoardMember = {

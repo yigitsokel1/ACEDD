@@ -71,7 +71,12 @@ export async function GET(request: NextRequest) {
     const role = searchParams.get("role"); // Sprint 5: memberType yerine role
 
     // Build where clause
-    const where: any = {};
+    // Sprint 14: Yönetim kurulunda sadece aktif üyeler olabilir
+    const where: any = {
+      member: {
+        status: "ACTIVE", // Sprint 14: Sadece aktif üyeler yönetim kurulunda olabilir
+      },
+    };
 
     if (role) {
       where.role = role;
@@ -122,27 +127,35 @@ export async function POST(request: NextRequest) {
     // Sprint 5: Validation - memberId ve role gerekli
     if (!body.memberId || typeof body.memberId !== "string") {
       return NextResponse.json(
-        { error: "Validation error", message: "memberId is required and must be a string" },
+        { error: "Üye ID zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.role || typeof body.role !== "string") {
       return NextResponse.json(
-        { error: "Validation error", message: "role is required" },
+        { error: "Rol zorunludur" },
         { status: 400 }
       );
     }
 
-    // Member'ın var olduğunu kontrol et
+    // Member'ın var olduğunu ve aktif olduğunu kontrol et
+    // Sprint 14: Yönetim kurulunda sadece aktif üyeler olabilir
     const member = await prisma.member.findUnique({
       where: { id: body.memberId },
     });
 
     if (!member) {
       return NextResponse.json(
-        { error: "Validation error", message: "Member not found" },
+        { error: "Üye bulunamadı" },
         { status: 404 }
+      );
+    }
+
+    if (member.status !== "ACTIVE") {
+      return NextResponse.json(
+        { error: "Pasif üyeler yönetim kuruluna eklenemez" },
+        { status: 400 }
       );
     }
 
@@ -167,19 +180,15 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
       return createAuthErrorResponse(error.message);
     }
-    
-    console.error("Error creating board member:", error);
 
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const errorDetails = error instanceof Error ? error.stack : String(error);
-
-    console.error("Error details:", errorDetails);
+    console.error("[ERROR][API][BOARD_MEMBERS][CREATE]", error);
+    console.error("[ERROR][API][BOARD_MEMBERS][CREATE] Details:", errorDetails);
 
     return NextResponse.json(
       {
-        error: "Failed to create board member",
-        message: errorMessage,
-        ...(process.env.NODE_ENV === "development" && { details: errorDetails }),
+        error: "Yönetim kurulu üyesi kaydedilirken bir hata oluştu",
+        message: "Lütfen bilgilerinizi kontrol edip tekrar deneyin",
       },
       { status: 500 }
     );

@@ -12,6 +12,7 @@ import type {
   CreateAnnouncementRequest,
   UpdateAnnouncementRequest,
 } from "@/lib/types/announcement";
+import { ANNOUNCEMENT_CATEGORY_LABELS } from "@/lib/types/announcement";
 
 interface AnnouncementFormDialogProps {
   isOpen: boolean;
@@ -21,11 +22,12 @@ interface AnnouncementFormDialogProps {
   isLoading?: boolean;
 }
 
+// Sprint 14.3: Merkezi kategori label map'inden kullanılıyor
 const CATEGORY_OPTIONS = [
-  { value: "general", label: "Genel" },
-  { value: "scholarship", label: "Burs" },
-  { value: "event", label: "Etkinlik" },
-  { value: "system", label: "Sistem" },
+  { value: "general", label: ANNOUNCEMENT_CATEGORY_LABELS.general },
+  { value: "scholarship", label: ANNOUNCEMENT_CATEGORY_LABELS.scholarship },
+  { value: "event", label: ANNOUNCEMENT_CATEGORY_LABELS.event },
+  { value: "system", label: ANNOUNCEMENT_CATEGORY_LABELS.system },
 ];
 
 export function AnnouncementFormDialog({

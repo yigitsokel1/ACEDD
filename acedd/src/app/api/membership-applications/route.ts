@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import type { MembershipApplication } from "@/lib/types/member";
+import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
 
 /**
  * Helper function to format Prisma MembershipApplication to frontend MembershipApplication
@@ -72,6 +73,9 @@ function formatApplication(prismaApplication: {
 // GET - Tüm başvuruları getir
 export async function GET(request: NextRequest) {
   try {
+    // Sprint 14.7: Membership Applications GET requires ADMIN or SUPER_ADMIN (admin sayfasında kullanılıyor)
+    requireRole(request, ["SUPER_ADMIN", "ADMIN"]);
+    
     const { searchParams } = new URL(request.url);
     const statusParam = searchParams.get("status");
 
@@ -102,18 +106,19 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(formattedApplications);
   } catch (error) {
-    console.error("Error fetching membership applications:", error);
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
 
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const errorDetails = error instanceof Error ? error.stack : String(error);
-
-    console.error("Error details:", errorDetails);
+    console.error("[ERROR][API][MEMBERSHIP][GET]", error);
+    console.error("[ERROR][API][MEMBERSHIP][GET] Details:", errorDetails);
 
     return NextResponse.json(
       {
-        error: "Failed to fetch membership applications",
-        message: errorMessage,
-        ...(process.env.NODE_ENV === "development" && { details: errorDetails }),
+        error: "Başvurular yüklenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -128,35 +133,35 @@ export async function POST(request: NextRequest) {
     // Validation
     if (!body.firstName || typeof body.firstName !== "string" || body.firstName.trim().length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "firstName is required and must be a non-empty string" },
+        { error: "Ad alanı zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.lastName || typeof body.lastName !== "string" || body.lastName.trim().length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "lastName is required and must be a non-empty string" },
+        { error: "Soyad alanı zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.email || typeof body.email !== "string" || body.email.trim().length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "email is required and must be a non-empty string" },
+        { error: "E-posta adresi zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.phone || typeof body.phone !== "string" || body.phone.trim().length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "phone is required and must be a non-empty string" },
+        { error: "Telefon numarası zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.birthDate) {
       return NextResponse.json(
-        { error: "Validation error", message: "birthDate is required" },
+        { error: "Doğum tarihi zorunludur" },
         { status: 400 }
       );
     }
@@ -165,7 +170,7 @@ export async function POST(request: NextRequest) {
     const birthDate = new Date(body.birthDate);
     if (isNaN(birthDate.getTime())) {
       return NextResponse.json(
-        { error: "Validation error", message: "birthDate must be a valid date" },
+        { error: "Geçerli bir doğum tarihi giriniz" },
         { status: 400 }
       );
     }
@@ -197,18 +202,22 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(formattedApplication, { status: 201 });
   } catch (error) {
-    console.error("Error creating membership application:", error);
-
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][MEMBERSHIP][CREATE]", error);
+    console.error("[ERROR][API][MEMBERSHIP][CREATE] Details:", errorDetails);
 
-    console.error("Error details:", errorDetails);
+    // Prisma unique constraint error (duplicate email)
+    if (error && typeof error === "object" && "code" in error && error.code === "P2002") {
+      return NextResponse.json(
+        { error: "Bu e-posta adresi ile daha önce başvuru yapılmış" },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json(
       {
-        error: "Failed to create membership application",
-        message: errorMessage,
-        ...(process.env.NODE_ENV === "development" && { details: errorDetails }),
+        error: "Başvuru kaydedilirken bir hata oluştu",
+        message: "Lütfen bilgilerinizi kontrol edip tekrar deneyin",
       },
       { status: 500 }
     );

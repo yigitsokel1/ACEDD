@@ -89,11 +89,14 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(formattedAnnouncements);
   } catch (error) {
-    console.error("Error fetching announcements:", error);
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][ANNOUNCEMENTS][GET]", error);
+    console.error("[ERROR][API][ANNOUNCEMENTS][GET] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to fetch announcements",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Duyurular yüklenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -114,30 +117,21 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!body.title || typeof body.title !== "string" || body.title.trim().length === 0) {
       return NextResponse.json(
-        {
-          error: "Validation error",
-          message: "title is required and must be a non-empty string",
-        },
+        { error: "Başlık zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.content || typeof body.content !== "string" || body.content.trim().length === 0) {
       return NextResponse.json(
-        {
-          error: "Validation error",
-          message: "content is required and must be a non-empty string",
-        },
+        { error: "İçerik zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.category || typeof body.category !== "string" || body.category.trim().length === 0) {
       return NextResponse.json(
-        {
-          error: "Validation error",
-          message: "category is required and must be a non-empty string",
-        },
+        { error: "Kategori zorunludur" },
         { status: 400 }
       );
     }
@@ -150,10 +144,7 @@ export async function POST(request: NextRequest) {
       startsAt = new Date(body.startsAt);
       if (isNaN(startsAt.getTime())) {
         return NextResponse.json(
-          {
-            error: "Validation error",
-            message: "startsAt must be a valid ISO 8601 date string",
-          },
+          { error: "Geçerli bir başlangıç tarihi giriniz" },
           { status: 400 }
         );
       }
@@ -163,10 +154,7 @@ export async function POST(request: NextRequest) {
       endsAt = new Date(body.endsAt);
       if (isNaN(endsAt.getTime())) {
         return NextResponse.json(
-          {
-            error: "Validation error",
-            message: "endsAt must be a valid ISO 8601 date string",
-          },
+          { error: "Geçerli bir bitiş tarihi giriniz" },
           { status: 400 }
         );
       }
@@ -176,7 +164,7 @@ export async function POST(request: NextRequest) {
     if (startsAt && endsAt && startsAt >= endsAt) {
       return NextResponse.json(
         {
-          error: "Validation error",
+          error: "Başlangıç tarihi bitiş tarihinden önce olmalıdır",
           message: "startsAt must be before endsAt",
         },
         { status: 400 }
@@ -216,12 +204,15 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
       return createAuthErrorResponse(error.message);
     }
-    
-    console.error("Error creating announcement:", error);
+
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][ANNOUNCEMENTS][CREATE]", error);
+    console.error("[ERROR][API][ANNOUNCEMENTS][CREATE] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to create announcement",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Duyuru kaydedilirken bir hata oluştu",
+        message: "Lütfen bilgilerinizi kontrol edip tekrar deneyin",
       },
       { status: 500 }
     );

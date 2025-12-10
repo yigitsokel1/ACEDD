@@ -178,7 +178,7 @@ export async function GET(
 
     if (!application) {
       return NextResponse.json(
-        { error: "Application not found" },
+        { error: "Başvuru bulunamadı" },
         { status: 404 }
       );
     }
@@ -191,11 +191,14 @@ export async function GET(
       return createAuthErrorResponse(error.message);
     }
 
-    console.error("Error fetching scholarship application:", error);
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][SCHOLARSHIP][GET_BY_ID]", error);
+    console.error("[ERROR][API][SCHOLARSHIP][GET_BY_ID] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to fetch scholarship application",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Başvuru yüklenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -217,7 +220,7 @@ export async function PUT(
     // Validation
     if (!body.status || !["APPROVED", "REJECTED", "UNDER_REVIEW"].includes(body.status)) {
       return NextResponse.json(
-        { error: "Validation error", message: 'status must be "APPROVED", "REJECTED", or "UNDER_REVIEW"' },
+        { error: "Geçersiz durum değeri" },
         { status: 400 }
       );
     }
@@ -261,16 +264,19 @@ export async function PUT(
     if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
       // Record not found
       return NextResponse.json(
-        { error: "Application not found" },
+        { error: "Başvuru bulunamadı" },
         { status: 404 }
       );
     }
 
-    console.error("Error updating scholarship application:", error);
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][SCHOLARSHIP][UPDATE]", error);
+    console.error("[ERROR][API][SCHOLARSHIP][UPDATE] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to update scholarship application",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Başvuru güncellenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -292,7 +298,7 @@ export async function DELETE(
       where: { id },
     });
 
-    return NextResponse.json({ message: "Scholarship application deleted successfully" });
+    return NextResponse.json({ message: "Başvuru başarıyla silindi" });
   } catch (error) {
     // Auth error handling
     if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
@@ -303,16 +309,19 @@ export async function DELETE(
     if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
       // Record not found
       return NextResponse.json(
-        { error: "Application not found" },
+        { error: "Başvuru bulunamadı" },
         { status: 404 }
       );
     }
 
-    console.error("Error deleting scholarship application:", error);
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][SCHOLARSHIP][DELETE]", error);
+    console.error("[ERROR][API][SCHOLARSHIP][DELETE] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to delete scholarship application",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Başvuru silinirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );

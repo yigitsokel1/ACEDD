@@ -1,7 +1,7 @@
 # Sprint 5: Üye Hiyerarşisi + Yönetim Kurulu / Etiket Sistemi - Verification Checklist
 
-**Sprint Tarihi:** [Tamamlanma Tarihi]  
-**Doğrulama Tarihi:** [Doğrulama Tarihi]  
+**Sprint Tarihi:** 03.12.2025  
+**Doğrulama Tarihi:** 03.12.2025
 **Durum:** ✅ Doğrulandı
 
 ## Genel Kontroller

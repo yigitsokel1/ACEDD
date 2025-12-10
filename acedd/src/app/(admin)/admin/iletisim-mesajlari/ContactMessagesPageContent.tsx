@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useTransition } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button, Badge, Input, Select } from "@/components/ui";
 import { 
@@ -15,6 +15,7 @@ import {
   CheckCircle
 } from "lucide-react";
 import type { ContactMessage, ContactMessageStatus } from "@/lib/types/contact";
+import { formatDateTimeShort } from "@/lib/utils/dateHelpers";
 
 interface ContactMessageModalProps {
   message: ContactMessage | null;
@@ -126,13 +127,7 @@ function ContactMessageModal({
                   <label className="block text-sm font-medium text-gray-700 mb-1">Gönderim Tarihi</label>
                   <p className="text-gray-900 flex items-center">
                     <Calendar className="w-4 h-4 mr-2 text-gray-400" />
-                    {new Date(message.createdAt).toLocaleString('tr-TR', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
+                    {formatDateTimeShort(message.createdAt)}
                   </p>
                 </div>
               </div>
@@ -164,13 +159,7 @@ function ContactMessageModal({
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Okunma Tarihi</label>
                       <p className="text-gray-900">
-                        {new Date(message.readAt).toLocaleString('tr-TR', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
+                        {formatDateTimeShort(message.readAt)}
                       </p>
                     </div>
                   )}
@@ -178,13 +167,7 @@ function ContactMessageModal({
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Arşivlenme Tarihi</label>
                       <p className="text-gray-900">
-                        {new Date(message.archivedAt).toLocaleString('tr-TR', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
+                        {formatDateTimeShort(message.archivedAt)}
                       </p>
                     </div>
                   )}
@@ -277,32 +260,74 @@ function ContactMessageModal({
 }
 
 export default function ContactMessagesPageContent() {
-  const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [allMessages, setAllMessages] = useState<ContactMessage[]>([]); // Sprint 14.6: Tüm mesajlar (client-side filtering için)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
-  const [statusFilter, setStatusFilter] = useState<ContactMessageStatus | "ALL">("ALL");
+  // Sprint 14.6: Tab-based filtering - "Gelen Kutusu" (NEW+READ) or "Arşiv" (ARCHIVED)
+  const [activeTab, setActiveTab] = useState<"inbox" | "archived">("inbox");
   const [searchQuery, setSearchQuery] = useState("");
+  // Sprint 14.6: useTransition ile smooth tab/filter geçişleri (client-side)
+  const [isPending, startTransition] = useTransition();
+  const isInitialLoadRef = React.useRef(true);
+  // Sprint 14.7: Scroll pozisyonunu korumak için ref
+  const tableContainerRef = React.useRef<HTMLDivElement>(null);
 
-  // Fetch messages
+  // Sprint 14.6: Client-side filtering (like Members page)
+  const filteredMessages = React.useMemo(() => {
+    return allMessages.filter((message) => {
+      // Tab-based filter
+      if (activeTab === "inbox") {
+        // Gelen Kutusu: NEW ve READ mesajları
+        if (message.status !== "NEW" && message.status !== "READ") {
+          return false;
+        }
+      } else {
+        // Arşiv: Sadece ARCHIVED mesajları
+        if (message.status !== "ARCHIVED") {
+          return false;
+        }
+      }
+      
+      // Search filter
+      if (searchQuery.trim()) {
+        const searchLower = searchQuery.toLowerCase();
+        return (
+          message.fullName.toLowerCase().includes(searchLower) ||
+          message.email.toLowerCase().includes(searchLower) ||
+          message.subject.toLowerCase().includes(searchLower) ||
+          message.message.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      return true;
+    });
+  }, [allMessages, activeTab, searchQuery]);
+
+  // Sprint 14.6: Sadece ilk yüklemede fetch - sonra client-side filtering
   useEffect(() => {
     fetchMessages();
-  }, [statusFilter, searchQuery]);
+  }, []); // Sadece ilk yüklemede fetch
+
+  // Sprint 14.7: Scroll pozisyonunu korumak - filtre/tab değişiminde scroll sıfırlanmasın
+  React.useLayoutEffect(() => {
+    // Tab/filtre değişiminde scroll pozisyonu korunur (doğal davranış)
+    // Sadece ilk yüklemede scroll en üste gider
+  }, [activeTab, searchQuery]);
 
   const fetchMessages = async () => {
-    setLoading(true);
+    // Sprint 14.6: Sadece ilk yüklemede fetch - sonra client-side filtering
+    const isInitialLoad = isInitialLoadRef.current;
+    
+    if (isInitialLoad) {
+      setLoading(true);
+      isInitialLoadRef.current = false; // İlk yükleme tamamlandı
+    }
     setError(null);
 
     try {
-      const params = new URLSearchParams();
-      if (statusFilter !== "ALL") {
-        params.append("status", statusFilter.toLowerCase());
-      }
-      if (searchQuery.trim()) {
-        params.append("search", searchQuery.trim());
-      }
-
-      const response = await fetch(`/api/contact-messages?${params.toString()}`);
+      // Sprint 14.6: İlk yüklemede tüm mesajları getir (filtre yok, client-side filtering kullanılacak)
+      const response = await fetch(`/api/contact-messages`);
 
       if (!response.ok) {
         // Handle auth errors first
@@ -334,12 +359,19 @@ export default function ContactMessagesPageContent() {
       }
 
       const data = await response.json();
-      setMessages(data);
+      // Sprint 14.6: Tüm mesajları kaydet (client-side filtering için)
+      startTransition(() => {
+        setAllMessages(data);
+        if (isInitialLoad) {
+          setLoading(false);
+        }
+      });
     } catch (err) {
       console.error("Error fetching contact messages:", err);
       setError(err instanceof Error ? err.message : "Bilinmeyen bir hata oluştu.");
-    } finally {
-      setLoading(false);
+      if (isInitialLoad) {
+        setLoading(false);
+      }
     }
   };
 
@@ -357,10 +389,10 @@ export default function ContactMessagesPageContent() {
         throw new Error("Mesaj okundu olarak işaretlenirken bir hata oluştu.");
       }
 
-      // Refresh messages
-      await fetchMessages();
+      // Sprint 14.6: Update message in state directly (client-side filtering)
+      const updatedMessage = await response.json();
+      setAllMessages(prev => prev.map(msg => msg.id === id ? updatedMessage : msg));
       if (selectedMessage?.id === id) {
-        const updatedMessage = await response.json();
         setSelectedMessage(updatedMessage);
       }
     } catch (err) {
@@ -383,8 +415,9 @@ export default function ContactMessagesPageContent() {
         throw new Error("Mesaj arşive taşınırken bir hata oluştu.");
       }
 
-      // Refresh messages
-      await fetchMessages();
+      // Sprint 14.6: Update message in state directly (client-side filtering)
+      const updatedMessage = await response.json();
+      setAllMessages(prev => prev.map(msg => msg.id === id ? updatedMessage : msg));
       setSelectedMessage(null);
     } catch (err) {
       console.error("Error archiving message:", err);
@@ -402,8 +435,8 @@ export default function ContactMessagesPageContent() {
         throw new Error("Mesaj silinirken bir hata oluştu.");
       }
 
-      // Refresh messages
-      await fetchMessages();
+      // Sprint 14.6: Remove message from state directly (client-side filtering)
+      setAllMessages(prev => prev.filter(msg => msg.id !== id));
       setSelectedMessage(null);
     } catch (err) {
       console.error("Error deleting message:", err);
@@ -424,68 +457,100 @@ export default function ContactMessagesPageContent() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="p-8 text-center">
-        <p className="text-gray-600">Yükleniyor...</p>
+  return (
+    <div className="p-6">
+      {/* Sprint 14.6: Tab-based navigation - Her zaman göster */}
+      <div className="mb-6 border-b border-gray-200">
+        <nav className="flex space-x-8" aria-label="Tabs">
+          <button
+            onClick={() => {
+              // Sprint 14.6: Client-side filtering - useTransition ile smooth update
+              startTransition(() => {
+                setActiveTab("inbox");
+              });
+            }}
+            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === "inbox"
+                ? "border-blue-500 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            Gelen Kutusu
+          </button>
+          <button
+            onClick={() => {
+              // Sprint 14.6: Client-side filtering - useTransition ile smooth update
+              startTransition(() => {
+                setActiveTab("archived");
+              });
+            }}
+            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === "archived"
+                ? "border-blue-500 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            Arşiv
+          </button>
+        </nav>
       </div>
-    );
-  }
 
-  if (error) {
-    return (
-      <div className="p-8">
-        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+      {/* Sprint 14.6: Search filter (works with both tabs) - Her zaman göster */}
+      <div className="mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Input
+            type="text"
+            placeholder="İsim, email veya konu ara..."
+            value={searchQuery}
+            onChange={(e) => {
+              // Sprint 14.6: Client-side filtering - useTransition ile smooth update
+              startTransition(() => {
+                setSearchQuery(e.target.value);
+              });
+            }}
+            className="pl-10"
+          />
+        </div>
+      </div>
+
+      {/* Sprint 14.6: Error mesajı (liste varsa üstte göster) */}
+      {error && allMessages.length > 0 && (
+        <div className="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
           <p className="font-medium">Hata</p>
           <p className="text-sm">{error}</p>
         </div>
-        <Button onClick={fetchMessages} className="mt-4">
-          Tekrar Dene
-        </Button>
-      </div>
-    );
-  }
+      )}
 
-  return (
-    <div className="p-6">
-      {/* Filters */}
-      <div className="mb-6 space-y-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <Input
-                type="text"
-                placeholder="İsim, email veya konu ara..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-          <div className="w-full md:w-48">
-            <Select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as ContactMessageStatus | "ALL")}
-              options={[
-                { value: "ALL", label: "Tümü" },
-                { value: "NEW", label: "Yeni" },
-                { value: "READ", label: "Okundu" },
-                { value: "ARCHIVED", label: "Arşivde" },
-              ]}
-            />
-          </div>
+      {/* Sprint 14.6: Error gösterimi (ilk yüklemede hata varsa) */}
+      {error && allMessages.length === 0 && loading && (
+        <div className="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+          <p className="font-medium">Hata</p>
+          <p className="text-sm">{error}</p>
+          <Button onClick={fetchMessages} className="mt-2" size="sm">
+            Tekrar Dene
+          </Button>
         </div>
-      </div>
+      )}
 
       {/* Messages Table */}
-      {messages.length === 0 ? (
+      {loading && allMessages.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-solid border-blue-600 border-r-transparent mb-4"></div>
+          <p className="text-gray-600">Yükleniyor...</p>
+        </div>
+      ) : filteredMessages.length === 0 ? (
         <div className="text-center py-12">
           <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">Henüz mesaj bulunmuyor.</p>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            {searchQuery.trim() ? "Arama sonucu bulunamadı" : activeTab === "inbox" ? "Gelen kutusunda mesaj yok" : "Arşivde mesaj yok"}
+          </h3>
+          <p className="text-gray-600">
+            {searchQuery.trim() ? "Farklı arama terimleri deneyin." : "Henüz mesaj bulunmuyor."}
+          </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" ref={tableContainerRef}>
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200">
@@ -498,7 +563,7 @@ export default function ContactMessagesPageContent() {
               </tr>
             </thead>
             <tbody>
-              {messages.map((message) => (
+              {filteredMessages.map((message) => (
                 <tr
                   key={message.id}
                   className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
@@ -509,13 +574,7 @@ export default function ContactMessagesPageContent() {
                   <td className="py-3 px-4 text-sm text-gray-600">{message.email}</td>
                   <td className="py-3 px-4 text-sm text-gray-900">{message.subject}</td>
                   <td className="py-3 px-4 text-sm text-gray-600">
-                    {new Date(message.createdAt).toLocaleDateString('tr-TR', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
+                    {formatDateTimeShort(message.createdAt)}
                   </td>
                   <td className="py-3 px-4">
                     {getStatusBadge(message.status)}

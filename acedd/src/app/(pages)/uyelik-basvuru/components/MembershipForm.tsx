@@ -8,7 +8,15 @@ import { Textarea } from "@/components/ui/Textarea";
 import { FileText } from "lucide-react";
 import { FormData, FORM_FIELDS } from "../constants";
 
-export function MembershipForm() {
+interface MembershipFormProps {
+  formTitle?: string;
+  formDescription?: string;
+}
+
+export function MembershipForm({ 
+  formTitle = "Üyelik Başvuru Formu",
+  formDescription = "Lütfen aşağıdaki formu doldurarak üyelik başvurunuzu yapın. Tüm alanlar zorunludur."
+}: MembershipFormProps) {
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
     lastName: "",
@@ -106,10 +114,10 @@ export function MembershipForm() {
             <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
               <CardTitle className="text-2xl font-bold text-gray-800 flex items-center">
                 <FileText className="w-8 h-8 mr-3 text-blue-600" />
-                {MEMBERSHIP_CONTENT.form.title}
+                {formTitle}
               </CardTitle>
               <CardDescription className="text-lg text-gray-600">
-                {MEMBERSHIP_CONTENT.form.description}
+                {formDescription}
               </CardDescription>
             </CardHeader>
             

@@ -91,6 +91,9 @@ function formatMember(prismaMember: {
 // GET - Tüm üyeleri getir
 export async function GET(request: NextRequest) {
   try {
+    // Sprint 14.7: Members GET requires ADMIN or SUPER_ADMIN (admin sayfasında kullanılıyor)
+    requireRole(request, ["SUPER_ADMIN", "ADMIN"]);
+    
     const { searchParams } = new URL(request.url);
     const activeOnly = searchParams.get("activeOnly") === "true";
     const department = searchParams.get("department");
@@ -126,18 +129,19 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(formattedMembers);
   } catch (error) {
-    console.error("Error fetching members:", error);
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
 
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const errorDetails = error instanceof Error ? error.stack : String(error);
-
-    console.error("Error details:", errorDetails);
+    console.error("[ERROR][API][MEMBERS][GET]", error);
+    console.error("[ERROR][API][MEMBERS][GET] Details:", errorDetails);
 
     return NextResponse.json(
       {
-        error: "Failed to fetch members",
-        message: errorMessage,
-        ...(process.env.NODE_ENV === "development" && { details: errorDetails }),
+        error: "Üyeler yüklenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -155,35 +159,35 @@ export async function POST(request: NextRequest) {
     // Validation
     if (!body.firstName || typeof body.firstName !== "string" || body.firstName.trim().length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "firstName is required and must be a non-empty string" },
+        { error: "Ad alanı zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.lastName || typeof body.lastName !== "string" || body.lastName.trim().length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "lastName is required and must be a non-empty string" },
+        { error: "Soyad alanı zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.email || typeof body.email !== "string" || body.email.trim().length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "email is required and must be a non-empty string" },
+        { error: "E-posta adresi zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.birthDate) {
       return NextResponse.json(
-        { error: "Validation error", message: "birthDate is required" },
+        { error: "Doğum tarihi zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.membershipDate) {
       return NextResponse.json(
-        { error: "Validation error", message: "membershipDate is required" },
+        { error: "Üyelik tarihi zorunludur" },
         { status: 400 }
       );
     }
@@ -191,7 +195,7 @@ export async function POST(request: NextRequest) {
     // Sprint 5: membershipKind validation
     if (!body.membershipKind || (body.membershipKind !== "MEMBER" && body.membershipKind !== "VOLUNTEER")) {
       return NextResponse.json(
-        { error: "Validation error", message: "membershipKind is required and must be 'MEMBER' or 'VOLUNTEER'" },
+        { error: "Üyelik türü zorunludur (MEMBER veya VOLUNTEER)" },
         { status: 400 }
       );
     }
@@ -202,14 +206,14 @@ export async function POST(request: NextRequest) {
 
     if (isNaN(birthDate.getTime())) {
       return NextResponse.json(
-        { error: "Validation error", message: "birthDate must be a valid date" },
+        { error: "Geçerli bir doğum tarihi giriniz" },
         { status: 400 }
       );
     }
 
     if (isNaN(membershipDate.getTime())) {
       return NextResponse.json(
-        { error: "Validation error", message: "membershipDate must be a valid date" },
+        { error: "Geçerli bir üyelik tarihi giriniz" },
         { status: 400 }
       );
     }
@@ -221,14 +225,14 @@ export async function POST(request: NextRequest) {
         const validation = validateMemberTags(body.tags);
         if (!validation.valid) {
           return NextResponse.json(
-            { error: "Validation error", message: `Invalid tags: ${validation.invalidTags.join(", ")}` },
+            { error: `Geçersiz etiketler: ${validation.invalidTags.join(", ")}` },
             { status: 400 }
           );
         }
         tags = body.tags.length > 0 ? body.tags : null;
       } else {
         return NextResponse.json(
-          { error: "Validation error", message: "tags must be an array" },
+          { error: "Etiketler dizi formatında olmalıdır" },
           { status: 400 }
         );
       }
@@ -270,27 +274,23 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
       return createAuthErrorResponse(error.message);
     }
-    
-    console.error("Error creating member:", error);
+
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][MEMBERS][CREATE]", error);
+    console.error("[ERROR][API][MEMBERS][CREATE] Details:", errorDetails);
 
     // Prisma unique constraint error (email)
     if (error && typeof error === "object" && "code" in error && error.code === "P2002") {
       return NextResponse.json(
-        { error: "Validation error", message: "Email already exists" },
+        { error: "Bu e-posta adresi zaten kullanılıyor" },
         { status: 400 }
       );
     }
 
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-
-    console.error("Error details:", errorDetails);
-
     return NextResponse.json(
       {
-        error: "Failed to create member",
-        message: errorMessage,
-        ...(process.env.NODE_ENV === "development" && { details: errorDetails }),
+        error: "Üye kaydedilirken bir hata oluştu",
+        message: "Lütfen bilgilerinizi kontrol edip tekrar deneyin",
       },
       { status: 500 }
     );

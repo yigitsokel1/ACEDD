@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useTransition } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button, Badge, Input, Select, Textarea } from "@/components/ui";
 import { 
@@ -15,6 +15,8 @@ import {
   Trash2
 } from "lucide-react";
 import type { ScholarshipApplication, ScholarshipApplicationStatus } from "@/lib/types/scholarship";
+import { formatDateOnly } from "@/lib/utils/dateHelpers";
+import { getGenderLabel } from "@/lib/utils/genderHelpers";
 
 interface ScholarshipApplicationModalProps {
   application: ScholarshipApplication | null;
@@ -131,7 +133,7 @@ function ScholarshipApplicationModal({
                 )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Doğum Tarihi</label>
-                  <p className="text-gray-900">{new Date(application.birthDate).toLocaleDateString('tr-TR')}</p>
+                  <p className="text-gray-900">{formatDateOnly(application.birthDate)}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Doğum Yeri</label>
@@ -142,8 +144,16 @@ function ScholarshipApplicationModal({
                   <p className="text-gray-900">{application.tcNumber}</p>
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-gray-700">Kimlik Verildiği Yer</label>
+                  <p className="text-gray-900">{application.idIssuePlace}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Kimlik Veriliş Tarihi</label>
+                  <p className="text-gray-900">{formatDateOnly(application.idIssueDate)}</p>
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700">Cinsiyet</label>
-                  <p className="text-gray-900">{application.gender}</p>
+                  <p className="text-gray-900">{getGenderLabel(application.gender)}</p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Medeni Hal</label>
@@ -307,10 +317,10 @@ function ScholarshipApplicationModal({
                         <span className="font-medium text-gray-700">Bölüm:</span> {edu.department}
                       </div>
                       <div>
-                        <span className="font-medium text-gray-700">Başlangıç:</span> {new Date(edu.startDate).toLocaleDateString('tr-TR')}
+                        <span className="font-medium text-gray-700">Başlangıç:</span> {formatDateOnly(edu.startDate)}
                       </div>
                       <div>
-                        <span className="font-medium text-gray-700">Bitiş:</span> {new Date(edu.endDate).toLocaleDateString('tr-TR')}
+                        <span className="font-medium text-gray-700">Bitiş:</span> {formatDateOnly(edu.endDate)}
                       </div>
                       <div>
                         <span className="font-medium text-gray-700">Başarı Yüzdesi:</span> {edu.percentage}%
@@ -361,12 +371,12 @@ function ScholarshipApplicationModal({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Başvuru Tarihi</label>
-                <p className="text-gray-900">{new Date(application.createdAt).toLocaleDateString('tr-TR')}</p>
+                <p className="text-gray-900">{formatDateOnly(application.createdAt)}</p>
               </div>
               {application.reviewedAt && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700">İncelenme Tarihi</label>
-                  <p className="text-gray-900">{new Date(application.reviewedAt).toLocaleDateString('tr-TR')}</p>
+                  <p className="text-gray-900">{formatDateOnly(application.reviewedAt)}</p>
                 </div>
               )}
             </div>
@@ -481,32 +491,61 @@ function ScholarshipApplicationModal({
 }
 
 export default function ScholarshipApplicationsPageContent() {
-  const [applications, setApplications] = useState<ScholarshipApplication[]>([]);
+  const [allApplications, setAllApplications] = useState<ScholarshipApplication[]>([]); // Sprint 14.6: Tüm başvurular (client-side filtering için)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedApplication, setSelectedApplication] = useState<ScholarshipApplication | null>(null);
   const [statusFilter, setStatusFilter] = useState<ScholarshipApplicationStatus | "ALL">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  // Sprint 14.6: useTransition ile smooth filtre güncellemeleri (client-side)
+  const [isPending, startTransition] = useTransition();
+  // Sprint 14.6: İlk yükleme kontrolü için ref
+  const isInitialLoadRef = React.useRef(true);
+  // Sprint 14.7: Scroll pozisyonunu korumak için ref
+  const tableContainerRef = React.useRef<HTMLDivElement>(null);
 
-  // Fetch applications
+  // Sprint 14.6: Client-side filtering (like Members page)
+  const filteredApplications = React.useMemo(() => {
+    return allApplications.filter((application) => {
+      // Status filter
+      const matchesStatus = statusFilter === "ALL" || application.status === statusFilter;
+      
+      // Search filter
+      const matchesSearch = searchQuery.trim() === "" || 
+        application.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        application.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        application.university?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        application.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        application.faculty?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      return matchesStatus && matchesSearch;
+    });
+  }, [allApplications, statusFilter, searchQuery]);
+
+  // Sprint 14.6: Client-side filtering (like Members page) - fetch only on initial load
   useEffect(() => {
     fetchApplications();
+  }, []); // Sadece ilk yüklemede fetch
+
+  // Sprint 14.7: Scroll pozisyonunu korumak - filtre değişiminde scroll sıfırlanmasın
+  React.useLayoutEffect(() => {
+    // Filtre değişiminde scroll pozisyonu korunur (doğal davranış)
+    // Sadece ilk yüklemede scroll en üste gider
   }, [statusFilter, searchQuery]);
 
   const fetchApplications = async () => {
-    setLoading(true);
+    // Sprint 14.6: Sadece ilk yüklemede fetch - sonra client-side filtering
+    const isInitialLoad = isInitialLoadRef.current;
+    
+    if (isInitialLoad) {
+      setLoading(true);
+      isInitialLoadRef.current = false; // İlk yükleme tamamlandı
+    }
     setError(null);
 
     try {
-      const params = new URLSearchParams();
-      if (statusFilter !== "ALL") {
-        params.append("status", statusFilter.toLowerCase());
-      }
-      if (searchQuery.trim()) {
-        params.append("search", searchQuery.trim());
-      }
-
-      const response = await fetch(`/api/scholarship-applications?${params.toString()}`);
+      // Sprint 14.6: İlk yüklemede tüm başvuruları getir (filtre yok)
+      const response = await fetch(`/api/scholarship-applications`);
 
       if (!response.ok) {
         // Handle auth errors first
@@ -543,12 +582,19 @@ export default function ScholarshipApplicationsPageContent() {
       }
 
       const data = await response.json();
-      setApplications(data);
+      // Sprint 14.6: Tüm başvuruları kaydet (client-side filtering için)
+      startTransition(() => {
+        setAllApplications(data);
+        if (isInitialLoad) {
+          setLoading(false);
+        }
+      });
     } catch (err) {
       console.error("Error fetching scholarship applications:", err);
       setError(err instanceof Error ? err.message : "Bilinmeyen bir hata oluştu.");
-    } finally {
-      setLoading(false);
+      if (isInitialLoad) {
+        setLoading(false);
+      }
     }
   };
 
@@ -572,7 +618,9 @@ export default function ScholarshipApplicationsPageContent() {
         throw new Error("Başvuru onaylanırken bir hata oluştu.");
       }
 
-      await fetchApplications();
+      // Sprint 14.6: Update application in state directly (client-side filtering)
+      const updatedApplication = await response.json();
+      setAllApplications(prev => prev.map(app => app.id === id ? updatedApplication : app));
       setSelectedApplication(null);
     } catch (err) {
       console.error("Error approving application:", err);
@@ -600,7 +648,9 @@ export default function ScholarshipApplicationsPageContent() {
         throw new Error("Başvuru reddedilirken bir hata oluştu.");
       }
 
-      await fetchApplications();
+      // Sprint 14.6: Update application in state directly (client-side filtering)
+      const updatedApplication = await response.json();
+      setAllApplications(prev => prev.map(app => app.id === id ? updatedApplication : app));
       setSelectedApplication(null);
     } catch (err) {
       console.error("Error rejecting application:", err);
@@ -628,7 +678,9 @@ export default function ScholarshipApplicationsPageContent() {
         throw new Error("Başvuru incelemeye alınırken bir hata oluştu.");
       }
 
-      await fetchApplications();
+      // Sprint 14.6: Update application in state directly (client-side filtering)
+      const updatedApplication = await response.json();
+      setAllApplications(prev => prev.map(app => app.id === id ? updatedApplication : app));
       setSelectedApplication(null);
     } catch (err) {
       console.error("Error setting under review:", err);
@@ -649,7 +701,8 @@ export default function ScholarshipApplicationsPageContent() {
         throw new Error("Başvuru silinirken bir hata oluştu.");
       }
 
-      await fetchApplications();
+      // Sprint 14.6: Remove application from state directly (client-side filtering)
+      setAllApplications(prev => prev.filter(app => app.id !== id));
       setSelectedApplication(null);
     } catch (err) {
       console.error("Error deleting application:", err);
@@ -672,37 +725,19 @@ export default function ScholarshipApplicationsPageContent() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          Hata: {error}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="p-6">
-      {/* Header */}
+      {/* Header - Her zaman göster */}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Burs Başvuruları</h2>
-          <p className="text-gray-600">Toplam {applications.length} başvuru</p>
+          <p className="text-gray-600">
+            {filteredApplications.length} başvuru gösteriliyor {statusFilter !== "ALL" || searchQuery.trim() ? `(Toplam ${allApplications.length})` : ""}
+          </p>
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Filters - Her zaman göster */}
       <div className="mb-6 flex flex-col md:flex-row gap-4">
         <div className="flex-1 relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -712,14 +747,24 @@ export default function ScholarshipApplicationsPageContent() {
             type="text"
             placeholder="İsim veya email ile ara..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              // Sprint 14.6: Client-side filtering - useTransition ile smooth update
+              startTransition(() => {
+                setSearchQuery(e.target.value);
+              });
+            }}
             className="pl-10"
           />
         </div>
         <div className="w-full md:w-64">
           <Select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as ScholarshipApplicationStatus | "ALL")}
+            onChange={(e) => {
+              // Sprint 14.6: Client-side filtering - useTransition ile smooth update
+              startTransition(() => {
+                setStatusFilter(e.target.value as ScholarshipApplicationStatus | "ALL");
+              });
+            }}
             options={[
               { value: "ALL", label: "Tümü" },
               { value: "PENDING", label: "Bekleyen" },
@@ -731,15 +776,42 @@ export default function ScholarshipApplicationsPageContent() {
         </div>
       </div>
 
+      {/* Sprint 14.6: Error mesajı (liste varsa üstte göster) */}
+      {error && allApplications.length > 0 && (
+        <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          Hata: {error}
+        </div>
+      )}
+
+      {/* Sprint 14.6: Error gösterimi (ilk yüklemede hata varsa) */}
+      {error && allApplications.length === 0 && loading && (
+        <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <p className="font-medium">Hata</p>
+          <p className="text-sm">{error}</p>
+          <Button onClick={fetchApplications} className="mt-2" size="sm">
+            Tekrar Dene
+          </Button>
+        </div>
+      )}
+
       {/* Applications Table */}
-      {applications.length === 0 ? (
+      {loading && allApplications.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-solid border-blue-600 border-r-transparent mb-4"></div>
+          <p className="text-gray-600">Yükleniyor...</p>
+        </div>
+      ) : filteredApplications.length === 0 ? (
         <div className="text-center py-12">
           <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Henüz başvuru yok</h3>
-          <p className="text-gray-600">Burs başvuruları burada görünecek.</p>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            {searchQuery.trim() || statusFilter !== "ALL" ? "Filtre sonucu bulunamadı" : "Henüz başvuru yok"}
+          </h3>
+          <p className="text-gray-600">
+            {searchQuery.trim() || statusFilter !== "ALL" ? "Farklı filtreler deneyin." : "Burs başvuruları burada görünecek."}
+          </p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-white rounded-lg shadow overflow-hidden" ref={tableContainerRef}>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -771,7 +843,7 @@ export default function ScholarshipApplicationsPageContent() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {applications.map((application) => (
+                {filteredApplications.map((application) => (
                   <tr key={application.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{application.fullName}</div>
@@ -800,7 +872,7 @@ export default function ScholarshipApplicationsPageContent() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900 flex items-center">
                         <Calendar className="w-4 h-4 mr-1 text-gray-400" />
-                        {new Date(application.createdAt).toLocaleDateString('tr-TR')}
+                        {formatDateOnly(application.createdAt)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

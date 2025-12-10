@@ -1,6 +1,6 @@
 # Sprint 8: İletişim Mesajları Modülü - Completion Report
 
-**Sprint Tarihi:** [Tamamlanma Tarihi]  
+**Sprint Tarihi:** 06.12.2025
 **Durum:** ✅ Tamamlandı  
 **Doğrulama:** ✅ Beklenen Durum Sağlandı (bkz. `docs/sprint-8-verification.md`)
 

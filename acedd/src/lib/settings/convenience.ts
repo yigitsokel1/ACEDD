@@ -3,11 +3,13 @@
  * 
  * Sprint 10: High-level convenience functions for common settings
  * Sprint 11: Content & SEO convenience functions added
+ * Sprint 12: Using centralized key management
  */
 
 import { getSetting, getSettings, getSettingValue } from "./getSetting";
 import { SITE_CONFIG, CONTACT_INFO } from "../constants";
 import type { PageIdentifier, PageContent, PageSEO } from "../types/setting";
+import { getContentPrefix, getSeoPrefix, getSeoKey } from "./keys";
 
 /**
  * Get site name from settings (with fallback)
@@ -38,7 +40,6 @@ export async function getSocialLinks(): Promise<{
   facebook?: string;
   linkedin?: string;
   youtube?: string;
-  github?: string;
 }> {
   const settings = await getSettings("social");
 
@@ -56,9 +57,6 @@ export async function getSocialLinks(): Promise<{
       | string
       | undefined,
     youtube: getSettingValue(settings, "social.youtube", undefined) as
-      | string
-      | undefined,
-    github: getSettingValue(settings, "social.github", undefined) as
       | string
       | undefined,
   };
@@ -178,8 +176,221 @@ const PAGE_DESCRIPTIONS: Record<PageIdentifier, string> = {
 };
 
 /**
+ * Normalize and validate JSON array fields
+ * Sprint 12: JSON field stabilization - ensures arrays are valid and filtered
+ */
+
+/**
+ * Normalize string array (e.g., requirements)
+ * Filters out null, undefined, and empty strings
+ */
+function normalizeStringArray(value: any): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    .map(item => item.trim());
+}
+
+/**
+ * Normalize applicationSteps array
+ * Validates: step (number), title (string), description (string)
+ */
+function normalizeApplicationSteps(value: any): Array<{ step: number; title: string; description: string }> {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is { step: number; title: string; description: string } => {
+      return (
+        typeof item === "object" &&
+        item !== null &&
+        typeof item.step === "number" &&
+        typeof item.title === "string" &&
+        item.title.trim().length > 0 &&
+        typeof item.description === "string" &&
+        item.description.trim().length > 0
+      );
+    })
+    .map(item => ({
+      step: item.step,
+      title: item.title.trim(),
+      description: item.description.trim(),
+    }));
+}
+
+/**
+ * Normalize stats array (home page)
+ * Validates: id, icon, value, label, color (all strings)
+ */
+function normalizeStatsArray(value: any): Array<{ id: string; icon: string; value: string; label: string; color: string }> {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is { id: string; icon: string; value: string; label: string; color: string } => {
+      return (
+        typeof item === "object" &&
+        item !== null &&
+        typeof item.id === "string" &&
+        typeof item.icon === "string" &&
+        typeof item.value === "string" &&
+        typeof item.label === "string" &&
+        typeof item.color === "string"
+      );
+    })
+    .map(item => ({
+      id: item.id,
+      icon: item.icon,
+      value: item.value,
+      label: item.label,
+      color: item.color,
+    }));
+}
+
+/**
+ * Normalize missions/activities array (home page)
+ * Validates: id, icon, title, description, color (all strings)
+ */
+function normalizeMissionsActivitiesArray(value: any): Array<{ id: string; icon: string; title: string; description: string; color: string }> {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is { id: string; icon: string; title: string; description: string; color: string } => {
+      return (
+        typeof item === "object" &&
+        item !== null &&
+        typeof item.id === "string" &&
+        typeof item.icon === "string" &&
+        typeof item.title === "string" &&
+        item.title.trim().length > 0 &&
+        typeof item.description === "string" &&
+        item.description.trim().length > 0 &&
+        typeof item.color === "string"
+      );
+    })
+    .map(item => ({
+      id: item.id,
+      icon: item.icon,
+      title: item.title.trim(),
+      description: item.description.trim(),
+      color: item.color,
+    }));
+}
+
+/**
+ * Normalize trustIndicators array (home page)
+ * Validates: id, icon, label (all strings)
+ */
+function normalizeTrustIndicatorsArray(value: any): Array<{ id: string; icon: string; label: string }> {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is { id: string; icon: string; label: string } => {
+      return (
+        typeof item === "object" &&
+        item !== null &&
+        typeof item.id === "string" &&
+        typeof item.icon === "string" &&
+        typeof item.label === "string" &&
+        item.label.trim().length > 0
+      );
+    })
+    .map(item => ({
+      id: item.id,
+      icon: item.icon,
+      label: item.label.trim(),
+    }));
+}
+
+/**
+ * Normalize jobDescriptions/values/goals array (about page)
+ * Validates: title (string), description (string)
+ */
+function normalizeTitleDescriptionArray(value: any): Array<{ title: string; description: string }> {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is { title: string; description: string } => {
+      return (
+        typeof item === "object" &&
+        item !== null &&
+        typeof item.title === "string" &&
+        item.title.trim().length > 0 &&
+        typeof item.description === "string" &&
+        item.description.trim().length > 0
+      );
+    })
+    .map(item => ({
+      title: item.title.trim(),
+      description: item.description.trim(),
+    }));
+}
+
+/**
+ * Normalize bankAccounts array (donation page)
+ * Validates: currency, bank, accountName, iban (all strings)
+ */
+function normalizeBankAccountsArray(value: any): Array<{ currency: string; bank: string; accountName: string; iban: string }> {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is { currency: string; bank: string; accountName: string; iban: string } => {
+      return (
+        typeof item === "object" &&
+        item !== null &&
+        typeof item.currency === "string" &&
+        item.currency.trim().length > 0 &&
+        typeof item.bank === "string" &&
+        item.bank.trim().length > 0 &&
+        typeof item.accountName === "string" &&
+        item.accountName.trim().length > 0 &&
+        typeof item.iban === "string" &&
+        item.iban.trim().length > 0
+      );
+    })
+    .map(item => ({
+      currency: item.currency.trim(),
+      bank: item.bank.trim(),
+      accountName: item.accountName.trim(),
+      iban: item.iban.trim(),
+    }));
+}
+
+/**
+ * Normalize missionVision object (about page)
+ * Validates: mission and vision objects with title and description
+ */
+function normalizeMissionVision(value: any): { mission: { title: string; description: string }; vision: { title: string; description: string } } | undefined {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return undefined;
+  
+  const mission = value.mission;
+  const vision = value.vision;
+  
+  if (
+    typeof mission === "object" &&
+    mission !== null &&
+    typeof mission.title === "string" &&
+    mission.title.trim().length > 0 &&
+    typeof mission.description === "string" &&
+    mission.description.trim().length > 0 &&
+    typeof vision === "object" &&
+    vision !== null &&
+    typeof vision.title === "string" &&
+    vision.title.trim().length > 0 &&
+    typeof vision.description === "string" &&
+    vision.description.trim().length > 0
+  ) {
+    return {
+      mission: {
+        title: mission.title.trim(),
+        description: mission.description.trim(),
+      },
+      vision: {
+        title: vision.title.trim(),
+        description: vision.description.trim(),
+      },
+    };
+  }
+  
+  return undefined;
+}
+
+/**
  * Get page content from settings
  * Sprint 11: Fetch content settings for a specific page
+ * Sprint 12: JSON field normalization and validation
  * 
  * @param pageKey - Page identifier (home, scholarship, membership, contact, about, events, donation)
  * @returns PageContent object with all available content fields for that page
@@ -189,7 +400,7 @@ const PAGE_DESCRIPTIONS: Record<PageIdentifier, string> = {
  * // Returns: { heroTitle?: string, intro?: string, stats?: Array, missions?: Array, ... }
  */
 export async function getPageContent(pageKey: PageIdentifier): Promise<PageContent> {
-  const prefix = `content.${pageKey}`;
+  const prefix = getContentPrefix(pageKey);
   const settings = await getSettings(prefix);
 
   // Build content object dynamically from all available settings
@@ -208,39 +419,125 @@ export async function getPageContent(pageKey: PageIdentifier): Promise<PageConte
 
       // Handle arrays first (Array.isArray check must come before typeof === "object" because arrays are also objects)
       if (Array.isArray(value)) {
-        // Only include non-empty arrays
-        if (value.length > 0) {
-          content[fieldKey] = value;
+        // Normalize and validate arrays based on field type
+        let normalizedValue: any = null;
+        
+        if (fieldKey === "requirements") {
+          normalizedValue = normalizeStringArray(value);
+        } else if (fieldKey === "applicationSteps") {
+          normalizedValue = normalizeApplicationSteps(value);
+        } else if (fieldKey === "stats") {
+          normalizedValue = normalizeStatsArray(value);
+        } else if (fieldKey === "missions" || fieldKey === "activities") {
+          normalizedValue = normalizeMissionsActivitiesArray(value);
+        } else if (fieldKey === "trustIndicators") {
+          normalizedValue = normalizeTrustIndicatorsArray(value);
+        } else if (fieldKey === "jobDescriptions" || fieldKey === "values" || fieldKey === "goals") {
+          normalizedValue = normalizeTitleDescriptionArray(value);
+        } else if (fieldKey === "bankAccounts") {
+          normalizedValue = normalizeBankAccountsArray(value);
+        } else {
+          // Unknown array type - use as-is but ensure it's an array
+          normalizedValue = Array.isArray(value) ? value : [];
+        }
+        
+        // Only include non-empty normalized arrays
+        if (normalizedValue !== null && Array.isArray(normalizedValue) && normalizedValue.length > 0) {
+          (content as Record<string, any>)[fieldKey] = normalizedValue;
         }
         continue;
       }
       // Handle strings (trim empty strings - empty strings are excluded so fallback can be used)
       else if (typeof value === "string") {
+        // Check if this field should be an array - if so, skip it (wrong type)
+        const arrayFields = [
+          "jobDescriptions",
+          "requirements",
+          "applicationSteps",
+          "stats",
+          "missions",
+          "activities",
+          "trustIndicators",
+          "values",
+          "goals",
+          "bankAccounts",
+        ];
+        if (arrayFields.includes(fieldKey)) {
+          // This field should be an array, but we got a string - skip it
+          continue;
+        }
+        
         if (value.trim()) {
-          content[fieldKey] = value;
+          (content as Record<string, any>)[fieldKey] = value;
         }
         continue;
       }
       // Handle objects (JSON fields)
-      else if (typeof value === "object") {
+      else if (typeof value === "object" && value !== null) {
         // Check if it's an object that should be converted to array (e.g., {"0": {...}, "1": {...}})
         // This happens when JSON is saved as object instead of array
-        if (fieldKey === "jobDescriptions" || fieldKey === "requirements" || fieldKey === "applicationSteps") {
-          const keys = Object.keys(value);
+        const arrayFields = [
+          "jobDescriptions",
+          "requirements",
+          "applicationSteps",
+          "stats",
+          "missions",
+          "activities",
+          "trustIndicators",
+          "values",
+          "goals",
+          "bankAccounts",
+        ];
+        
+        if (arrayFields.includes(fieldKey)) {
+          const objValue = value as Record<string, any>;
+          const keys = Object.keys(objValue);
           // If all keys are numeric strings, convert to array
           if (keys.length > 0 && keys.every(key => /^\d+$/.test(key))) {
             const arrayValue = keys
               .map(key => parseInt(key, 10))
               .sort((a, b) => a - b)
-              .map(key => value[String(key)]);
-            if (arrayValue.length > 0) {
-              content[fieldKey] = arrayValue;
-              continue;
+              .map(key => objValue[String(key)]);
+            
+            // Normalize the converted array
+            let normalizedValue: any = null;
+            if (fieldKey === "requirements") {
+              normalizedValue = normalizeStringArray(arrayValue);
+            } else if (fieldKey === "applicationSteps") {
+              normalizedValue = normalizeApplicationSteps(arrayValue);
+            } else if (fieldKey === "stats") {
+              normalizedValue = normalizeStatsArray(arrayValue);
+            } else if (fieldKey === "missions" || fieldKey === "activities") {
+              normalizedValue = normalizeMissionsActivitiesArray(arrayValue);
+            } else if (fieldKey === "trustIndicators") {
+              normalizedValue = normalizeTrustIndicatorsArray(arrayValue);
+            } else if (fieldKey === "jobDescriptions" || fieldKey === "values" || fieldKey === "goals") {
+              normalizedValue = normalizeTitleDescriptionArray(arrayValue);
+            } else if (fieldKey === "bankAccounts") {
+              normalizedValue = normalizeBankAccountsArray(arrayValue);
             }
+            
+            if (normalizedValue !== null && Array.isArray(normalizedValue) && normalizedValue.length > 0) {
+              (content as Record<string, any>)[fieldKey] = normalizedValue;
+            }
+            continue;
+          } else {
+            // This field should be an array, but we got an object that's not array-like - skip it
+            continue;
           }
         }
-        // Regular object (not array-like)
-        content[fieldKey] = value;
+        
+        // Handle missionVision object (special case)
+        if (fieldKey === "missionVision") {
+          const normalized = normalizeMissionVision(value);
+          if (normalized !== undefined) {
+            (content as Record<string, any>)[fieldKey] = normalized;
+          }
+          continue;
+        }
+        
+        // Regular object (not array-like, not missionVision) - use as-is
+        (content as Record<string, any>)[fieldKey] = value;
       }
     }
   }
@@ -264,7 +561,7 @@ export async function getPageContent(pageKey: PageIdentifier): Promise<PageConte
  * // Returns: { title: "ACEDD | Ana Sayfa", description: "..." }
  */
 export async function getPageSeo(pageKey: PageIdentifier): Promise<PageSEO> {
-  const prefix = `seo.${pageKey}`;
+  const prefix = getSeoPrefix(pageKey);
   const settings = await getSettings(prefix);
 
   // Get site name for title fallback
@@ -277,8 +574,8 @@ export async function getPageSeo(pageKey: PageIdentifier): Promise<PageSEO> {
   const fallbackDescription = PAGE_DESCRIPTIONS[pageKey];
 
   return {
-    title: getSettingValue(settings, `${prefix}.title`, fallbackTitle) as string,
-    description: getSettingValue(settings, `${prefix}.description`, fallbackDescription) as string,
+    title: getSettingValue(settings, getSeoKey(pageKey, "title"), fallbackTitle) as string,
+    description: getSettingValue(settings, getSeoKey(pageKey, "description"), fallbackDescription) as string,
   };
 }
 

@@ -45,10 +45,31 @@ npm install
 cp env.example .env
 ```
 
-Edit `.env` and configure your local database connection:
+Edit `.env` and configure required variables:
 ```env
+# REQUIRED - Database connection (MariaDB)
 DATABASE_URL="mysql://user:password@localhost:3306/acedd_dev"
+
+# REQUIRED - Session secret (generate with: npm run generate-session-secret)
+SESSION_SECRET="<generated-secret-here>"
+
+# OPTIONAL - Base URL (development: leave empty or use http://localhost:3000)
+# Production: MUST be set to your production domain (e.g., https://acedd.org)
+NEXT_PUBLIC_BASE_URL="http://localhost:3000"
 ```
+
+**Required Environment Variables:**
+- `DATABASE_URL`: MariaDB connection string (format: `mysql://user:password@host:port/database`)
+- `SESSION_SECRET`: Long random string for session security (generate with `npm run generate-session-secret`)
+
+**Optional Environment Variables:**
+- `NEXT_PUBLIC_BASE_URL`: Base URL for internal API calls
+  - Development: Leave empty or use `http://localhost:3000` (fallback)
+  - Production: **MUST be set** to production domain (e.g., `https://acedd.org`)
+- `NODE_ENV`: Automatically set by Next.js (usually not needed)
+- `SHADOW_DATABASE_URL`: Only if CREATE DATABASE permission not available (see `env.example`)
+
+See `env.example` for complete documentation of all environment variables.
 
 4. Set up the database:
 ```bash
@@ -94,12 +115,32 @@ npm run generate-session-secret
 - Never commit the secret to git (it should be in `.env`, which is in `.gitignore`)
 - If you change the secret, all existing admin sessions will be invalidated
 
+7. (Optional) Configure base URL for internal API calls:
+```env
+# Development: Leave empty or use http://localhost:3000 (fallback)
+# Production: MUST be set to production domain
+NEXT_PUBLIC_BASE_URL="http://localhost:3000"
+```
+
+**Note:** This is used for Server Component API calls (e.g., admin dashboard). In production, this **must** be set to your production domain.
+
 7. Start the development server:
 ```bash
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Deployment & Operations
+
+For complete deployment and operations guide, see [docs/runbook.md](./docs/runbook.md).
+
+The runbook includes:
+- Local development setup
+- Production deployment (Plesk)
+- Database schema updates
+- Backup & recovery procedures
+- Troubleshooting guide
 
 ## Database Setup
 

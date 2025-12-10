@@ -214,6 +214,449 @@ describe("getPageContent", () => {
     expect(homeResult.heroTitle).toBe("Ana Sayfa");
     expect(aboutResult.heroTitle).toBe("Hakkımızda");
   });
+
+  // Sprint 12.3: JSON normalization tests
+  describe("JSON Normalization - Wrong Format → Fallback Array", () => {
+    it("should return empty array when stats is not an array (string)", async () => {
+      const mockSettings = {
+        "content.home.stats": "not an array",
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("home");
+
+      expect(result.stats).toBeUndefined();
+    });
+
+    it("should return empty array when stats is not an array (number)", async () => {
+      const mockSettings = {
+        "content.home.stats": 123,
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("home");
+
+      expect(result.stats).toBeUndefined();
+    });
+
+    it("should return empty array when stats is not an array (object)", async () => {
+      const mockSettings = {
+        "content.home.stats": { not: "an array" },
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("home");
+
+      expect(result.stats).toBeUndefined();
+    });
+
+    it("should return empty array when requirements is not an array (object)", async () => {
+      const mockSettings = {
+        "content.scholarship.requirements": { not: "an array" },
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("scholarship");
+
+      expect(result.requirements).toBeUndefined();
+    });
+
+    it("should return empty array when applicationSteps is not an array (string)", async () => {
+      const mockSettings = {
+        "content.scholarship.applicationSteps": "not an array",
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("scholarship");
+
+      expect(result.applicationSteps).toBeUndefined();
+    });
+
+    it("should return empty array when missions is not an array (null)", async () => {
+      const mockSettings = {
+        "content.home.missions": null,
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("home");
+
+      expect(result.missions).toBeUndefined();
+    });
+  });
+
+  describe("JSON Normalization - Object-Array Shape Validation", () => {
+    it("should filter out applicationSteps with missing step field", async () => {
+      const mockSettings = {
+        "content.scholarship.applicationSteps": [
+          { step: 1, title: "Step 1", description: "Desc 1" },
+          { title: "Step 2", description: "Desc 2" }, // Missing step
+          { step: 3, title: "Step 3", description: "Desc 3" },
+        ],
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("scholarship");
+
+      expect(result.applicationSteps).toEqual([
+        { step: 1, title: "Step 1", description: "Desc 1" },
+        { step: 3, title: "Step 3", description: "Desc 3" },
+      ]);
+      expect(result.applicationSteps).toHaveLength(2);
+    });
+
+    it("should filter out applicationSteps with missing title field", async () => {
+      const mockSettings = {
+        "content.scholarship.applicationSteps": [
+          { step: 1, title: "Step 1", description: "Desc 1" },
+          { step: 2, description: "Desc 2" }, // Missing title
+          { step: 3, title: "Step 3", description: "Desc 3" },
+        ],
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("scholarship");
+
+      expect(result.applicationSteps).toEqual([
+        { step: 1, title: "Step 1", description: "Desc 1" },
+        { step: 3, title: "Step 3", description: "Desc 3" },
+      ]);
+    });
+
+    it("should filter out applicationSteps with missing description field", async () => {
+      const mockSettings = {
+        "content.scholarship.applicationSteps": [
+          { step: 1, title: "Step 1", description: "Desc 1" },
+          { step: 2, title: "Step 2" }, // Missing description
+          { step: 3, title: "Step 3", description: "Desc 3" },
+        ],
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("scholarship");
+
+      expect(result.applicationSteps).toEqual([
+        { step: 1, title: "Step 1", description: "Desc 1" },
+        { step: 3, title: "Step 3", description: "Desc 3" },
+      ]);
+    });
+
+    it("should filter out stats with missing value field", async () => {
+      const mockSettings = {
+        "content.home.stats": [
+          { id: "1", icon: "Users", value: "500+", label: "Aktif Üye", color: "blue" },
+          { id: "2", icon: "Heart", label: "Bursiyer", color: "green" }, // Missing value
+          { id: "3", icon: "Award", value: "50K+", label: "Bağışçı", color: "red" },
+        ],
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("home");
+
+      expect(result.stats).toHaveLength(2);
+      expect(result.stats?.[0].value).toBe("500+");
+      expect(result.stats?.[1].value).toBe("50K+");
+    });
+
+    it("should filter out stats with missing label field", async () => {
+      const mockSettings = {
+        "content.home.stats": [
+          { id: "1", icon: "Users", value: "500+", label: "Aktif Üye", color: "blue" },
+          { id: "2", icon: "Heart", value: "150", color: "green" }, // Missing label
+          { id: "3", icon: "Award", value: "50K+", label: "Bağışçı", color: "red" },
+        ],
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("home");
+
+      expect(result.stats).toHaveLength(2);
+      expect(result.stats?.[0].label).toBe("Aktif Üye");
+      expect(result.stats?.[1].label).toBe("Bağışçı");
+    });
+
+    it("should filter out missions with missing title field", async () => {
+      const mockSettings = {
+        "content.home.missions": [
+          { id: "1", icon: "Target", title: "Mission 1", description: "Desc 1", color: "blue" },
+          { id: "2", icon: "Heart", description: "Desc 2", color: "green" }, // Missing title
+          { id: "3", icon: "Users", title: "Mission 3", description: "Desc 3", color: "purple" },
+        ],
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("home");
+
+      expect(result.missions).toHaveLength(2);
+      expect(result.missions?.[0].title).toBe("Mission 1");
+      expect(result.missions?.[1].title).toBe("Mission 3");
+    });
+
+    it("should filter out missions with missing description field", async () => {
+      const mockSettings = {
+        "content.home.missions": [
+          { id: "1", icon: "Target", title: "Mission 1", description: "Desc 1", color: "blue" },
+          { id: "2", icon: "Heart", title: "Mission 2", color: "green" }, // Missing description
+          { id: "3", icon: "Users", title: "Mission 3", description: "Desc 3", color: "purple" },
+        ],
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("home");
+
+      expect(result.missions).toHaveLength(2);
+      expect(result.missions?.[0].description).toBe("Desc 1");
+      expect(result.missions?.[1].description).toBe("Desc 3");
+    });
+
+    it("should filter out jobDescriptions with missing title field", async () => {
+      const mockSettings = {
+        "content.about.jobDescriptions": [
+          { title: "Genel Kurul", description: "Desc 1" },
+          { description: "Desc 2" }, // Missing title
+          { title: "Yönetim Kurulu", description: "Desc 3" },
+        ],
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("about");
+
+      expect(result.jobDescriptions).toHaveLength(2);
+      expect(result.jobDescriptions?.[0].title).toBe("Genel Kurul");
+      expect(result.jobDescriptions?.[1].title).toBe("Yönetim Kurulu");
+    });
+
+    it("should filter out jobDescriptions with missing description field", async () => {
+      const mockSettings = {
+        "content.about.jobDescriptions": [
+          { title: "Genel Kurul", description: "Desc 1" },
+          { title: "Yönetim Kurulu" }, // Missing description
+          { title: "Denetim Kurulu", description: "Desc 3" },
+        ],
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("about");
+
+      expect(result.jobDescriptions).toHaveLength(2);
+      expect(result.jobDescriptions?.[0].description).toBe("Desc 1");
+      expect(result.jobDescriptions?.[1].description).toBe("Desc 3");
+    });
+  });
+
+  describe("JSON Normalization - Empty String Filtering", () => {
+    it("should filter out empty strings from requirements array", async () => {
+      const mockSettings = {
+        "content.scholarship.requirements": [
+          "Acıpayam ve çevresinde ikamet etmek",
+          "", // Empty string
+          "   ", // Whitespace only
+          "Lise veya üniversite öğrencisi olmak",
+          null, // Null value
+          "Not ortalaması 2.5 ve üzeri olmak",
+        ],
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("scholarship");
+
+      expect(result.requirements).toEqual([
+        "Acıpayam ve çevresinde ikamet etmek",
+        "Lise veya üniversite öğrencisi olmak",
+        "Not ortalaması 2.5 ve üzeri olmak",
+      ]);
+      expect(result.requirements).toHaveLength(3);
+    });
+
+    it("should filter out applicationSteps with empty title", async () => {
+      const mockSettings = {
+        "content.scholarship.applicationSteps": [
+          { step: 1, title: "Step 1", description: "Desc 1" },
+          { step: 2, title: "", description: "Desc 2" }, // Empty title
+          { step: 3, title: "   ", description: "Desc 3" }, // Whitespace only title
+          { step: 4, title: "Step 4", description: "Desc 4" },
+        ],
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("scholarship");
+
+      expect(result.applicationSteps).toEqual([
+        { step: 1, title: "Step 1", description: "Desc 1" },
+        { step: 4, title: "Step 4", description: "Desc 4" },
+      ]);
+    });
+
+    it("should filter out applicationSteps with empty description", async () => {
+      const mockSettings = {
+        "content.scholarship.applicationSteps": [
+          { step: 1, title: "Step 1", description: "Desc 1" },
+          { step: 2, title: "Step 2", description: "" }, // Empty description
+          { step: 3, title: "Step 3", description: "   " }, // Whitespace only description
+          { step: 4, title: "Step 4", description: "Desc 4" },
+        ],
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("scholarship");
+
+      expect(result.applicationSteps).toEqual([
+        { step: 1, title: "Step 1", description: "Desc 1" },
+        { step: 4, title: "Step 4", description: "Desc 4" },
+      ]);
+    });
+
+    it("should filter out missions with empty title", async () => {
+      const mockSettings = {
+        "content.home.missions": [
+          { id: "1", icon: "Target", title: "Mission 1", description: "Desc 1", color: "blue" },
+          { id: "2", icon: "Heart", title: "", description: "Desc 2", color: "green" }, // Empty title
+          { id: "3", icon: "Users", title: "Mission 3", description: "Desc 3", color: "purple" },
+        ],
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("home");
+
+      expect(result.missions).toHaveLength(2);
+      expect(result.missions?.[0].title).toBe("Mission 1");
+      expect(result.missions?.[1].title).toBe("Mission 3");
+    });
+
+    it("should filter out missions with empty description", async () => {
+      const mockSettings = {
+        "content.home.missions": [
+          { id: "1", icon: "Target", title: "Mission 1", description: "Desc 1", color: "blue" },
+          { id: "2", icon: "Heart", title: "Mission 2", description: "", color: "green" }, // Empty description
+          { id: "3", icon: "Users", title: "Mission 3", description: "Desc 3", color: "purple" },
+        ],
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("home");
+
+      expect(result.missions).toHaveLength(2);
+      expect(result.missions?.[0].description).toBe("Desc 1");
+      expect(result.missions?.[1].description).toBe("Desc 3");
+    });
+
+    it("should filter out jobDescriptions with empty title", async () => {
+      const mockSettings = {
+        "content.about.jobDescriptions": [
+          { title: "Genel Kurul", description: "Desc 1" },
+          { title: "", description: "Desc 2" }, // Empty title
+          { title: "Yönetim Kurulu", description: "Desc 3" },
+        ],
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("about");
+
+      expect(result.jobDescriptions).toHaveLength(2);
+      expect(result.jobDescriptions?.[0].title).toBe("Genel Kurul");
+      expect(result.jobDescriptions?.[1].title).toBe("Yönetim Kurulu");
+    });
+
+    it("should filter out jobDescriptions with empty description", async () => {
+      const mockSettings = {
+        "content.about.jobDescriptions": [
+          { title: "Genel Kurul", description: "Desc 1" },
+          { title: "Yönetim Kurulu", description: "" }, // Empty description
+          { title: "Denetim Kurulu", description: "Desc 3" },
+        ],
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("about");
+
+      expect(result.jobDescriptions).toHaveLength(2);
+      expect(result.jobDescriptions?.[0].description).toBe("Desc 1");
+      expect(result.jobDescriptions?.[1].description).toBe("Desc 3");
+    });
+
+    it("should trim whitespace from requirements and filter empty results", async () => {
+      const mockSettings = {
+        "content.scholarship.requirements": [
+          "  Acıpayam ve çevresinde ikamet etmek  ", // Has whitespace
+          "Lise veya üniversite öğrencisi olmak",
+        ],
+      };
+
+      vi.mocked(getSettings).mockResolvedValue(mockSettings);
+
+      const result = await getPageContent("scholarship");
+
+      expect(result.requirements).toEqual([
+        "Acıpayam ve çevresinde ikamet etmek", // Trimmed
+        "Lise veya üniversite öğrencisi olmak",
+      ]);
+    });
+  });
+
+  describe("Settings API Prefix Usage", () => {
+    it("should call getSettings with correct prefix for home page", async () => {
+      vi.mocked(getSettings).mockResolvedValue({});
+
+      await getPageContent("home");
+
+      expect(getSettings).toHaveBeenCalledWith("content.home");
+    });
+
+    it("should call getSettings with correct prefix for scholarship page", async () => {
+      vi.mocked(getSettings).mockResolvedValue({});
+
+      await getPageContent("scholarship");
+
+      expect(getSettings).toHaveBeenCalledWith("content.scholarship");
+    });
+
+    it("should call getSettings with correct prefix for about page", async () => {
+      vi.mocked(getSettings).mockResolvedValue({});
+
+      await getPageContent("about");
+
+      expect(getSettings).toHaveBeenCalledWith("content.about");
+    });
+
+    it("should call getSettings with correct prefix for all page identifiers", async () => {
+      const pageKeys: PageIdentifier[] = [
+        "home",
+        "scholarship",
+        "membership",
+        "contact",
+        "about",
+        "events",
+        "donation",
+      ];
+
+      for (const pageKey of pageKeys) {
+        vi.mocked(getSettings).mockResolvedValue({});
+        await getPageContent(pageKey);
+        expect(getSettings).toHaveBeenCalledWith(`content.${pageKey}`);
+      }
+    });
+  });
 });
 
 describe("getPageSeo", () => {

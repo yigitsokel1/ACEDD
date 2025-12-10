@@ -2,7 +2,6 @@
 
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import { CONTACT_INFO as FALLBACK_CONTACT_INFO } from "@/lib/constants";
 import { Phone, Mail, MapPin } from "lucide-react";
 
 interface ContactInfoSectionProps {
@@ -18,18 +17,11 @@ interface ContactInfoSectionProps {
 }
 
 export function ContactInfoSection({ contactInfo, content }: ContactInfoSectionProps) {
-  const handleContactClick = (type: string, value: string) => {
-    if (type === "Telefon") {
-      window.open(`tel:${value}`, '_self');
-    } else if (type === "E-posta") {
-      window.open(`mailto:${value}`, '_self');
-    }
-  };
-
-  // Use settings if available, otherwise fallback to constants
-  const displayAddress = contactInfo?.address || FALLBACK_CONTACT_INFO.address;
-  const displayPhone = contactInfo?.phone || FALLBACK_CONTACT_INFO.phone;
-  const displayEmail = contactInfo?.email || FALLBACK_CONTACT_INFO.email;
+  // Sprint 14.3: Clickable linkler kaldırıldı - sadece text gösteriliyor
+  // Use settings only (no constants fallback - getContactInfo() already has fallback)
+  const displayAddress = contactInfo?.address || "";
+  const displayPhone = contactInfo?.phone || "";
+  const displayEmail = contactInfo?.email || "";
   
   // Get section title and description from settings
   const sectionTitle = content?.infoSectionTitle || "İletişim Bilgileri";
@@ -73,19 +65,14 @@ export function ContactInfoSection({ contactInfo, content }: ContactInfoSectionP
           {contactInfoArray.map((info, index) => (
             <Card 
               key={index} 
-              className={`text-center hover:shadow-lg transition-all duration-300 ${
-                info.title === "Telefon" || info.title === "E-posta"
-                  ? "cursor-pointer hover:scale-105 hover:shadow-xl" 
-                  : ""
-              }`}
-              onClick={() => handleContactClick(info.title, info.value)}
+              className="text-center hover:shadow-lg transition-all duration-300"
             >
               <CardHeader>
                 <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 mx-auto ${
                   info.title === "Telefon" 
-                    ? "bg-green-100 group-hover:bg-green-200" 
+                    ? "bg-green-100" 
                     : info.title === "E-posta"
-                    ? "bg-blue-100 group-hover:bg-blue-200"
+                    ? "bg-blue-100"
                     : "bg-gray-100"
                 }`}>
                   <info.icon className={`h-8 w-8 ${
@@ -99,24 +86,12 @@ export function ContactInfoSection({ contactInfo, content }: ContactInfoSectionP
                 <CardTitle className="text-lg">{info.title}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className={`font-medium mb-2 ${
-                  info.title === "Telefon" || info.title === "E-posta"
-                    ? "text-blue-600 hover:text-blue-800 transition-colors duration-200"
-                    : "text-gray-900"
-                }`}>
+                <p className="font-medium mb-2 text-gray-900">
                   {info.value}
                 </p>
                 <CardDescription className="text-sm">
                   {info.description}
                 </CardDescription>
-                {(info.title === "Telefon" || info.title === "E-posta") && (
-                  <p className="text-xs text-gray-500 mt-2">
-                    {info.title === "Telefon" 
-                      ? "Tıklayarak ara" 
-                      : "Tıklayarak mail at"
-                    }
-                  </p>
-                )}
               </CardContent>
             </Card>
           ))}

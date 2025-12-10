@@ -18,13 +18,11 @@ export async function AdditionalInfoSection() {
                 </h3>
                 <p className="text-gray-600">
                   {content.additionalInfoDescription || "Üyelik başvurunuz değerlendirildikten sonra size e-posta veya telefon ile geri dönüş yapılacaktır. Sorularınız için bizimle iletişime geçebilirsiniz."}{" "}
+                  {/* Sprint 14.3: Clickable link kaldırıldı - sadece text gösteriliyor */}
                   {contactInfo.email && (
-                    <a 
-                      href={`mailto:${contactInfo.email}`} 
-                      className="text-blue-600 hover:text-blue-700 font-medium"
-                    >
+                    <span className="text-blue-600 font-medium">
                       {contactInfo.email}
-                    </a>
+                    </span>
                   )}
                 </p>
               </div>

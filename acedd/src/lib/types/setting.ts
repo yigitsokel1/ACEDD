@@ -59,7 +59,6 @@ export type SettingKey =
   | "social.facebook"
   | "social.linkedin"
   | "social.youtube"
-  | "social.github"
   // Footer
   | "footer.text"
   | "footer.copyright"
@@ -135,7 +134,6 @@ export interface SettingsByCategory {
     facebook?: string;
     linkedin?: string;
     youtube?: string;
-    github?: string;
   };
   footer: {
     text?: string;
@@ -200,6 +198,8 @@ export interface PageContent {
   missionVision?: { mission: { title: string; description: string }; vision: { title: string; description: string } };
   
   // Membership page specific
+  formTitle?: string;
+  formDescription?: string;
   additionalInfoTitle?: string;
   additionalInfoDescription?: string;
   

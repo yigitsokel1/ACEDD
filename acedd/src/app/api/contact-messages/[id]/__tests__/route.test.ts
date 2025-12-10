@@ -244,8 +244,7 @@ describe("PUT /api/contact-messages/[id] - Status Update", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data).toHaveProperty("message", 'status must be "READ" or "ARCHIVED"');
+    expect(data).toHaveProperty("error", "Geçersiz durum değeri");
     expect(prisma.contactMessage.update).not.toHaveBeenCalled();
   });
 
@@ -263,7 +262,7 @@ describe("PUT /api/contact-messages/[id] - Status Update", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
+    expect(data).toHaveProperty("error", "Geçersiz durum değeri");
     expect(prisma.contactMessage.update).not.toHaveBeenCalled();
   });
 
@@ -285,7 +284,7 @@ describe("PUT /api/contact-messages/[id] - Status Update", () => {
     const data = await response.json();
 
     expect(response.status).toBe(404);
-    expect(data).toHaveProperty("error", "Message not found");
+    expect(data).toHaveProperty("error", "Mesaj bulunamadı");
   });
 
   it("should return 401 when UNAUTHORIZED", async () => {
@@ -369,7 +368,7 @@ describe("DELETE /api/contact-messages/[id]", () => {
     const data = await response.json();
 
     expect(response.status).toBe(200);
-    expect(data).toHaveProperty("message", "Contact message deleted successfully");
+    expect(data).toHaveProperty("message", "Mesaj başarıyla silindi");
     expect(prisma.contactMessage.delete).toHaveBeenCalledWith({
       where: { id: "msg-1" },
     });
@@ -389,7 +388,7 @@ describe("DELETE /api/contact-messages/[id]", () => {
     const data = await response.json();
 
     expect(response.status).toBe(404);
-    expect(data).toHaveProperty("error", "Message not found");
+    expect(data).toHaveProperty("error", "Mesaj bulunamadı");
   });
 
   it("should return 401 when UNAUTHORIZED", async () => {

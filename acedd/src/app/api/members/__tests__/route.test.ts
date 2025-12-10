@@ -23,6 +23,81 @@ vi.mock("@/lib/auth/adminAuth", () => ({
 describe("GET /api/members", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Mock requireRole to return a valid session for all GET tests
+    const mockSession = {
+      adminUserId: "admin-1",
+      role: "SUPER_ADMIN" as const,
+      email: "admin@acedd.org",
+      name: "Admin User",
+    };
+    vi.mocked(requireRole).mockReturnValue(mockSession);
+    // Mock createAuthErrorResponse
+    vi.mocked(createAuthErrorResponse).mockImplementation((error: string) => {
+      if (error === "UNAUTHORIZED") {
+        return NextResponse.json(
+          { error: "Oturum bulunamadı. Lütfen giriş yapın." },
+          { status: 401 }
+        );
+      }
+      if (error === "FORBIDDEN") {
+        return NextResponse.json(
+          { error: "Bu işlem için yetkiniz bulunmamaktadır." },
+          { status: 403 }
+        );
+      }
+      return NextResponse.json(
+        { error: "Yetkilendirme hatası" },
+        { status: 500 }
+      );
+    });
+  });
+
+  it("should return 401 when no session is provided", async () => {
+    vi.mocked(requireRole).mockImplementation(() => {
+      throw new Error("UNAUTHORIZED");
+    });
+
+    const request = new NextRequest("http://localhost:3000/api/members");
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(data).toHaveProperty("error", "Oturum bulunamadı. Lütfen giriş yapın.");
+    expect(requireRole).toHaveBeenCalledWith(request, ["SUPER_ADMIN", "ADMIN"]);
+    expect(prisma.member.findMany).not.toHaveBeenCalled();
+  });
+
+  it("should return 403 when unauthorized role", async () => {
+    vi.mocked(requireRole).mockImplementation(() => {
+      throw new Error("FORBIDDEN");
+    });
+
+    const request = new NextRequest("http://localhost:3000/api/members");
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(data).toHaveProperty("error", "Bu işlem için yetkiniz bulunmamaktadır.");
+    expect(requireRole).toHaveBeenCalledWith(request, ["SUPER_ADMIN", "ADMIN"]);
+    expect(prisma.member.findMany).not.toHaveBeenCalled();
+  });
+
+  it("should return 200 for ADMIN role", async () => {
+    vi.mocked(requireRole).mockReturnValue({
+      adminUserId: "admin-1",
+      role: "ADMIN" as const,
+      email: "admin@acedd.org",
+      name: "Admin User",
+    });
+    vi.mocked(prisma.member.findMany).mockResolvedValue([]);
+
+    const request = new NextRequest("http://localhost:3000/api/members");
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data).toEqual([]);
+    expect(requireRole).toHaveBeenCalledWith(request, ["SUPER_ADMIN", "ADMIN"]);
   });
 
   it("should return empty array when no members exist", async () => {
@@ -155,8 +230,8 @@ describe("GET /api/members", () => {
     const data = await response.json();
 
     expect(response.status).toBe(500);
-    expect(data).toHaveProperty("error", "Failed to fetch members");
-    expect(data).toHaveProperty("message");
+    expect(data).toHaveProperty("error", "Üyeler yüklenirken bir hata oluştu");
+    expect(data).toHaveProperty("message", "Lütfen daha sonra tekrar deneyin");
   });
 });
 
@@ -364,8 +439,7 @@ describe("POST /api/members", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("membershipKind");
+    expect(data).toHaveProperty("error", "Üyelik türü zorunludur (MEMBER veya VOLUNTEER)");
   });
 
   it("should reject member with invalid tags", async () => {
@@ -391,8 +465,7 @@ describe("POST /api/members", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("tags");
+    expect(data).toHaveProperty("error", "Etiketler dizi formatında olmalıdır");
   });
 
   it("should reject member without firstName", async () => {
@@ -415,8 +488,7 @@ describe("POST /api/members", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("firstName");
+    expect(data).toHaveProperty("error", "Ad alanı zorunludur");
     expect(prisma.member.create).not.toHaveBeenCalled();
   });
 
@@ -440,8 +512,7 @@ describe("POST /api/members", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("lastName");
+    expect(data).toHaveProperty("error", "Soyad alanı zorunludur");
   });
 
   it("should reject member without email", async () => {
@@ -464,8 +535,7 @@ describe("POST /api/members", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("email");
+    expect(data).toHaveProperty("error", "E-posta adresi zorunludur");
   });
 
   it("should reject member with invalid birthDate", async () => {
@@ -490,8 +560,7 @@ describe("POST /api/members", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("birthDate");
+    expect(data).toHaveProperty("error", "Geçerli bir doğum tarihi giriniz");
   });
 
   it("should reject member with duplicate email", async () => {
@@ -522,8 +591,7 @@ describe("POST /api/members", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("Email already exists");
+    expect(data).toHaveProperty("error", "Bu e-posta adresi zaten kullanılıyor");
   });
 
   it("should handle database errors gracefully", async () => {
@@ -551,8 +619,8 @@ describe("POST /api/members", () => {
     const data = await response.json();
 
     expect(response.status).toBe(500);
-    expect(data).toHaveProperty("error", "Failed to create member");
-    expect(data).toHaveProperty("message");
+    expect(data).toHaveProperty("error", "Üye kaydedilirken bir hata oluştu");
+    expect(data).toHaveProperty("message", "Lütfen bilgilerinizi kontrol edip tekrar deneyin");
   });
 
   // Sprint 6: Role-based access control tests

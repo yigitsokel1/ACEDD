@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { GET, POST } from "../route";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
 
 // Mock Prisma
 vi.mock("@/lib/db", () => ({
@@ -11,6 +12,29 @@ vi.mock("@/lib/db", () => ({
       create: vi.fn(),
     },
   },
+}));
+
+// Mock adminAuth
+vi.mock("@/lib/auth/adminAuth", () => ({
+  requireRole: vi.fn(),
+  createAuthErrorResponse: vi.fn((error: string) => {
+    if (error === "UNAUTHORIZED") {
+      return NextResponse.json(
+        { error: "Oturum bulunamadı. Lütfen giriş yapın." },
+        { status: 401 }
+      );
+    }
+    if (error === "FORBIDDEN") {
+      return NextResponse.json(
+        { error: "Bu işlem için yetkiniz bulunmamaktadır." },
+        { status: 403 }
+      );
+    }
+    return NextResponse.json(
+      { error: "Yetkilendirme hatası" },
+      { status: 500 }
+    );
+  }),
 }));
 
 describe("GET /api/events", () => {
@@ -114,14 +138,22 @@ describe("GET /api/events", () => {
     const data = await response.json();
 
     expect(response.status).toBe(500);
-    expect(data).toHaveProperty("error", "Failed to fetch events");
-    expect(data).toHaveProperty("message");
+    expect(data).toHaveProperty("error", "Etkinlikler yüklenirken bir hata oluştu");
+    expect(data).toHaveProperty("message", "Lütfen daha sonra tekrar deneyin");
   });
 });
 
 describe("POST /api/events", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Mock requireRole to return a valid session for all POST tests
+    const mockSession = {
+      adminUserId: "admin-1",
+      role: "SUPER_ADMIN" as const,
+      email: "admin@acedd.org",
+      name: "Admin User",
+    };
+    vi.mocked(requireRole).mockReturnValue(mockSession);
   });
 
   it("should create event with valid data", async () => {
@@ -215,8 +247,7 @@ describe("POST /api/events", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("title");
+    expect(data).toHaveProperty("error", "Başlık zorunludur");
     expect(prisma.event.create).not.toHaveBeenCalled();
   });
 
@@ -241,8 +272,7 @@ describe("POST /api/events", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("title");
+    expect(data).toHaveProperty("error", "Başlık zorunludur");
   });
 
   it("should reject event without description", async () => {
@@ -265,8 +295,7 @@ describe("POST /api/events", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("description");
+    expect(data).toHaveProperty("error", "Açıklama zorunludur");
   });
 
   it("should reject event without shortDescription", async () => {
@@ -289,8 +318,7 @@ describe("POST /api/events", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("shortDescription");
+    expect(data).toHaveProperty("error", "Kısa açıklama zorunludur");
   });
 
   it("should reject event with invalid date", async () => {
@@ -314,8 +342,7 @@ describe("POST /api/events", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("date");
+    expect(data).toHaveProperty("error", "Geçerli bir tarih giriniz");
   });
 
   it("should reject event without location", async () => {
@@ -339,8 +366,7 @@ describe("POST /api/events", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
-    expect(data.message).toContain("location");
+    expect(data).toHaveProperty("error", "Konum zorunludur");
   });
 
   it("should handle empty images array", async () => {
@@ -466,7 +492,7 @@ describe("POST /api/events", () => {
     const data = await response.json();
 
     expect(response.status).toBe(500);
-    expect(data).toHaveProperty("error", "Failed to create event");
-    expect(data).toHaveProperty("message");
+    expect(data).toHaveProperty("error", "Etkinlik kaydedilirken bir hata oluştu");
+    expect(data).toHaveProperty("message", "Lütfen bilgilerinizi kontrol edip tekrar deneyin");
   });
 });

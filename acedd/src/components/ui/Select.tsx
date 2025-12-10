@@ -46,7 +46,38 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           id={selectId}
           {...props}
         >
-          <option value="">{placeholder || "Seçiniz"}</option>
+          {/* Sprint 14.7: Placeholder option sadece value boşsa veya value options array'inde yoksa göster */}
+          {/* Sprint 14.7: Eğer options array'inde zaten "all" value'su varsa (Tümü seçeneği), placeholder gösterme */}
+          {(() => {
+            // Options array'inde "all" value'su var mı kontrol et (çift Tümü önleme)
+            const hasAllOption = options.some(opt => {
+              if (isOptionObject(opt)) {
+                return opt.value === "all" || opt.value === "";
+              }
+              return opt === "all" || opt === "";
+            });
+            
+            // Eğer options array'inde "all" value'su varsa, placeholder gösterme
+            if (hasAllOption) {
+              return null;
+            }
+            
+            // Eğer value varsa, options array'inde olup olmadığını kontrol et
+            if (props.value && props.value !== "") {
+              const valueExists = options.some(opt => {
+                if (isOptionObject(opt)) {
+                  return opt.value === props.value;
+                }
+                return opt === props.value;
+              });
+              // Value options array'inde varsa placeholder gösterme
+              if (valueExists) {
+                return null;
+              }
+            }
+            // Value yoksa veya options array'inde yoksa placeholder göster
+            return <option value="">{placeholder || "Seçiniz"}</option>;
+          })()}
           {options.map((option, index) => {
             if (isOptionObject(option)) {
               return (

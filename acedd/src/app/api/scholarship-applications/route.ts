@@ -214,18 +214,14 @@ export async function GET(request: NextRequest) {
       return createAuthErrorResponse(error.message);
     }
 
-    console.error("Error fetching scholarship applications:", error);
-
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const errorDetails = error instanceof Error ? error.stack : String(error);
-
-    console.error("Error details:", errorDetails);
+    console.error("[ERROR][API][SCHOLARSHIP][GET]", error);
+    console.error("[ERROR][API][SCHOLARSHIP][GET] Details:", errorDetails);
 
     return NextResponse.json(
       {
-        error: "Failed to fetch scholarship applications",
-        message: errorMessage,
-        ...(process.env.NODE_ENV === "development" && { details: errorDetails }),
+        error: "Başvurular yüklenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -240,63 +236,63 @@ export async function POST(request: NextRequest) {
     // Validation - Required fields
     if (!body.name || typeof body.name !== "string" || body.name.trim().length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "name is required and must be a non-empty string" },
+        { error: "Ad alanı zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.surname || typeof body.surname !== "string" || body.surname.trim().length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "surname is required and must be a non-empty string" },
+        { error: "Soyad alanı zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.email || typeof body.email !== "string" || body.email.trim().length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "email is required and must be a non-empty string" },
+        { error: "E-posta adresi zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.phone || typeof body.phone !== "string" || body.phone.trim().length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "phone is required and must be a non-empty string" },
+        { error: "Telefon numarası zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.university || typeof body.university !== "string" || body.university.trim().length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "university is required and must be a non-empty string" },
+        { error: "Üniversite bilgisi zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.faculty || typeof body.faculty !== "string" || body.faculty.trim().length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "faculty is required and must be a non-empty string" },
+        { error: "Fakülte bilgisi zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.permanentAddress || typeof body.permanentAddress !== "string" || body.permanentAddress.trim().length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "permanentAddress is required and must be a non-empty string" },
+        { error: "Adres bilgisi zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.birthDate) {
       return NextResponse.json(
-        { error: "Validation error", message: "birthDate is required" },
+        { error: "Doğum tarihi zorunludur" },
         { status: 400 }
       );
     }
 
     if (!body.idIssueDate) {
       return NextResponse.json(
-        { error: "Validation error", message: "idIssueDate is required" },
+        { error: "Kimlik düzenleme tarihi zorunludur" },
         { status: 400 }
       );
     }
@@ -305,7 +301,7 @@ export async function POST(request: NextRequest) {
     const birthDate = new Date(body.birthDate);
     if (isNaN(birthDate.getTime())) {
       return NextResponse.json(
-        { error: "Validation error", message: "birthDate must be a valid date" },
+        { error: "Geçerli bir doğum tarihi giriniz" },
         { status: 400 }
       );
     }
@@ -313,7 +309,7 @@ export async function POST(request: NextRequest) {
     const idIssueDate = new Date(body.idIssueDate);
     if (isNaN(idIssueDate.getTime())) {
       return NextResponse.json(
-        { error: "Validation error", message: "idIssueDate must be a valid date" },
+        { error: "Geçerli bir kimlik düzenleme tarihi giriniz" },
         { status: 400 }
       );
     }
@@ -321,21 +317,21 @@ export async function POST(request: NextRequest) {
     // Validate arrays
     if (!Array.isArray(body.relatives) || body.relatives.length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "relatives is required and must be a non-empty array" },
+        { error: "Aile üyeleri bilgisi zorunludur" },
         { status: 400 }
       );
     }
 
     if (!Array.isArray(body.educationHistory) || body.educationHistory.length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "educationHistory is required and must be a non-empty array" },
+        { error: "Eğitim geçmişi bilgisi zorunludur" },
         { status: 400 }
       );
     }
 
     if (!Array.isArray(body.references) || body.references.length === 0) {
       return NextResponse.json(
-        { error: "Validation error", message: "references is required and must be a non-empty array" },
+        { error: "Referans bilgisi zorunludur" },
         { status: 400 }
       );
     }
@@ -386,26 +382,22 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(formattedApplication, { status: 201 });
   } catch (error) {
-    console.error("Error creating scholarship application:", error);
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][SCHOLARSHIP][CREATE]", error);
+    console.error("[ERROR][API][SCHOLARSHIP][CREATE] Details:", errorDetails);
 
     // Prisma unique constraint error (duplicate email)
     if (error && typeof error === "object" && "code" in error && error.code === "P2002") {
       return NextResponse.json(
-        { error: "Validation error", message: "An application with this email already exists" },
+        { error: "Bu e-posta adresi ile daha önce başvuru yapılmış" },
         { status: 400 }
       );
     }
 
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-
-    console.error("Error details:", errorDetails);
-
     return NextResponse.json(
       {
-        error: "Failed to create scholarship application",
-        message: errorMessage,
-        ...(process.env.NODE_ENV === "development" && { details: errorDetails }),
+        error: "Başvuru kaydedilirken bir hata oluştu",
+        message: "Lütfen bilgilerinizi kontrol edip tekrar deneyin",
       },
       { status: 500 }
     );

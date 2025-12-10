@@ -18,9 +18,15 @@ export async function POST() {
     
     return response;
   } catch (error) {
-    console.error("[Admin Logout API] Error:", error);
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][ADMIN][LOGOUT]", error);
+    console.error("[ERROR][API][ADMIN][LOGOUT] Details:", errorDetails);
+
     return NextResponse.json(
-      { error: "Çıkış işlemi sırasında bir hata oluştu" },
+      {
+        error: "Çıkış işlemi sırasında bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
+      },
       { status: 500 }
     );
   }

@@ -116,12 +116,14 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error("[Admin Login API] Error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Bilinmeyen hata";
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][ADMIN][LOGIN]", error);
+    console.error("[ERROR][API][ADMIN][LOGIN] Details:", errorDetails);
+
     return NextResponse.json(
-      { 
+      {
         error: "Giriş işlemi sırasında bir hata oluştu",
-        details: process.env.NODE_ENV === "development" ? errorMessage : undefined
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );

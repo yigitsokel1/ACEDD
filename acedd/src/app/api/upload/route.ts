@@ -8,9 +8,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
 
 export async function POST(request: NextRequest) {
   try {
+    // Sprint 14.7: Upload requires ADMIN or SUPER_ADMIN (admin panelinde kullanılıyor)
+    requireRole(request, ["SUPER_ADMIN", "ADMIN"]);
+    
     const data = await request.formData();
     const files = data.getAll('file') as File[];
 
@@ -69,11 +73,12 @@ export async function POST(request: NextRequest) {
         });
 
         uploadedDatasetIds.push(dataset.id);
-        console.log('Görsel Prisma Dataset olarak eklendi:', dataset.id);
       } catch (dbError) {
-        console.error('Dataset oluşturma hatası:', dbError);
+        const dbErrorDetails = dbError instanceof Error ? dbError.stack : String(dbError);
+        console.error("[ERROR][API][UPLOAD][CREATE_DATASET]", dbError);
+        console.error("[ERROR][API][UPLOAD][CREATE_DATASET] Details:", dbErrorDetails);
         return NextResponse.json(
-          { error: 'Failed to save dataset' },
+          { error: "Dosya kaydedilirken bir hata oluştu" },
           { status: 500 }
         );
       }
@@ -85,11 +90,19 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error uploading files:', error);
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][UPLOAD][POST]", error);
+    console.error("[ERROR][API][UPLOAD][POST] Details:", errorDetails);
+
     return NextResponse.json(
-      { 
-        error: 'Failed to upload files',
-        message: error instanceof Error ? error.message : 'Unknown error',
+      {
+        error: "Dosya yüklenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );

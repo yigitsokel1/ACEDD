@@ -208,8 +208,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         createdAt: true,
       },
     }),
+    // Sprint 14: Active announcements only for recent list
     prisma.announcement.findMany({
-      take: 5,
+      take: 10, // Take more to filter active ones
       orderBy: [
         { isPinned: "desc" },
         { createdAt: "desc" },
@@ -231,6 +232,17 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const announcementsActive = announcementsAll.filter((announcement) =>
     isAnnouncementActive(announcement, now)
   ).length;
+
+  // Sprint 14: Filter and sort recent announcements (active only, pinned first)
+  const activeRecentAnnouncements = announcementsRecent
+    .filter((announcement) => isAnnouncementActive(announcement, now))
+    .sort((a, b) => {
+      if (a.isPinned !== b.isPinned) {
+        return a.isPinned ? -1 : 1;
+      }
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    })
+    .slice(0, 5); // Take top 5 active announcements
 
   // Format and return response
   return {
@@ -287,13 +299,13 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     announcements: {
       total: announcementsAll.length,
       active: announcementsActive,
-      recent: announcementsRecent.map((announcement) => ({
+      recent: activeRecentAnnouncements.map((announcement) => ({
         id: announcement.id,
         title: announcement.title,
         summary: announcement.summary,
         category: announcement.category,
         isPinned: announcement.isPinned,
-        isActive: isAnnouncementActive(announcement, now),
+        isActive: true, // Sprint 14: Recent list only contains active announcements
         createdAt: announcement.createdAt.toISOString(),
       })),
     },

@@ -1,6 +1,6 @@
 # Sprint 5: Üye Hiyerarşisi + Yönetim Kurulu / Etiket Sistemi - Completion Report
 
-**Sprint Tarihi:** [Tamamlanma Tarihi]  
+**Sprint Tarihi:** 03.12.2025 
 **Durum:** ✅ Tamamlandı  
 **Doğrulama:** ✅ Beklenen Durum Sağlandı (bkz. `docs/sprint-5-verification.md`)
 

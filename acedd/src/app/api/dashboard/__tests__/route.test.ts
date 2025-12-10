@@ -498,7 +498,7 @@ describe("GET /api/dashboard", () => {
     const data = await response.json();
 
     expect(response.status).toBe(500);
-    expect(data.error).toBe("Failed to fetch dashboard data");
-    expect(data.message).toBe("Database connection error");
+    expect(data.error).toBe("Dashboard verileri yüklenirken bir hata oluştu");
+    expect(data.message).toBe("Lütfen daha sonra tekrar deneyin");
   });
 });

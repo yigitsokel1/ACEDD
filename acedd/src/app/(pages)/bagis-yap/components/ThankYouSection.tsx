@@ -38,13 +38,11 @@ export async function ThankYouSection() {
             <div className="mt-8 text-center">
               <p className="text-gray-600">
                 {contactMessage}{" "}
+                {/* Sprint 14.3: Clickable link kaldırıldı - sadece text gösteriliyor */}
                 {contactEmail && (
-                  <a 
-                    href={`mailto:${contactEmail}`} 
-                    className="text-blue-600 hover:text-blue-700 font-medium"
-                  >
+                  <span className="text-blue-600 font-medium">
                     {contactEmail}
-                  </a>
+                  </span>
                 )}
               </p>
             </div>

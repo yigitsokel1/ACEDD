@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Edit2, Trash2, Pin, PinOff } from "lucide-react";
 import type { Announcement } from "@/lib/types/announcement";
+import { getAnnouncementCategoryLabel } from "@/lib/types/announcement";
 import { isAnnouncementActive } from "@/lib/utils/isAnnouncementActive";
 
 interface AdminAnnouncementsTableProps {
@@ -119,18 +120,18 @@ export function AdminAnnouncementsTable({
                 const isActive = isAnnouncementActive(announcement);
                 return (
                   <tr key={announcement.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        {announcement.isPinned && (
-                          <Pin className="w-4 h-4 text-orange-500 mr-2" />
-                        )}
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
+                    <td className="px-6 py-4">
+                      <div className="flex items-start">
+                        {/* Sprint 14.7: Pin etiketi kaldırıldı - sadece aksiyonlar sütununda gösteriliyor */}
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium text-gray-900 mb-1">
                             {announcement.title}
                           </div>
+                          {/* Sprint 14.7: Summary ayrı bir alan olarak render edilmeli */}
                           {announcement.summary && (
-                            <div className="text-sm text-gray-500 truncate max-w-xs">
-                              {announcement.summary}
+                            <div className="text-xs text-gray-600 mt-1.5 pt-1.5 border-t border-gray-100">
+                              <span className="font-medium text-gray-700 mr-1">Özet:</span>
+                              <span className="text-gray-600 line-clamp-2">{announcement.summary}</span>
                             </div>
                           )}
                         </div>
@@ -138,7 +139,7 @@ export function AdminAnnouncementsTable({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Badge className={getCategoryBadgeColor(announcement.category)}>
-                        {announcement.category}
+                        {getAnnouncementCategoryLabel(announcement.category)}
                       </Badge>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

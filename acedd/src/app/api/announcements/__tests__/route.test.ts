@@ -167,8 +167,7 @@ describe("POST /api/announcements", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data.error).toBe("Validation error");
-    expect(data.message).toContain("title");
+    expect(data.error).toBe("Başlık zorunludur");
     expect(prisma.announcement.create).not.toHaveBeenCalled();
   });
 
@@ -188,8 +187,7 @@ describe("POST /api/announcements", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data.error).toBe("Validation error");
-    expect(data.message).toContain("content");
+    expect(data.error).toBe("İçerik zorunludur");
   });
 
   it("should return 400 when category is missing", async () => {
@@ -208,8 +206,7 @@ describe("POST /api/announcements", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data.error).toBe("Validation error");
-    expect(data.message).toContain("category");
+    expect(data.error).toBe("Kategori zorunludur");
   });
 
   it("should return 400 when startsAt is after endsAt", async () => {
@@ -231,8 +228,7 @@ describe("POST /api/announcements", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data.error).toBe("Validation error");
-    expect(data.message).toContain("startsAt must be before endsAt");
+    expect(data.error).toBe("Başlangıç tarihi bitiş tarihinden önce olmalıdır");
   });
 
   it("should create announcement with valid data", async () => {

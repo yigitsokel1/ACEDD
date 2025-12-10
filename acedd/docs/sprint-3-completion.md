@@ -1,6 +1,6 @@
 # Sprint 3: Üyelik Sistemi Migration (Members + Applications + BoardMembers) - Completion Report
 
-**Sprint Tarihi:** [Tamamlanma Tarihi]  
+**Sprint Tarihi:** 02.12.2025
 **Durum:** ✅ Tamamlandı  
 **Doğrulama:** ✅ Beklenen Durum Sağlandı (bkz. `docs/sprint-3-verification.md`)
 

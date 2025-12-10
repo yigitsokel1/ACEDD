@@ -1,6 +1,6 @@
 # Sprint 4: Admin Auth + Role Bazlı Erişim + Yönetim Kurulu İncelemesi - Completion Report
 
-**Sprint Tarihi:** [Tamamlanma Tarihi]  
+**Sprint Tarihi:** 02.12.2025
 **Durum:** ✅ Tamamlandı  
 **Doğrulama:** ✅ Beklenen Durum Sağlandı (bkz. `docs/sprint-4-verification.md`)
 

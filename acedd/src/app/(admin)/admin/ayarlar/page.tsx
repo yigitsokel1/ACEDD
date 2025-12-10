@@ -1,10 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import { Metadata } from "next";
+import React, { useState, useTransition } from "react";
 import { Globe, Mail, Share2, FileText, Search } from "lucide-react";
-
-// Components
+// Sprint 14.6: Direct imports - all tabs mount immediately for instant switching
 import SiteInfoTab from "./components/SiteInfoTab";
 import ContactInfoTab from "./components/ContactInfoTab";
 import SocialMediaTab from "./components/SocialMediaTab";
@@ -13,6 +11,8 @@ import SEOTab from "./components/SEOTab";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'site' | 'contact' | 'social' | 'content' | 'seo'>('site');
+  // Sprint 14.6: useTransition ile smooth tab geçişleri
+  const [, startTransition] = useTransition();
 
   const tabs = [
     {
@@ -64,7 +64,12 @@ export default function SettingsPage() {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  // Sprint 14.6: Tab değişikliği useTransition ile smooth
+                  startTransition(() => {
+                    setActiveTab(tab.id);
+                  });
+                }}
                 className={`group inline-flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'
@@ -81,13 +86,23 @@ export default function SettingsPage() {
         </nav>
       </div>
 
-      {/* Tab Content */}
+      {/* Tab Content - Sprint 14.6: All tabs mounted, only visibility changes for instant switching */}
       <div className="bg-white rounded-lg shadow">
-        {activeTab === 'site' && <SiteInfoTab />}
-        {activeTab === 'contact' && <ContactInfoTab />}
-        {activeTab === 'social' && <SocialMediaTab />}
-        {activeTab === 'content' && <ContentTab />}
-        {activeTab === 'seo' && <SEOTab />}
+        <div className={activeTab !== 'site' ? 'hidden' : ''}>
+          <SiteInfoTab />
+        </div>
+        <div className={activeTab !== 'contact' ? 'hidden' : ''}>
+          <ContactInfoTab />
+        </div>
+        <div className={activeTab !== 'social' ? 'hidden' : ''}>
+          <SocialMediaTab />
+        </div>
+        <div className={activeTab !== 'content' ? 'hidden' : ''}>
+          <ContentTab />
+        </div>
+        <div className={activeTab !== 'seo' ? 'hidden' : ''}>
+          <SEOTab />
+        </div>
       </div>
     </div>
   );

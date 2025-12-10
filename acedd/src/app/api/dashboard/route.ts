@@ -27,18 +27,14 @@ export async function GET(request: NextRequest) {
       return createAuthErrorResponse(error.message);
     }
 
-    console.error("Error fetching dashboard data:", error);
-
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const errorDetails = error instanceof Error ? error.stack : String(error);
-
-    console.error("Error details:", errorDetails);
+    console.error("[ERROR][API][DASHBOARD][GET]", error);
+    console.error("[ERROR][API][DASHBOARD][GET] Details:", errorDetails);
 
     return NextResponse.json(
       {
-        error: "Failed to fetch dashboard data",
-        message: errorMessage,
-        ...(process.env.NODE_ENV === "development" && { details: errorDetails }),
+        error: "Dashboard verileri yüklenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );

@@ -80,11 +80,19 @@ export async function GET() {
     
     return NextResponse.json(formattedDatasets);
   } catch (error) {
-    console.error('Error fetching datasets:', error);
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][DATASETS][GET]", error);
+    console.error("[ERROR][API][DATASETS][GET] Details:", errorDetails);
+
     return NextResponse.json(
-      { 
-        error: 'Failed to fetch datasets',
-        message: error instanceof Error ? error.message : 'Unknown error',
+      {
+        error: "Veri setleri yüklenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -102,14 +110,14 @@ export async function POST(request: NextRequest) {
     // Validation
     if (!body.name || typeof body.name !== 'string' || body.name.trim().length === 0) {
       return NextResponse.json(
-        { error: 'Validation error', message: 'name is required' },
+        { error: 'İsim zorunludur' },
         { status: 400 }
       );
     }
 
     if (!body.fileUrl || typeof body.fileUrl !== 'string') {
       return NextResponse.json(
-        { error: 'Validation error', message: 'fileUrl is required' },
+        { error: 'Dosya URL zorunludur' },
         { status: 400 }
       );
     }
@@ -141,12 +149,15 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
       return createAuthErrorResponse(error.message);
     }
-    
-    console.error('Error creating dataset:', error);
+
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][DATASETS][CREATE]", error);
+    console.error("[ERROR][API][DATASETS][CREATE] Details:", errorDetails);
+
     return NextResponse.json(
-      { 
-        error: 'Failed to create dataset',
-        message: error instanceof Error ? error.message : 'Unknown error',
+      {
+        error: "Veri seti kaydedilirken bir hata oluştu",
+        message: "Lütfen bilgilerinizi kontrol edip tekrar deneyin",
       },
       { status: 500 }
     );

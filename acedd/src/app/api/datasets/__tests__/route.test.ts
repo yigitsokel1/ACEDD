@@ -147,8 +147,8 @@ describe("GET /api/datasets", () => {
     const data = await response.json();
 
     expect(response.status).toBe(500);
-    expect(data).toHaveProperty("error", "Failed to fetch datasets");
-    expect(data).toHaveProperty("message");
+    expect(data).toHaveProperty("error", "Veri setleri yüklenirken bir hata oluştu");
+    expect(data).toHaveProperty("message", "Lütfen daha sonra tekrar deneyin");
   });
 });
 
@@ -263,7 +263,7 @@ describe("POST /api/datasets", () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data).toHaveProperty("error", "Validation error");
+    expect(data).toHaveProperty("error", "İsim zorunludur");
     expect((prisma as any).dataset.create).not.toHaveBeenCalled();
   });
 
@@ -295,8 +295,8 @@ describe("POST /api/datasets", () => {
     const data = await response.json();
 
     expect(response.status).toBe(500);
-    expect(data).toHaveProperty("error", "Failed to create dataset");
-    expect(data).toHaveProperty("message");
+    expect(data).toHaveProperty("error", "Veri seti kaydedilirken bir hata oluştu");
+    expect(data).toHaveProperty("message", "Lütfen bilgilerinizi kontrol edip tekrar deneyin");
   });
 
   // Sprint 6: Role-based access control tests

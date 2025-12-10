@@ -2,15 +2,14 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Banknote } from "lucide-react";
 import { getPageContent } from "@/lib/settings/convenience";
-import { BANK_ACCOUNTS } from "../constants";
 import { CopyButton } from "./CopyButton";
 
 export async function BankAccountsSection() {
   const content = await getPageContent("donation");
   
-  // Get content from settings (empty fallback for arrays)
+  // Get content from settings (empty array fallback - no constants fallback)
   const introduction = content.introduction || "";
-  const bankAccounts = content.bankAccounts || BANK_ACCOUNTS;
+  const bankAccounts = content.bankAccounts || [];
 
   return (
     <section className="py-16 bg-white">

@@ -1,6 +1,6 @@
 # Sprint 7: Burs Başvuruları Tam Modülü - Completion Report
 
-**Sprint Tarihi:** [Tamamlanma Tarihi]  
+**Sprint Tarihi:** 05.12.2025
 **Durum:** ✅ Tamamlandı  
 **Doğrulama:** ✅ Beklenen Durum Sağlandı (bkz. `docs/sprint-7-verification.md`)
 

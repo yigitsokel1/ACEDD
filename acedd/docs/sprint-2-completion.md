@@ -1,6 +1,6 @@
 # Sprint 2: Events (Etkinlikler) Prisma Migration - Completion Report
 
-**Sprint Tarihi:** [Tamamlanma Tarihi]  
+**Sprint Tarihi:** 01.12.2025
 **Durum:** ✅ Tamamlandı  
 **Doğrulama:** ✅ Beklenen Durum Sağlandı (bkz. `docs/sprint-2-verification.md`)
 

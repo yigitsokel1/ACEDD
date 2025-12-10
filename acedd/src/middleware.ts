@@ -1,10 +1,12 @@
 /**
  * Next.js Middleware
  * 
- * Protects admin routes by checking for valid admin session.
+ * Protects admin routes by checking for valid admin session and role permissions.
  * Redirects unauthenticated users to /admin-login
+ * Redirects unauthorized users (wrong role) to /admin (403 handling)
  * 
  * Sprint 6: Uses HMAC-SHA256 signature verification for session security
+ * Sprint 14.7: Adds role-based access control at middleware level
  * Note: Middleware runs in Edge Runtime, so we use Web Crypto API instead of Node.js crypto
  */
 
@@ -13,6 +15,21 @@ import type { NextRequest } from "next/server";
 
 const SESSION_COOKIE_NAME = "admin_session";
 const SESSION_SECRET = process.env.SESSION_SECRET || "change-me-in-production";
+
+/**
+ * Page-level permissions (inline copy for Edge Runtime compatibility)
+ * Must match rolePermissions.ts pagePermissions
+ * Sprint 14.7: Middleware role kontrolü için inline tanım
+ */
+const PAGE_PERMISSIONS: Record<string, string[]> = {
+  "/admin": ["SUPER_ADMIN", "ADMIN"], // Dashboard
+  "/admin/duyurular": ["SUPER_ADMIN", "ADMIN"], // Duyurular
+  "/admin/etkinlikler": ["SUPER_ADMIN", "ADMIN"], // Etkinlikler
+  "/admin/uyeler": ["SUPER_ADMIN", "ADMIN"], // Üyeler
+  "/admin/burs-basvurulari": ["SUPER_ADMIN", "ADMIN"], // Burs Başvuruları
+  "/admin/iletisim-mesajlari": ["SUPER_ADMIN", "ADMIN"], // İletişim Mesajları
+  "/admin/ayarlar": ["SUPER_ADMIN"], // Ayarlar - Sadece SUPER_ADMIN
+};
 
 /**
  * Convert string to Uint8Array (for Web Crypto API)
@@ -111,22 +128,23 @@ function base64Decode(str: string): string {
  * Session validation with HMAC signature verification
  * Format: base64(payload).hex(hmac)
  * Edge Runtime compatible
+ * Returns session object if valid, null otherwise
  */
-async function isValidSession(sessionCookie: string | undefined): Promise<boolean> {
-  if (!sessionCookie) return false;
+async function getSessionFromCookie(sessionCookie: string | undefined): Promise<{ role: string; adminUserId: string; email: string; name: string } | null> {
+  if (!sessionCookie) return null;
   
   try {
     // Split payload and signature
     const parts = sessionCookie.split(".");
     if (parts.length !== 2) {
-      return false; // Invalid format
+      return null; // Invalid format
     }
 
     const [payload, signature] = parts;
 
     // Verify signature
     if (!(await verifySignature(payload, signature))) {
-      return false; // Invalid signature - possible tampering
+      return null; // Invalid signature - possible tampering
     }
 
     // Decode payload (Edge Runtime compatible)
@@ -134,14 +152,22 @@ async function isValidSession(sessionCookie: string | undefined): Promise<boolea
     const session = JSON.parse(decoded);
     
     // Validate session structure
-    return (
+    if (
       typeof session.adminUserId === "string" &&
       typeof session.role === "string" &&
       typeof session.email === "string" &&
       typeof session.name === "string"
-    );
+    ) {
+      return {
+        role: session.role,
+        adminUserId: session.adminUserId,
+        email: session.email,
+        name: session.name,
+      };
+    }
+    return null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -160,13 +186,26 @@ export async function middleware(request: NextRequest) {
 
     // Check for session cookie
     const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+    const session = await getSessionFromCookie(sessionCookie);
 
-    if (!sessionCookie || !(await isValidSession(sessionCookie))) {
-      // Redirect to login page
+    // Sprint 14.7: Auth kontrolü - Session yoksa login'e yönlendir
+    if (!session) {
       const loginUrl = new URL("/admin-login", request.url);
       // Add redirect parameter to return to original page after login
       loginUrl.searchParams.set("redirect", pathname);
       return NextResponse.redirect(loginUrl);
+    }
+
+    // Sprint 14.7: Role kontrolü - Sayfa için yetki yoksa dashboard'a yönlendir
+    const requiredRoles = PAGE_PERMISSIONS[pathname];
+    if (requiredRoles) {
+      // SUPER_ADMIN has access to everything
+      if (session.role !== "SUPER_ADMIN" && !requiredRoles.includes(session.role)) {
+        // Unauthorized: Redirect to dashboard with error message
+        const dashboardUrl = new URL("/admin", request.url);
+        dashboardUrl.searchParams.set("error", "unauthorized");
+        return NextResponse.redirect(dashboardUrl);
+      }
     }
   }
 

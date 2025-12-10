@@ -1,6 +1,6 @@
 # Sprint 10: Settings (Ayarlar) Modülü - Completion Report
 
-**Sprint Tarihi:** [Tamamlanma Tarihi]  
+**Sprint Tarihi:** 08.12.2025  
 **Durum:** ✅ Tamamlandı  
 **Doğrulama:** ✅ Beklenen Durum Sağlandı (bkz. `docs/sprint-10-verification.md`)
 

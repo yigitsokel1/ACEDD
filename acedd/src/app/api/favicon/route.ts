@@ -63,7 +63,10 @@ export async function GET(request: NextRequest) {
     // Fallback: return 404
     return new NextResponse(null, { status: 404 });
   } catch (error) {
-    console.error('[Favicon API] Error:', error);
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][FAVICON][GET]", error);
+    console.error("[ERROR][API][FAVICON][GET] Details:", errorDetails);
+
     return new NextResponse(null, { status: 500 });
   }
 }

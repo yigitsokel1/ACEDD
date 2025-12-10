@@ -5,6 +5,7 @@ import { Button, Input, Textarea } from "@/components/ui";
 import { Save, Loader2 } from "lucide-react";
 import type { Setting } from "@/lib/types/setting";
 import type { PageIdentifier } from "@/lib/types/setting";
+import { getContentPrefix, getContentKey } from "@/lib/settings/keys";
 import JsonEditor from "./JsonEditor";
 
 const PAGES: Array<{ key: PageIdentifier; label: string }> = [
@@ -105,7 +106,6 @@ export default function ContentTab() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedPage, setSelectedPage] = useState<PageIdentifier>("home");
-  const [settings, setSettings] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Dynamic form state based on selected page
@@ -116,7 +116,9 @@ export default function ContentTab() {
   const fetchSettings = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/settings");
+      // Use prefix parameter to fetch only relevant settings for selected page
+      const prefix = getContentPrefix(selectedPage);
+      const response = await fetch(`/api/settings?prefix=${encodeURIComponent(prefix)}`);
       if (!response.ok) {
         throw new Error("Failed to fetch settings");
       }
@@ -133,12 +135,11 @@ export default function ContentTab() {
       });
 
       // Populate form with existing settings for selected page
-      const prefix = `content.${selectedPage}`;
       const pageFields = PAGE_FIELDS[selectedPage];
       const initialFormData: Record<string, any> = {};
 
       pageFields.forEach((field) => {
-        const key = `${prefix}.${field.key}`;
+        const key = getContentKey(selectedPage, field.key);
         const value = settingsMap[key];
         
         if (field.type === "json") {
@@ -179,14 +180,13 @@ export default function ContentTab() {
     setErrors({});
 
     try {
-      const prefix = `content.${selectedPage}`;
       const pageFields = PAGE_FIELDS[selectedPage];
       const settingsToUpdate: Array<{ key: string; value: any }> = [];
       
       // Prepare settings to update
       for (const field of pageFields) {
         const value = formData[field.key];
-        const settingKey = `${prefix}.${field.key}`;
+        const settingKey = getContentKey(selectedPage, field.key);
         
         // Handle different field types
         if (field.type === "json") {
@@ -362,14 +362,20 @@ export default function ContentTab() {
 
                     if (field.type === "json") {
                       return (
-                        <JsonEditor
-                          key={field.key}
-                          label={field.label}
-                          value={fieldValue || (Array.isArray(fieldValue) ? [] : {})}
-                          onChange={(value) => handleChange(field.key, value)}
-                          helperText={field.helperText}
-                          error={errors[field.key]}
-                        />
+                        <div key={field.key} className="space-y-2">
+                          <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+                            <p className="text-xs text-amber-800">
+                              <strong>⚠️ JSON Formatı:</strong> Bu alan JSON formatındadır. Hatalı format girmeniz durumunda ilgili içerik boş görünür. Lütfen geçerli bir JSON yapısı kullanın.
+                            </p>
+                          </div>
+                          <JsonEditor
+                            label={field.label}
+                            value={fieldValue || (Array.isArray(fieldValue) ? [] : {})}
+                            onChange={(value) => handleChange(field.key, value)}
+                            helperText={field.helperText}
+                            error={errors[field.key]}
+                          />
+                        </div>
                       );
                     }
 

@@ -13,9 +13,15 @@ import type { BoardMember, Member } from "@/lib/types/member";
 
 // Sprint 5: Fetch board members (BoardMember modelinden, Member ile ilişkili)
 // Sprint 6: isActive ve order alanları Prisma modelinde yok, TS tipinde de yok (tutarlılık sağlandı)
+// Sprint 14: Yönetim kurulunda sadece aktif üyeler olabilir
 async function fetchBoardMembers(): Promise<BoardMember[]> {
   try {
     const boardMembers = await prisma.boardMember.findMany({
+      where: {
+        member: {
+          status: "ACTIVE", // Sprint 14: Sadece aktif üyeler yönetim kurulunda olabilir
+        },
+      },
       include: {
         member: true, // Sprint 5: Member bilgilerini de getir
       },
@@ -56,13 +62,12 @@ export async function TeamSection() {
   const content = await getPageContent("about");
   
   // Sprint 5: Fetch members by tags (Member modelinden)
-  // Not: MariaDB'de JSON array contains için Prisma'nın doğru syntax'ını kullanmalıyız
-  // Alternatif: Raw query veya tüm aktif üyeleri çekip filtreleme
-  const [allActiveMembersRaw, boardMembers] = await Promise.all([
+  // Sprint 14: Etiketler için tüm üyeler (aktif + pasif) çekiliyor
+  // Onursal Başkan, Kurucu Üye, Kurucu Başkan ve Önceki Başkan etiketleri pasif üyeler için de görünmeli
+  // Not: Board members sadece aktif üyelerden oluşur (fetchBoardMembers içinde filtreleniyor)
+  const [allMembersRaw, boardMembers] = await Promise.all([
     prisma.member.findMany({
-      where: { 
-        status: "ACTIVE",
-      },
+      // Sprint 14: Status filtresi kaldırıldı - etiketler için tüm üyeler gerekli
       orderBy: {
         membershipDate: "asc",
       },
@@ -71,7 +76,8 @@ export async function TeamSection() {
   ]);
 
   // Sprint 6: Prisma sonuçlarını TypeScript Member tipine dönüştür
-  const allActiveMembers: Member[] = allActiveMembersRaw.map(m => ({
+  // Sprint 14: Tüm üyeler (aktif + pasif) etiketler için kullanılıyor
+  const allMembers: Member[] = allMembersRaw.map(m => ({
     id: m.id,
     firstName: m.firstName,
     lastName: m.lastName,
@@ -97,10 +103,12 @@ export async function TeamSection() {
   })) as Member[];
 
   // Sprint 6: Tags'e göre filtreleme - helper fonksiyonları kullan
-  const honoraryPresidents = groupByTag(allActiveMembers, "HONORARY_PRESIDENT");
-  const foundingPresidents = groupByTag(allActiveMembers, "FOUNDING_PRESIDENT");
-  const foundingMembers = groupByTag(allActiveMembers, "FOUNDING_MEMBER");
-  const formerPresidents = groupByTag(allActiveMembers, "PAST_PRESIDENT");
+  // Sprint 14: Etiketler için tüm üyeler (aktif + pasif) kullanılıyor
+  // Onursal Başkan, Kurucu Üye, Kurucu Başkan ve Önceki Başkan etiketleri pasif üyeler için de görünmeli
+  const honoraryPresidents = groupByTag(allMembers, "HONORARY_PRESIDENT");
+  const foundingPresidents = groupByTag(allMembers, "FOUNDING_PRESIDENT");
+  const foundingMembers = groupByTag(allMembers, "FOUNDING_MEMBER");
+  const formerPresidents = groupByTag(allMembers, "PAST_PRESIDENT");
   
   // Sprint 6: Board members'ı helper fonksiyonla sırala
   const sortedBoardMembers = sortBoardMembersByRole(boardMembers);

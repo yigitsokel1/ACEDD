@@ -73,11 +73,19 @@ export async function GET(
 
     return NextResponse.json(formattedAnnouncement);
   } catch (error) {
-    console.error("Error fetching announcement:", error);
+    // Auth error handling
+    if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
+      return createAuthErrorResponse(error.message);
+    }
+
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][ANNOUNCEMENTS][GET_BY_ID]", error);
+    console.error("[ERROR][API][ANNOUNCEMENTS][GET_BY_ID] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to fetch announcement",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Duyuru yüklenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -106,10 +114,7 @@ export async function PUT(
 
     if (!existing) {
       return NextResponse.json(
-        {
-          error: "Not found",
-          message: "Announcement not found",
-        },
+        { error: "Duyuru bulunamadı" },
         { status: 404 }
       );
     }
@@ -118,10 +123,7 @@ export async function PUT(
     if (body.title !== undefined) {
       if (typeof body.title !== "string" || body.title.trim().length === 0) {
         return NextResponse.json(
-          {
-            error: "Validation error",
-            message: "title must be a non-empty string",
-          },
+          { error: "Başlık boş olamaz" },
           { status: 400 }
         );
       }
@@ -130,10 +132,7 @@ export async function PUT(
     if (body.content !== undefined) {
       if (typeof body.content !== "string" || body.content.trim().length === 0) {
         return NextResponse.json(
-          {
-            error: "Validation error",
-            message: "content must be a non-empty string",
-          },
+          { error: "İçerik boş olamaz" },
           { status: 400 }
         );
       }
@@ -142,10 +141,7 @@ export async function PUT(
     if (body.category !== undefined) {
       if (typeof body.category !== "string" || body.category.trim().length === 0) {
         return NextResponse.json(
-          {
-            error: "Validation error",
-            message: "category must be a non-empty string",
-          },
+          { error: "Kategori boş olamaz" },
           { status: 400 }
         );
       }
@@ -255,12 +251,23 @@ export async function PUT(
     if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
       return createAuthErrorResponse(error.message);
     }
-    
-    console.error("Error updating announcement:", error);
+
+    // Prisma error handling
+    if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
+      return NextResponse.json(
+        { error: "Duyuru bulunamadı" },
+        { status: 404 }
+      );
+    }
+
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][ANNOUNCEMENTS][UPDATE]", error);
+    console.error("[ERROR][API][ANNOUNCEMENTS][UPDATE] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to update announcement",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Duyuru güncellenirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
@@ -288,10 +295,7 @@ export async function DELETE(
 
     if (!existing) {
       return NextResponse.json(
-        {
-          error: "Not found",
-          message: "Announcement not found",
-        },
+        { error: "Duyuru bulunamadı" },
         { status: 404 }
       );
     }
@@ -301,18 +305,29 @@ export async function DELETE(
       where: { id },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ message: "Duyuru başarıyla silindi" });
   } catch (error) {
     // Auth error handling
     if (error instanceof Error && (error.message === "UNAUTHORIZED" || error.message === "FORBIDDEN")) {
       return createAuthErrorResponse(error.message);
     }
-    
-    console.error("Error deleting announcement:", error);
+
+    // Prisma error handling
+    if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
+      return NextResponse.json(
+        { error: "Duyuru bulunamadı" },
+        { status: 404 }
+      );
+    }
+
+    const errorDetails = error instanceof Error ? error.stack : String(error);
+    console.error("[ERROR][API][ANNOUNCEMENTS][DELETE]", error);
+    console.error("[ERROR][API][ANNOUNCEMENTS][DELETE] Details:", errorDetails);
+
     return NextResponse.json(
       {
-        error: "Failed to delete announcement",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: "Duyuru silinirken bir hata oluştu",
+        message: "Lütfen daha sonra tekrar deneyin",
       },
       { status: 500 }
     );
