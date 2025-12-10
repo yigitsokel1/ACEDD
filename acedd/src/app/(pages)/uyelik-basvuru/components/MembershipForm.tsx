@@ -1,115 +1,275 @@
 "use client";
 
 import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui";
-import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
-import { FileText } from "lucide-react";
-import { FormData, FORM_FIELDS } from "../constants";
+import { Input } from "@/components/ui";
+import { Textarea } from "@/components/ui";
+import { Select } from "@/components/ui";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { FileText, CheckCircle, X, FileCheck } from "lucide-react";
+import { MEMBERSHIP_FORM_FIELDS, type MembershipFormData } from "../constants";
+import { validateTCNumber, validatePhoneNumber, validateEmail } from "@/lib/utils/validationHelpers";
+
+// Sprint 15.1: Zod validation schema (Türkçe hata mesajları)
+const membershipFormSchema = z.object({
+  firstName: z
+    .string({
+      required_error: "Ad zorunludur",
+      invalid_type_error: "Ad geçerli bir metin olmalıdır",
+    })
+    .min(2, "Ad en az 2 karakter olmalıdır"),
+  lastName: z
+    .string({
+      required_error: "Soyad zorunludur",
+      invalid_type_error: "Soyad geçerli bir metin olmalıdır",
+    })
+    .min(2, "Soyad en az 2 karakter olmalıdır"),
+  identityNumber: z
+    .string({
+      required_error: "TC Kimlik No zorunludur",
+      invalid_type_error: "TC Kimlik No geçerli bir metin olmalıdır",
+    })
+    .min(1, "TC Kimlik No zorunludur")
+    .refine((val) => validateTCNumber(val), {
+      message: "Geçerli bir TC Kimlik No giriniz (11 haneli)",
+    }),
+  gender: z
+    .string({
+      required_error: "Cinsiyet seçimi zorunludur",
+      invalid_type_error: "Cinsiyet seçimi zorunludur",
+    })
+    .refine((val) => val === "erkek" || val === "kadın", {
+      message: "Cinsiyet seçimi zorunludur",
+    }),
+  bloodType: z
+    .string({
+      required_error: "Kan grubu seçimi zorunludur",
+      invalid_type_error: "Kan grubu seçimi zorunludur",
+    })
+    .refine(
+      (val) =>
+        val === "A_POSITIVE" ||
+        val === "A_NEGATIVE" ||
+        val === "B_POSITIVE" ||
+        val === "B_NEGATIVE" ||
+        val === "AB_POSITIVE" ||
+        val === "AB_NEGATIVE" ||
+        val === "O_POSITIVE" ||
+        val === "O_NEGATIVE",
+      {
+        message: "Kan grubu seçimi zorunludur",
+      }
+    ),
+  birthPlace: z
+    .string({
+      required_error: "Doğum yeri zorunludur",
+      invalid_type_error: "Doğum yeri geçerli bir metin olmalıdır",
+    })
+    .min(2, "Doğum yeri en az 2 karakter olmalıdır"),
+  birthDate: z
+    .string({
+      required_error: "Doğum tarihi zorunludur",
+      invalid_type_error: "Doğum tarihi geçerli bir tarih olmalıdır",
+    })
+    .min(1, "Doğum tarihi zorunludur"),
+  city: z
+    .string({
+      required_error: "Şehir zorunludur",
+      invalid_type_error: "Şehir geçerli bir metin olmalıdır",
+    })
+    .min(2, "Şehir en az 2 karakter olmalıdır"),
+  phone: z
+    .string({
+      required_error: "Telefon numarası zorunludur",
+      invalid_type_error: "Telefon numarası geçerli bir metin olmalıdır",
+    })
+    .min(1, "Telefon numarası zorunludur")
+    .refine((val) => validatePhoneNumber(val), {
+      message: "Geçerli bir telefon numarası giriniz (örn: 05551234567)",
+    }),
+  email: z
+    .string({
+      required_error: "E-posta adresi zorunludur",
+      invalid_type_error: "E-posta adresi geçerli bir metin olmalıdır",
+    })
+    .min(1, "E-posta adresi zorunludur")
+    .email("Geçerli bir e-posta adresi giriniz")
+    .refine((val) => validateEmail(val), {
+      message: "Geçerli bir e-posta adresi giriniz",
+    }),
+  address: z
+    .string({
+      required_error: "Adres zorunludur",
+      invalid_type_error: "Adres geçerli bir metin olmalıdır",
+    })
+    .min(10, "Adres en az 10 karakter olmalıdır"),
+  conditionsAccepted: z
+    .boolean({
+      required_error: "Şartları kabul etmeniz gerekmektedir",
+      invalid_type_error: "Şartları kabul etmeniz gerekmektedir",
+    })
+    .refine((val) => val === true, {
+      message: "Şartları kabul etmeniz gerekmektedir",
+    }),
+});
+
+type MembershipFormSchema = z.infer<typeof membershipFormSchema>;
 
 interface MembershipFormProps {
   formTitle?: string;
   formDescription?: string;
+  membershipConditionsText?: string; // Sprint 15.4: Üyelik şartları metni
 }
 
-export function MembershipForm({ 
+export function MembershipForm({
   formTitle = "Üyelik Başvuru Formu",
-  formDescription = "Lütfen aşağıdaki formu doldurarak üyelik başvurunuzu yapın. Tüm alanlar zorunludur."
+  formDescription = "Lütfen aşağıdaki formu doldurarak üyelik başvurunuzu yapın. Tüm alanlar zorunludur.",
+  membershipConditionsText = "",
 }: MembershipFormProps) {
-  const [formData, setFormData] = useState<FormData>({
-    firstName: "",
-    lastName: "",
-    gender: "",
-    email: "",
-    phone: "",
-    birthDate: "",
-    academicLevel: "",
-    maritalStatus: "",
-    hometown: "",
-    placeOfBirth: "",
-    nationality: "",
-    currentAddress: "",
-    tcId: "",
-    lastValidDate: ""
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showConditionsModal, setShowConditionsModal] = useState(false);
+  const [hasReadConditions, setHasReadConditions] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    setValue,
+    watch,
+  } = useForm<MembershipFormSchema>({
+    resolver: zodResolver(membershipFormSchema),
+    mode: "onBlur", // Validate on blur for better UX
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      identityNumber: "",
+      gender: undefined as any,
+      bloodType: undefined as any,
+      birthPlace: "",
+      birthDate: "",
+      city: "",
+      phone: "",
+      email: "",
+      address: "",
+      conditionsAccepted: false,
+    },
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Sprint 15.4: Watch conditionsAccepted to sync with hasReadConditions
+  const conditionsAccepted = watch("conditionsAccepted");
 
-  const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  // Sprint 15.4: Handle conditions modal close - if user read conditions, auto-check checkbox
+  const handleConditionsModalClose = () => {
+    setShowConditionsModal(false);
+    if (hasReadConditions && !conditionsAccepted) {
+      setValue("conditionsAccepted", true);
+    }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  // Sprint 15.4: Mark conditions as read when user scrolls to bottom of modal
+  const handleConditionsScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const isScrolledToBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 50; // 50px threshold
+    if (isScrolledToBottom && !hasReadConditions) {
+      setHasReadConditions(true);
+      setValue("conditionsAccepted", true);
+    }
+  };
+
+  const onSubmit = async (data: MembershipFormSchema, e?: React.BaseSyntheticEvent) => {
+    // Prevent default form submission (page reload)
+    e?.preventDefault();
     
+    setIsSubmitting(true);
+    setSubmitSuccess(false);
+
     try {
-      const response = await fetch('/api/membership-applications', {
-        method: 'POST',
+      const response = await fetch("/api/membership-applications", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          firstName: data.firstName.trim(),
+          lastName: data.lastName.trim(),
+          identityNumber: data.identityNumber.trim(),
+          gender: data.gender,
+          bloodType: data.bloodType,
+          birthPlace: data.birthPlace.trim(),
+          birthDate: data.birthDate,
+          city: data.city.trim(),
+          phone: data.phone.trim(),
+          email: data.email.trim().toLowerCase(),
+          address: data.address.trim(),
+          conditionsAccepted: data.conditionsAccepted,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Başvuru gönderilirken bir hata oluştu');
+        const errorData = await response.json().catch(() => ({ error: "Başvuru gönderilirken bir hata oluştu" }));
+        
+        // Handle rate limit error (429)
+        if (response.status === 429) {
+          const retryAfter = response.headers.get("Retry-After");
+          const resetTime = retryAfter
+            ? `yaklaşık ${Math.ceil(parseInt(retryAfter) / 60)} dakika`
+            : "birkaç dakika";
+          throw new Error(`Çok fazla istek gönderdiniz. Lütfen ${resetTime} sonra tekrar deneyin.`);
+        }
+        
+        throw new Error(errorData.error || errorData.message || "Başvuru gönderilirken bir hata oluştu");
       }
 
-      alert("Başvurunuz başarıyla gönderildi! En kısa sürede size geri dönüş yapacağız.");
-      
-      // Reset form
-      setFormData({
-        firstName: "",
-        lastName: "",
-        gender: "",
-        email: "",
-        phone: "",
-        birthDate: "",
-        academicLevel: "",
-        maritalStatus: "",
-        hometown: "",
-        placeOfBirth: "",
-        nationality: "",
-        currentAddress: "",
-        tcId: "",
-        lastValidDate: ""
-      });
+      // Success - show message and reset form
+      setSubmitSuccess(true);
+      setSubmitError(null); // Clear any previous errors
+      reset();
+
+      // Scroll to success message after a brief delay
+      setTimeout(() => {
+        const successElement = document.querySelector('[data-success-message]');
+        if (successElement) {
+          successElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 150);
+
+      // Success message stays visible (user can see it clearly)
+      // Optionally hide after 15 seconds
+      setTimeout(() => {
+        setSubmitSuccess(false);
+      }, 15000);
     } catch (error) {
-      console.error('Error submitting application:', error);
-      alert("Başvuru gönderilirken bir hata oluştu. Lütfen tekrar deneyin.");
+      console.error("Error submitting application:", error);
+      const errorMessage = error instanceof Error ? error.message : "Başvuru gönderilirken bir hata oluştu. Lütfen tekrar deneyin.";
+      setSubmitError(errorMessage);
+      
+      // Scroll to error message after a brief delay
+      setTimeout(() => {
+        const errorElement = document.querySelector('[data-error-message]');
+        if (errorElement) {
+          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 150);
+      
+      // Clear error after 10 seconds
+      setTimeout(() => {
+        setSubmitError(null);
+      }, 10000);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleClear = () => {
-    setFormData({
-      firstName: "",
-      lastName: "",
-      gender: "",
-      email: "",
-      phone: "",
-      birthDate: "",
-      academicLevel: "",
-      maritalStatus: "",
-      hometown: "",
-      placeOfBirth: "",
-      nationality: "",
-      currentAddress: "",
-      tcId: "",
-      lastValidDate: ""
-    });
-  };
-
   return (
     <section className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <Card className="shadow-xl">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
               <CardTitle className="text-2xl font-bold text-gray-800 flex items-center">
@@ -120,252 +280,242 @@ export function MembershipForm({
                 {formDescription}
               </CardDescription>
             </CardHeader>
-            
+
             <CardContent className="p-8">
-              <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Personal Information */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Left Column */}
-                  <div className="space-y-6">
-                    {/* İsim */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        İsim *
-                      </label>
+              {/* Sprint 15.1: Success message */}
+              {submitSuccess && (
+                <div data-success-message className="mb-6 p-4 bg-green-50 border-2 border-green-500 rounded-lg flex items-center shadow-md">
+                  <CheckCircle className="w-6 h-6 text-green-600 mr-3 flex-shrink-0" />
+                  <div>
+                    <p className="text-green-900 font-bold text-lg mb-1">
+                      Başvurunuz başarıyla gönderildi!
+                    </p>
+                    <p className="text-green-700 text-sm">
+                      En kısa sürede size geri dönüş yapacağız.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Error message */}
+              {submitError && (
+                <div data-error-message className="mb-6 p-4 bg-red-50 border-2 border-red-500 rounded-lg flex items-center shadow-md">
+                  <X className="w-6 h-6 text-red-600 mr-3 flex-shrink-0" />
+                  <div>
+                    <p className="text-red-900 font-bold text-lg mb-1">
+                      Başvuru gönderilemedi
+                    </p>
+                    <p className="text-red-700 text-sm">
+                      {submitError}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                {/* Sprint 15.1: Simetrik form layout - Her satır ayrı grid row (eşit yükseklik için) */}
+                
+                {/* Satır 1: Ad Soyad | TC Kimlik No */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex flex-col">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Ad Soyad <span className="text-red-500">*</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
                       <Input
                         type="text"
-                        value={formData.firstName}
-                        onChange={(e) => handleInputChange("firstName", e.target.value)}
-                        placeholder="Adınızı girin"
-                        required
+                        {...register("firstName")}
+                        placeholder="Ad"
                         className="w-full"
+                        error={errors.firstName?.message}
                       />
-                    </div>
-
-                    {/* Cinsiyet */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Cinsiyet *
-                      </label>
-                      <select
-                        value={formData.gender}
-                        onChange={(e) => handleInputChange("gender", e.target.value)}
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        {FORM_FIELDS.gender.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Email */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Email *
-                      </label>
-                      <Input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => handleInputChange("email", e.target.value)}
-                        placeholder="email@example.com"
-                        required
-                        className="w-full"
-                      />
-                    </div>
-
-                    {/* Akademik Seviye */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Akademik Seviye *
-                      </label>
-                      <select
-                        value={formData.academicLevel}
-                        onChange={(e) => handleInputChange("academicLevel", e.target.value)}
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        {FORM_FIELDS.academicLevel.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Memleket */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Memleket *
-                      </label>
                       <Input
                         type="text"
-                        value={formData.hometown}
-                        onChange={(e) => handleInputChange("hometown", e.target.value)}
-                        placeholder="Memleketinizi girin"
-                        required
+                        {...register("lastName")}
+                        placeholder="Soyad"
                         className="w-full"
-                      />
-                    </div>
-
-                    {/* Mevcut Adres */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Mevcut Adres *
-                      </label>
-                      <Textarea
-                        value={formData.currentAddress}
-                        onChange={(e) => handleInputChange("currentAddress", e.target.value)}
-                        placeholder="Mevcut adresinizi girin"
-                        required
-                        rows={3}
-                        className="w-full"
-                      />
-                    </div>
-
-                    {/* TC Kimlik No */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        TC. Kimlik No (Zorunlu değil)
-                      </label>
-                      <Input
-                        type="text"
-                        value={formData.tcId}
-                        onChange={(e) => handleInputChange("tcId", e.target.value)}
-                        placeholder="TC Kimlik numaranızı girin"
-                        className="w-full"
+                        error={errors.lastName?.message}
                       />
                     </div>
                   </div>
+                  <div className="flex flex-col">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      TC Kimlik No <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="text"
+                      {...register("identityNumber")}
+                      placeholder="11 haneli TC kimlik numaranız"
+                      maxLength={11}
+                      className="w-full"
+                      error={errors.identityNumber?.message}
+                    />
+                  </div>
+                </div>
 
-                  {/* Right Column */}
-                  <div className="space-y-6">
-                    {/* Soyisim */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Soyisim *
-                      </label>
-                      <Input
-                        type="text"
-                        value={formData.lastName}
-                        onChange={(e) => handleInputChange("lastName", e.target.value)}
-                        placeholder="Soyadınızı girin"
-                        required
-                        className="w-full"
-                      />
-                    </div>
+                {/* Satır 2: Cinsiyet | İkamet Ettiğiniz Şehir */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex flex-col">
+                    <Select
+                      {...register("gender")}
+                      label="Cinsiyet"
+                      options={[...MEMBERSHIP_FORM_FIELDS.gender.options]}
+                      placeholder="Seçiniz"
+                      className="w-full"
+                      error={errors.gender?.message}
+                      required
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      İkamet Ettiğiniz Şehir <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="text"
+                      {...register("city")}
+                      placeholder="Şehrinizi girin"
+                      className="w-full"
+                      error={errors.city?.message}
+                    />
+                  </div>
+                </div>
 
-                    {/* Doğum Tarihi */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Doğum Tarihi *
-                      </label>
-                      <Input
-                        type="date"
-                        value={formData.birthDate}
-                        onChange={(e) => handleInputChange("birthDate", e.target.value)}
-                        required
-                        className="w-full"
-                      />
-                    </div>
+                {/* Satır 3: Doğum Yeri | Doğum Tarihi */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex flex-col">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Doğum Yeri <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="text"
+                      {...register("birthPlace")}
+                      placeholder="Doğum yerinizi girin"
+                      className="w-full"
+                      error={errors.birthPlace?.message}
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Doğum Tarihi <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="date"
+                      {...register("birthDate")}
+                      className="w-full"
+                      error={errors.birthDate?.message}
+                    />
+                  </div>
+                </div>
 
-                    {/* Telefon */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Telefon Numarası *
-                      </label>
-                      <Input
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => handleInputChange("phone", e.target.value)}
-                        placeholder="Telefon numaranızı girin"
-                        required
-                        className="w-full"
-                      />
-                    </div>
+                {/* Satır 4: E-posta | Telefon Numarası */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex flex-col">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      E-posta <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="email"
+                      {...register("email")}
+                      placeholder="ornek@email.com"
+                      className="w-full"
+                      error={errors.email?.message}
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Telefon Numarası <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      type="tel"
+                      {...register("phone")}
+                      placeholder="05551234567"
+                      className="w-full"
+                      error={errors.phone?.message}
+                    />
+                  </div>
+                </div>
 
-                    {/* Medeni Hal */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Medeni Hal *
-                      </label>
-                      <select
-                        value={formData.maritalStatus}
-                        onChange={(e) => handleInputChange("maritalStatus", e.target.value)}
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        {FORM_FIELDS.maritalStatus.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                {/* Satır 5: Kan Grubu (Tam genişlik) */}
+                <div className="flex flex-col">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Kan Grubu <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    {...register("bloodType")}
+                    options={[...MEMBERSHIP_FORM_FIELDS.bloodType.options]}
+                    placeholder="Seçiniz"
+                    className="w-full"
+                    error={errors.bloodType?.message}
+                    required
+                  />
+                </div>
 
-                    {/* Doğum Yeri */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Doğum Yeri *
-                      </label>
-                      <Input
-                        type="text"
-                        value={formData.placeOfBirth}
-                        onChange={(e) => handleInputChange("placeOfBirth", e.target.value)}
-                        placeholder="Doğum yerinizi girin"
-                        required
-                        className="w-full"
-                      />
-                    </div>
+                {/* Satır 6: Adres (Tam genişlik) */}
+                <div className="flex flex-col">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Adres <span className="text-red-500">*</span>
+                  </label>
+                  <Textarea
+                    {...register("address")}
+                    placeholder="Tam adresinizi girin"
+                    rows={4}
+                    className="w-full"
+                    error={errors.address?.message}
+                  />
+                </div>
 
-                    {/* Ulus */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Ulus *
-                      </label>
-                      <Input
-                        type="text"
-                        value={formData.nationality}
-                        onChange={(e) => handleInputChange("nationality", e.target.value)}
-                        placeholder="Uyruğunuzu girin"
-                        required
-                        className="w-full"
-                      />
-                    </div>
-
-                    {/* Son Geçerlilik Tarihi */}
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Son Geçerlilik Tarihi (Ör. 20.10.1960)
-                      </label>
-                      <Input
-                        type="date"
-                        value={formData.lastValidDate}
-                        onChange={(e) => handleInputChange("lastValidDate", e.target.value)}
-                        className="w-full"
-                      />
-                    </div>
+                {/* Sprint 15.4: Conditions Accepted Checkbox with "Read Conditions" link */}
+                <div className="pt-4 border-t border-gray-200">
+                  <label className="flex items-start space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      {...register("conditionsAccepted")}
+                      className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">
+                      <span className="text-red-500">*</span>{" "}
+                      {membershipConditionsText ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setShowConditionsModal(true)}
+                            className="text-blue-600 hover:text-blue-800 underline font-medium"
+                          >
+                            Başvuru şartlarını oku
+                          </button>
+                          {" "}ve kabul ediyorum.
+                        </>
+                      ) : (
+                        "Şartları ve koşulları okudum ve kabul ediyorum."
+                      )}
+                    </span>
+                  </label>
+                  {/* Fixed height for error message to prevent layout shift */}
+                  {/* Using h-6 (24px) to accommodate text-sm line-height + margin */}
+                  <div className="h-6 mt-1">
+                    {errors.conditionsAccepted && (
+                      <p className="text-sm text-red-600 leading-tight">{errors.conditionsAccepted.message}</p>
+                    )}
                   </div>
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex justify-end space-x-4 pt-8 border-t border-gray-200">
+                <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
                   <Button
                     type="button"
-                    onClick={handleClear}
+                    onClick={() => reset()}
                     variant="outline"
+                    disabled={isSubmitting}
                     className="px-8 py-3 text-gray-700 border-gray-300 hover:bg-gray-50"
                   >
-                    Kaydı Sil
+                    Temizle
                   </Button>
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white"
+                    className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isSubmitting ? "Gönderiliyor..." : "Kaydı Gönder"}
+                    {isSubmitting ? "Gönderiliyor..." : "Başvuruyu Gönder"}
                   </Button>
                 </div>
               </form>
@@ -373,7 +523,59 @@ export function MembershipForm({
           </Card>
         </div>
       </div>
+
+      {/* Sprint 15.4: Conditions Modal */}
+      {showConditionsModal && membershipConditionsText && (
+        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[80vh] flex flex-col border border-gray-200">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                <FileCheck className="w-6 h-6 mr-2 text-blue-600" />
+                Üyelik Başvuru Şartları ve Koşulları
+              </h3>
+              <button
+                onClick={handleConditionsModalClose}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Modal Content - Scrollable */}
+            <div
+              onScroll={handleConditionsScroll}
+              className="flex-1 overflow-y-auto p-6"
+            >
+              <div className="prose prose-sm max-w-none">
+                <div className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+                  {membershipConditionsText}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  {hasReadConditions && (
+                    <div className="flex items-center text-green-600">
+                      <CheckCircle className="w-5 h-5 mr-2" />
+                      <span className="text-sm font-medium">Şartlar okundu</span>
+                    </div>
+                  )}
+                </div>
+                <Button
+                  onClick={handleConditionsModalClose}
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {hasReadConditions ? "Kapat ve Devam Et" : "Kapat"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
-

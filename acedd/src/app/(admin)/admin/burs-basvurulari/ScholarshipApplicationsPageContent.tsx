@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useTransition } from "react";
+import React, { useState, useEffect, useTransition, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button, Badge, Input, Select, Textarea } from "@/components/ui";
 import { 
@@ -38,6 +38,8 @@ function ScholarshipApplicationModal({
   const [reviewNotes, setReviewNotes] = useState("");
   const [action, setAction] = useState<'approve' | 'reject' | 'under_review' | 'delete' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const confirmationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (application) {
@@ -45,6 +47,20 @@ function ScholarshipApplicationModal({
       setAction(null);
     }
   }, [application]);
+
+  // Auto-scroll to confirmation message when action is set
+  useEffect(() => {
+    if (action && confirmationRef.current && modalRef.current) {
+      // Small delay to ensure DOM has updated
+      setTimeout(() => {
+        confirmationRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'nearest',
+          inline: 'nearest'
+        });
+      }, 100);
+    }
+  }, [action]);
 
   if (!application) return null;
 
@@ -89,7 +105,7 @@ function ScholarshipApplicationModal({
 
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto border border-gray-200">
+      <div ref={modalRef} className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto border border-gray-200">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Burs Başvurusu Detayları</h2>
@@ -450,7 +466,7 @@ function ScholarshipApplicationModal({
               </Button>
             </div>
             {action && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+              <div ref={confirmationRef} className="mt-4 p-4 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600 mb-2">
                   {action === 'approve' && 'Başvuruyu onaylamak istediğinizden emin misiniz?'}
                   {action === 'reject' && 'Başvuruyu reddetmek istediğinizden emin misiniz?'}

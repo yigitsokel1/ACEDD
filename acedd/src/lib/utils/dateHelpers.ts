@@ -91,3 +91,30 @@ export function formatDateTimeShort(dateString: string | null | undefined): stri
     return "-";
   }
 }
+
+/**
+ * Converts an ISO 8601 date string to YYYY-MM-DD format for HTML date inputs
+ * 
+ * @param dateString - ISO 8601 date string (e.g., "2024-01-15T00:00:00.000Z")
+ * @returns Date string in YYYY-MM-DD format (e.g., "2024-01-15") or empty string if invalid
+ */
+export function isoToDateInput(dateString: string | null | undefined): string {
+  if (!dateString) return "";
+  
+  try {
+    const date = new Date(dateString);
+    
+    if (isNaN(date.getTime())) {
+      return "";
+    }
+    
+    // Get date components in local timezone (Europe/Istanbul)
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+  } catch {
+    return "";
+  }
+}

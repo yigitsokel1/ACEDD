@@ -124,7 +124,7 @@ NEXT_PUBLIC_BASE_URL="http://localhost:3000"
 
 **Note:** This is used for Server Component API calls (e.g., admin dashboard). In production, this **must** be set to your production domain.
 
-7. Start the development server:
+8. Start the development server:
 ```bash
 npm run dev
 ```

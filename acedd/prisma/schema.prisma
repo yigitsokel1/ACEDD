@@ -64,13 +64,9 @@ model Member {
   email         String         @unique
   phone         String?
   birthDate     DateTime
-  academicLevel MemberAcademicLevel
-  maritalStatus MemberMaritalStatus
-  hometown      String
   placeOfBirth  String
-  nationality   String
   currentAddress String        @db.Text
-  tcId          String?
+  tcId          String?        // TC Kimlik No (identityNumber için kullanılacak)
   lastValidDate DateTime?
   titles        String         @db.Text // JSON array olarak saklanacak
   status        MemberStatus   @default(ACTIVE)
@@ -82,6 +78,9 @@ model Member {
   // Sprint 5: Üye türü ve etiketler
   membershipKind MembershipKind @default(MEMBER)
   tags          Json?          // MemberTag array: ["HONORARY_PRESIDENT", "FOUNDING_PRESIDENT", etc.]
+  // Sprint 15: Membership Application'dan gelen yeni alanlar
+  bloodType     BloodType?     // Kan grubu
+  city          String?        // İkamet edilen şehir
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -92,6 +91,7 @@ model Member {
   @@index([status])
   @@index([membershipDate])
   @@index([membershipKind])
+  @@index([tcId])
 }
 
 enum MemberGender {
@@ -126,40 +126,53 @@ enum MembershipKind {
   VOLUNTEER
 }
 
+// Sprint 15.1: Kan Grubu Enum
+enum BloodType {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
+}
+
 // ============================================================================
 // Membership Applications (Üyelik Başvuruları)
 // ============================================================================
 
 model MembershipApplication {
-  id            String                    @id @default(uuid())
-  firstName     String
-  lastName      String
-  gender        MemberGender
-  email         String
-  phone         String
-  birthDate     DateTime
-  academicLevel MemberAcademicLevel
-  maritalStatus MemberMaritalStatus
-  hometown      String
-  placeOfBirth  String
-  nationality   String
-  currentAddress String                   @db.Text
-  tcId          String?
-  lastValidDate DateTime?
-  status        ApplicationStatus         @default(PENDING)
-  applicationDate DateTime                @default(now())
-  reviewedAt    DateTime?
-  reviewedBy    String?                   // AdminUser ID
-  notes         String?                   @db.Text
-  // Yeni alanlar (opsiyonel)
-  department    String?                   // Bölüm
-  reason        String?                    @db.Text // Başvuru nedeni
-  createdAt     DateTime                  @default(now())
-  updatedAt     DateTime                  @updatedAt
+  id                  String                    @id @default(uuid())
+  // Sprint 15.1: Yeni form alanları (zorunlu)
+  firstName           String
+  lastName            String
+  identityNumber      String                    // TC Kimlik No (11 haneli)
+  gender              MemberGender
+  bloodType           BloodType?
+  birthPlace          String
+  birthDate           DateTime
+  city                String
+  phone               String
+  email               String
+  address             String                    @db.Text
+  conditionsAccepted  Boolean                   @default(false)
+  // Sprint 15.1: Durum ve İnceleme
+  status              ApplicationStatus         @default(PENDING)
+  applicationDate     DateTime                  @default(now())
+  reviewedAt          DateTime?
+  reviewedBy          String?                   // AdminUser ID
+  notes               String?                   @db.Text
+  // Sprint 15.1: Future-proof alanlar (şimdilik kullanılmayacak ama schema modular)
+  // cvUrl              String?                   // İleride CV upload için (şimdilik kapalı)
+  // documents          Json?                     // İleride ek belgeler için (şimdilik kapalı)
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
 
   @@index([email])
   @@index([status])
   @@index([applicationDate])
+  @@index([identityNumber])
 }
 
 enum ApplicationStatus {

@@ -15,6 +15,7 @@ import { prisma } from "@/lib/db";
 import type { Member } from "@/lib/types/member";
 import { requireRole, createAuthErrorResponse, getAdminFromRequest } from "@/lib/auth/adminAuth";
 import { validateMemberTags } from "@/lib/utils/memberHelpers";
+import { validateTCNumber } from "@/lib/utils/validationHelpers";
 
 /**
  * Helper function to parse JSON string to array
@@ -41,11 +42,7 @@ function formatMember(prismaMember: {
   email: string;
   phone: string | null;
   birthDate: Date;
-  academicLevel: string;
-  maritalStatus: string;
-  hometown: string;
   placeOfBirth: string;
-  nationality: string;
   currentAddress: string;
   tcId: string | null;
   lastValidDate: Date | null;
@@ -57,6 +54,8 @@ function formatMember(prismaMember: {
   department: string | null;
   graduationYear: number | null;
   occupation: string | null;
+  bloodType: string | null;
+  city: string | null;
   createdAt: Date;
   updatedAt: Date;
 }) {
@@ -70,11 +69,7 @@ function formatMember(prismaMember: {
     email: prismaMember.email,
     phone: prismaMember.phone || "",
     birthDate: prismaMember.birthDate.toISOString(),
-    academicLevel: prismaMember.academicLevel as Member["academicLevel"],
-    maritalStatus: prismaMember.maritalStatus as Member["maritalStatus"],
-    hometown: prismaMember.hometown,
     placeOfBirth: prismaMember.placeOfBirth,
-    nationality: prismaMember.nationality,
     currentAddress: prismaMember.currentAddress,
     tcId: prismaMember.tcId || undefined,
     lastValidDate: prismaMember.lastValidDate?.toISOString() || undefined,
@@ -83,6 +78,8 @@ function formatMember(prismaMember: {
     membershipDate: prismaMember.membershipDate.toISOString(),
     membershipKind: prismaMember.membershipKind as "MEMBER" | "VOLUNTEER",
     tags: tags as Member["tags"],
+    bloodType: prismaMember.bloodType as Member["bloodType"] || undefined,
+    city: prismaMember.city || undefined,
     createdAt: prismaMember.createdAt.toISOString(),
     updatedAt: prismaMember.updatedAt.toISOString(),
   };
@@ -218,6 +215,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate TC Number if provided
+    if (body.tcId && typeof body.tcId === "string" && body.tcId.trim().length > 0) {
+      if (!validateTCNumber(body.tcId.trim())) {
+        return NextResponse.json(
+          { error: "Geçerli bir TC Kimlik No giriniz (11 haneli)" },
+          { status: 400 }
+        );
+      }
+    }
+
     // Sprint 6: Validate tags if provided (using centralized helper)
     let tags = null;
     if (body.tags !== undefined) {
@@ -247,22 +254,21 @@ export async function POST(request: NextRequest) {
         email: body.email.trim(),
         phone: body.phone || null,
         birthDate,
-        academicLevel: body.academicLevel || "lise",
-        maritalStatus: body.maritalStatus || "bekar",
-        hometown: body.hometown || "",
         placeOfBirth: body.placeOfBirth || "",
-        nationality: body.nationality || "",
         currentAddress: body.currentAddress || "",
         tcId: body.tcId || null,
         lastValidDate: body.lastValidDate ? new Date(body.lastValidDate) : null,
         titles: body.titles && Array.isArray(body.titles) ? JSON.stringify(body.titles) : JSON.stringify([]),
-        status: body.status === "inactive" ? "INACTIVE" : "ACTIVE",
+        status: "ACTIVE", // Automatically active for new members
         membershipDate,
         membershipKind: body.membershipKind, // Sprint 5: Required field
         tags: tags, // Sprint 5: Optional tags
         department: body.department || null,
         graduationYear: body.graduationYear || null,
         occupation: body.occupation || null,
+        // Sprint 15: Membership Application'dan gelen yeni alanlar
+        bloodType: body.bloodType || null,
+        city: body.city || null,
       },
     });
 

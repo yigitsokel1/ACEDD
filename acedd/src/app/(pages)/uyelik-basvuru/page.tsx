@@ -22,11 +22,17 @@ export default async function MembershipApplicationPage() {
   // Form title and description with fallbacks
   const formTitle = content.formTitle || "Üyelik Başvuru Formu";
   const formDescription = content.formDescription || "Lütfen aşağıdaki formu doldurarak üyelik başvurunuzu yapın. Tüm alanlar zorunludur.";
+  // Sprint 15.4: Membership conditions text from settings
+  const membershipConditionsText = content.membershipConditionsText || "";
   
   return (
     <div className="min-h-screen bg-white">
       <HeroSection />
-      <MembershipForm formTitle={formTitle} formDescription={formDescription} />
+      <MembershipForm 
+        formTitle={formTitle} 
+        formDescription={formDescription}
+        membershipConditionsText={membershipConditionsText}
+      />
       <AdditionalInfoSection />
     </div>
   );

@@ -85,11 +85,8 @@ export async function TeamSection() {
     email: m.email,
     phone: m.phone || "", // Prisma'dan null gelebilir, string'e çevir
     birthDate: m.birthDate.toISOString(),
-    academicLevel: m.academicLevel as any,
-    maritalStatus: m.maritalStatus as any,
-    hometown: m.hometown,
+    // Sprint 15: academicLevel, maritalStatus, hometown, nationality alanları kaldırıldı
     placeOfBirth: m.placeOfBirth,
-    nationality: m.nationality,
     currentAddress: m.currentAddress,
     tcId: m.tcId || undefined,
     lastValidDate: m.lastValidDate?.toISOString(),

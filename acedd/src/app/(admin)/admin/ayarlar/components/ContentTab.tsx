@@ -51,6 +51,7 @@ const PAGE_FIELDS: Record<PageIdentifier, Array<{ key: string; label: string; ty
   membership: [
     { key: "heroTitle", label: "Hero Başlık", type: "input", helperText: "Üyelik başvurusu sayfasının ana başlığı" },
     { key: "intro", label: "Hero Açıklama", type: "textarea", rows: 4, helperText: "Hero bölümündeki açıklama metni" },
+    { key: "membershipConditionsText", label: "Üyelik Şartları Metni", type: "textarea", rows: 8, helperText: "Başvuru formunda gösterilecek üyelik şartları ve koşulları metni (sade metin)" },
     { key: "additionalInfoTitle", label: "Başvuru Hakkında Başlığı", type: "input", helperText: "Sayfa altındaki 'Başvuru Hakkında' bölümünün başlığı" },
     { key: "additionalInfoDescription", label: "Başvuru Hakkında Açıklaması", type: "textarea", rows: 3, helperText: "Başvuru Hakkında bölümündeki açıklama metni" },
   ],

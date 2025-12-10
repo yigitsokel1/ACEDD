@@ -78,7 +78,7 @@ describe("GET /api/scholarship-applications", () => {
         alternativePhone: null,
         birthDate: new Date("2000-01-01T00:00:00Z"),
         birthPlace: "Istanbul",
-        tcNumber: "12345678901",
+        tcNumber: "12345678950", // Algorithmically valid TC number
         idIssuePlace: "Istanbul",
         idIssueDate: new Date("2018-01-01T00:00:00Z"),
         gender: "Erkek",
@@ -226,7 +226,7 @@ describe("POST /api/scholarship-applications", () => {
       alternativePhone: null,
       birthDate: new Date("2001-05-15T00:00:00Z"),
       birthPlace: "Ankara",
-      tcNumber: "98765432109",
+      tcNumber: "12345678950", // Algorithmically valid TC number
       idIssuePlace: "Ankara",
       idIssueDate: new Date("2019-01-01T00:00:00Z"),
       gender: "Kadın",
@@ -269,7 +269,7 @@ describe("POST /api/scholarship-applications", () => {
       email: "fatma@example.com",
       birthDate: "2001-05-15",
       birthPlace: "Ankara",
-      tcNumber: "98765432109",
+      tcNumber: "12345678950", // Algorithmically valid TC number
       idIssuePlace: "Ankara",
       idIssueDate: "2019-01-01",
       gender: "Kadın",
@@ -536,5 +536,102 @@ describe("POST /api/scholarship-applications", () => {
     expect(response.status).toBe(500);
     expect(data).toHaveProperty("error", "Başvuru kaydedilirken bir hata oluştu");
     expect(data).toHaveProperty("message", "Lütfen bilgilerinizi kontrol edip tekrar deneyin");
+  });
+
+  it("should return 400 when TC Number is invalid", async () => {
+    const requestBody = {
+      name: "Fatma",
+      surname: "Demir",
+      email: "fatma@example.com",
+      phone: "05551234567",
+      birthDate: "2001-05-15",
+      idIssueDate: "2019-01-01",
+      tcNumber: "1234567890", // Invalid (10 digits, should be 11)
+      university: "Ankara Üniversitesi",
+      faculty: "Eğitim Fakültesi",
+      permanentAddress: "Ankara",
+      relatives: [{ kinship: "Anne", name: "Ayşe", surname: "Demir", birthDate: "1975-01-01", education: "Lise", occupation: "Ev Hanımı", job: "-", healthInsurance: "Var", healthDisability: "Yok", income: 0, phone: "5553333333" }],
+      educationHistory: [{ schoolName: "Fen Lisesi", startDate: "2015-09-01", endDate: "2019-06-01", graduation: "Mezun", department: "Fen", percentage: 90 }],
+      references: [{ relationship: "Öğretmen", fullName: "Zeynep Kaya", isAcddMember: "Hayır", job: "Öğretmen", address: "Ankara", phone: "5554444444" }],
+    };
+
+    const request = new NextRequest("http://localhost:3000/api/scholarship-applications", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data).toHaveProperty("error", "Geçerli bir TC Kimlik No giriniz (11 haneli)");
+    expect(prisma.scholarshipApplication.create).not.toHaveBeenCalled();
+  });
+
+  it("should return 400 when phone number is invalid", async () => {
+    const requestBody = {
+      name: "Fatma",
+      surname: "Demir",
+      email: "fatma@example.com",
+      phone: "1234567890", // Invalid (doesn't start with 5)
+      birthDate: "2001-05-15",
+      idIssueDate: "2019-01-01",
+      university: "Ankara Üniversitesi",
+      faculty: "Eğitim Fakültesi",
+      permanentAddress: "Ankara",
+      relatives: [{ kinship: "Anne", name: "Ayşe", surname: "Demir", birthDate: "1975-01-01", education: "Lise", occupation: "Ev Hanımı", job: "-", healthInsurance: "Var", healthDisability: "Yok", income: 0, phone: "5553333333" }],
+      educationHistory: [{ schoolName: "Fen Lisesi", startDate: "2015-09-01", endDate: "2019-06-01", graduation: "Mezun", department: "Fen", percentage: 90 }],
+      references: [{ relationship: "Öğretmen", fullName: "Zeynep Kaya", isAcddMember: "Hayır", job: "Öğretmen", address: "Ankara", phone: "5554444444" }],
+    };
+
+    const request = new NextRequest("http://localhost:3000/api/scholarship-applications", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data).toHaveProperty("error", "Geçerli bir telefon numarası giriniz (örn: 05551234567)");
+    expect(prisma.scholarshipApplication.create).not.toHaveBeenCalled();
+  });
+
+  it("should return 400 when email is invalid", async () => {
+    const requestBody = {
+      name: "Fatma",
+      surname: "Demir",
+      email: "invalid-email", // Invalid email format
+      phone: "05551234567",
+      birthDate: "2001-05-15",
+      idIssueDate: "2019-01-01",
+      university: "Ankara Üniversitesi",
+      faculty: "Eğitim Fakültesi",
+      permanentAddress: "Ankara",
+      relatives: [{ kinship: "Anne", name: "Ayşe", surname: "Demir", birthDate: "1975-01-01", education: "Lise", occupation: "Ev Hanımı", job: "-", healthInsurance: "Var", healthDisability: "Yok", income: 0, phone: "5553333333" }],
+      educationHistory: [{ schoolName: "Fen Lisesi", startDate: "2015-09-01", endDate: "2019-06-01", graduation: "Mezun", department: "Fen", percentage: 90 }],
+      references: [{ relationship: "Öğretmen", fullName: "Zeynep Kaya", isAcddMember: "Hayır", job: "Öğretmen", address: "Ankara", phone: "5554444444" }],
+    };
+
+    const request = new NextRequest("http://localhost:3000/api/scholarship-applications", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data).toHaveProperty("error", "Geçerli bir e-posta adresi giriniz");
+    expect(prisma.scholarshipApplication.create).not.toHaveBeenCalled();
   });
 });

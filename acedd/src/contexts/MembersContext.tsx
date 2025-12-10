@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { Member, MembershipApplication, BoardMember, CreateMemberData, UpdateMemberData, CreateApplicationData, CreateBoardMemberData } from "@/lib/types/member";
 import { sortBoardMembersByRole } from "@/lib/utils/memberHelpers";
 
-interface MembersContextType {
+export interface MembersContextType {
   // Members
   members: Member[];
   membersLoading: boolean;
@@ -314,7 +314,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const updateApplicationStatus = async (id: string, status: 'approved' | 'rejected', notes?: string, reviewedBy?: string) => {
+  const updateApplicationStatus = async (id: string, status?: 'approved' | 'rejected', notes?: string, reviewedBy?: string) => {
     setApplicationsLoading(true);
     setApplicationsError(null);
     try {
@@ -343,6 +343,11 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       setApplications(prev => 
         prev.map(application => application.id === id ? updatedApplication : application)
       );
+      
+      // If application was approved, refresh members list to show the new member
+      if (status === 'approved') {
+        await fetchMembers();
+      }
     } catch (err) {
       console.error('Error updating application:', err);
       setApplicationsError(err instanceof Error ? err.message : 'Failed to update application');

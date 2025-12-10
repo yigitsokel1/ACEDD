@@ -43,11 +43,7 @@ function formatMember(prismaMember: {
   email: string;
   phone: string | null;
   birthDate: Date;
-  academicLevel: string;
-  maritalStatus: string;
-  hometown: string;
   placeOfBirth: string;
-  nationality: string;
   currentAddress: string;
   tcId: string | null;
   lastValidDate: Date | null;
@@ -59,6 +55,8 @@ function formatMember(prismaMember: {
   department: string | null;
   graduationYear: number | null;
   occupation: string | null;
+  bloodType: string | null;
+  city: string | null;
   createdAt: Date;
   updatedAt: Date;
 }) {
@@ -72,11 +70,7 @@ function formatMember(prismaMember: {
     email: prismaMember.email,
     phone: prismaMember.phone || "",
     birthDate: prismaMember.birthDate.toISOString(),
-    academicLevel: prismaMember.academicLevel as Member["academicLevel"],
-    maritalStatus: prismaMember.maritalStatus as Member["maritalStatus"],
-    hometown: prismaMember.hometown,
     placeOfBirth: prismaMember.placeOfBirth,
-    nationality: prismaMember.nationality,
     currentAddress: prismaMember.currentAddress,
     tcId: prismaMember.tcId || undefined,
     lastValidDate: prismaMember.lastValidDate?.toISOString() || undefined,
@@ -85,6 +79,8 @@ function formatMember(prismaMember: {
     membershipDate: prismaMember.membershipDate.toISOString(),
     membershipKind: prismaMember.membershipKind as "MEMBER" | "VOLUNTEER",
     tags: tags as Member["tags"],
+    bloodType: prismaMember.bloodType as Member["bloodType"] || undefined,
+    city: prismaMember.city || undefined,
     createdAt: prismaMember.createdAt.toISOString(),
     updatedAt: prismaMember.updatedAt.toISOString(),
   };
@@ -206,11 +202,7 @@ export async function PUT(
     }
 
     if (body.gender !== undefined) updateData.gender = body.gender;
-    if (body.academicLevel !== undefined) updateData.academicLevel = body.academicLevel;
-    if (body.maritalStatus !== undefined) updateData.maritalStatus = body.maritalStatus;
-    if (body.hometown !== undefined) updateData.hometown = body.hometown;
     if (body.placeOfBirth !== undefined) updateData.placeOfBirth = body.placeOfBirth;
-    if (body.nationality !== undefined) updateData.nationality = body.nationality;
     if (body.currentAddress !== undefined) updateData.currentAddress = body.currentAddress;
     if (body.tcId !== undefined) updateData.tcId = body.tcId || null;
     if (body.lastValidDate !== undefined) {
@@ -253,6 +245,9 @@ export async function PUT(
     if (body.department !== undefined) updateData.department = body.department || null;
     if (body.graduationYear !== undefined) updateData.graduationYear = body.graduationYear || null;
     if (body.occupation !== undefined) updateData.occupation = body.occupation || null;
+    // Sprint 15: bloodType and city
+    if (body.bloodType !== undefined) updateData.bloodType = body.bloodType || null;
+    if (body.city !== undefined) updateData.city = body.city || null;
 
     const updatedMember = await prisma.member.update({
       where: { id },

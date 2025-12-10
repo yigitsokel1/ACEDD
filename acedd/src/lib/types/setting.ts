@@ -200,6 +200,7 @@ export interface PageContent {
   // Membership page specific
   formTitle?: string;
   formDescription?: string;
+  membershipConditionsText?: string; // Sprint 15.4: Üyelik şartları metni
   additionalInfoTitle?: string;
   additionalInfoDescription?: string;
   

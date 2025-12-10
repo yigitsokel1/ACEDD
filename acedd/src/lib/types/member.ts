@@ -24,11 +24,7 @@ export interface Member {
   email: string;
   phone: string;
   birthDate: string;
-  academicLevel: 'ilkokul' | 'ortaokul' | 'lise' | 'onlisans' | 'lisans' | 'yukseklisans' | 'doktora';
-  maritalStatus: 'bekar' | 'evli' | 'dul' | 'bosanmis';
-  hometown: string;
   placeOfBirth: string;
-  nationality: string;
   currentAddress: string;
   tcId?: string;
   lastValidDate?: string;
@@ -38,6 +34,9 @@ export interface Member {
   // Sprint 5: Yeni alanlar
   membershipKind: MembershipKind;
   tags?: MemberTag[];
+  // Sprint 15: Membership Application'dan gelen yeni alanlar
+  bloodType?: BloodType | null;
+  city?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -49,11 +48,7 @@ export interface CreateMemberFormData {
   email: string;
   phone: string;
   birthDate: string;
-  academicLevel: 'ilkokul' | 'ortaokul' | 'lise' | 'onlisans' | 'lisans' | 'yukseklisans' | 'doktora' | '';
-  maritalStatus: 'bekar' | 'evli' | 'dul' | 'bosanmis' | '';
-  hometown: string;
   placeOfBirth: string;
-  nationality: string;
   currentAddress: string;
   tcId?: string;
   lastValidDate?: string;
@@ -63,31 +58,63 @@ export interface CreateMemberFormData {
   // Sprint 5: Yeni alanlar
   membershipKind?: MembershipKind;
   tags?: MemberTag[];
+  // Sprint 15: Membership Application'dan gelen yeni alanlar
+  bloodType?: BloodType | null;
+  city?: string | null;
 }
 
+// Sprint 15.1: Kan Grubu Type
+export type BloodType =
+  | "A_POSITIVE"
+  | "A_NEGATIVE"
+  | "B_POSITIVE"
+  | "B_NEGATIVE"
+  | "AB_POSITIVE"
+  | "AB_NEGATIVE"
+  | "O_POSITIVE"
+  | "O_NEGATIVE";
+
+// Sprint 15.1: Yeni MembershipApplication interface
 export interface MembershipApplication {
   id: string;
+  // Sprint 15.1: Yeni form alanları (zorunlu)
   firstName: string;
   lastName: string;
+  identityNumber: string; // TC Kimlik No (11 haneli)
   gender: 'erkek' | 'kadın';
-  email: string;
+  bloodType?: BloodType | null;
+  birthPlace: string;
+  birthDate: string; // ISO 8601
+  city: string;
   phone: string;
-  birthDate: string;
-  academicLevel: 'ilkokul' | 'ortaokul' | 'lise' | 'onlisans' | 'lisans' | 'yukseklisans' | 'doktora';
-  maritalStatus: 'bekar' | 'evli' | 'dul' | 'bosanmis';
-  hometown: string;
-  placeOfBirth: string;
-  nationality: string;
-  currentAddress: string;
-  tcId?: string;
-  lastValidDate?: string;
+  email: string;
+  address: string; // @db.Text
+  conditionsAccepted: boolean;
+  // Sprint 15.1: Durum ve İnceleme
   status: 'pending' | 'approved' | 'rejected';
-  applicationDate: string;
-  reviewedAt?: string;
-  reviewedBy?: string;
+  applicationDate: string; // ISO 8601
+  reviewedAt?: string; // ISO 8601
+  reviewedBy?: string; // AdminUser ID
   notes?: string;
-  createdAt: string;
-  updatedAt: string;
+  // Metadata
+  createdAt: string; // ISO 8601
+  updatedAt: string; // ISO 8601
+}
+
+// Sprint 15.1: Create Membership Application Request (Form submission data)
+export interface CreateMembershipApplicationRequest {
+  firstName: string;
+  lastName: string;
+  identityNumber: string; // TC Kimlik No (11 haneli)
+  gender: 'erkek' | 'kadın';
+  bloodType?: BloodType | null;
+  birthPlace: string;
+  birthDate: string; // ISO 8601
+  city: string;
+  phone: string;
+  email: string;
+  address: string;
+  conditionsAccepted: boolean;
 }
 
 // Sprint 5: BoardMember artık Member ile ilişkili

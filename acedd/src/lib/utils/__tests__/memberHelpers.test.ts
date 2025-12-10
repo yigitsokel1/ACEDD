@@ -23,11 +23,8 @@ describe("memberHelpers", () => {
     email: "test@example.com",
     phone: "1234567890",
     birthDate: "1990-01-01T00:00:00.000Z",
-    academicLevel: "lisans",
-    maritalStatus: "bekar",
-    hometown: "Istanbul",
+    // Sprint 15: academicLevel, maritalStatus, hometown, nationality alanları kaldırıldı
     placeOfBirth: "Istanbul",
-    nationality: "TR",
     currentAddress: "Test Address",
     titles: [],
     status: "active",

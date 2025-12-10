@@ -35,12 +35,16 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           id={inputId}
           {...props}
         />
-        {error && (
-          <p className="mt-1 text-sm text-red-600">{error}</p>
-        )}
-        {helperText && !error && (
-          <p className="mt-1 text-sm text-gray-500">{helperText}</p>
-        )}
+        {/* Fixed height for error message to prevent layout shift */}
+        {/* Using h-6 (24px) to accommodate text-sm line-height + margin */}
+        <div className="h-6 mt-1">
+          {error && (
+            <p className="text-sm text-red-600 leading-tight">{error}</p>
+          )}
+          {helperText && !error && (
+            <p className="text-sm text-gray-500 leading-tight">{helperText}</p>
+          )}
+        </div>
       </div>
     );
   }

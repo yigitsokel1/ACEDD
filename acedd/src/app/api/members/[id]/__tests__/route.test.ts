@@ -116,12 +116,10 @@ describe("GET /api/members/[id]", () => {
       email: "john@example.com",
       phone: "5551234567",
       birthDate: new Date("1990-01-01T00:00:00Z"),
-      academicLevel: "lisans",
-      maritalStatus: "bekar",
-      hometown: "Istanbul",
       placeOfBirth: "Istanbul",
-      nationality: "TR",
       currentAddress: "Istanbul",
+      bloodType: "A_POSITIVE" as any,
+      city: "Istanbul",
       tcId: "12345678901",
       lastValidDate: null,
       titles: JSON.stringify(["Üye"]),
@@ -163,12 +161,10 @@ describe("GET /api/members/[id]", () => {
       email: "john@example.com",
       phone: "5551234567",
       birthDate: new Date("1990-01-01T00:00:00Z"),
-      academicLevel: "lisans",
-      maritalStatus: "bekar",
-      hometown: "Istanbul",
       placeOfBirth: "Istanbul",
-      nationality: "TR",
       currentAddress: "Istanbul",
+      bloodType: "A_POSITIVE" as any,
+      city: "Istanbul",
       tcId: "12345678901",
       lastValidDate: null,
       titles: JSON.stringify(["Üye"]),
@@ -262,6 +258,121 @@ describe("PUT /api/members/[id]", () => {
     expect(data).toHaveProperty("error", "Bu işlem için yetkiniz bulunmamaktadır.");
     expect(requireRole).toHaveBeenCalledWith(request, ["SUPER_ADMIN"]);
     expect(prisma.member.update).not.toHaveBeenCalled();
+  });
+
+  it("should update member with partial data", async () => {
+    const existingMember = {
+      id: "member-1",
+      firstName: "John",
+      lastName: "Doe",
+      gender: "erkek",
+      email: "john@example.com",
+      phone: "5551234567",
+      birthDate: new Date("1990-01-01T00:00:00Z"),
+      placeOfBirth: "Istanbul",
+      currentAddress: "Istanbul",
+      bloodType: "A_POSITIVE" as any,
+      city: "Istanbul",
+      tcId: "12345678901",
+      lastValidDate: null,
+      titles: JSON.stringify(["Üye"]),
+      status: "ACTIVE",
+      membershipDate: new Date("2024-01-01T00:00:00Z"),
+      membershipKind: "MEMBER",
+      tags: null,
+      department: null,
+      graduationYear: null,
+      occupation: null,
+      createdAt: new Date("2024-01-01T00:00:00Z"),
+      updatedAt: new Date("2024-01-01T00:00:00Z"),
+    } as any;
+
+    const updatedMember = {
+      ...existingMember,
+      firstName: "Updated",
+      phone: "5559998888",
+      updatedAt: new Date("2024-01-02T00:00:00Z"),
+    };
+
+    vi.mocked(prisma.member.findUnique).mockResolvedValue(existingMember);
+    vi.mocked(prisma.member.update).mockResolvedValue(updatedMember);
+
+    const requestBody = {
+      firstName: "Updated",
+      phone: "5559998888",
+    };
+
+    const params = Promise.resolve({ id: "member-1" });
+    const request = new NextRequest("http://localhost:3000/api/members/member-1", {
+      method: "PUT",
+      body: JSON.stringify(requestBody),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const response = await PUT(request, { params });
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.firstName).toBe("Updated");
+    expect(data.phone).toBe("5559998888");
+    expect(prisma.member.update).toHaveBeenCalled();
+  });
+
+  it("should update bloodType and city fields", async () => {
+    const existingMember = {
+      id: "member-1",
+      firstName: "John",
+      lastName: "Doe",
+      gender: "erkek",
+      email: "john@example.com",
+      phone: "5551234567",
+      birthDate: new Date("1990-01-01T00:00:00Z"),
+      placeOfBirth: "Istanbul",
+      currentAddress: "Istanbul",
+      bloodType: "A_POSITIVE" as any,
+      city: "Istanbul",
+      tcId: "12345678901",
+      lastValidDate: null,
+      titles: JSON.stringify(["Üye"]),
+      status: "ACTIVE",
+      membershipDate: new Date("2024-01-01T00:00:00Z"),
+      membershipKind: "MEMBER",
+      tags: null,
+      department: null,
+      graduationYear: null,
+      occupation: null,
+      createdAt: new Date("2024-01-01T00:00:00Z"),
+      updatedAt: new Date("2024-01-01T00:00:00Z"),
+    } as any;
+
+    const updatedMember = {
+      ...existingMember,
+      bloodType: "B_POSITIVE" as any,
+      city: "Ankara",
+      updatedAt: new Date("2024-01-02T00:00:00Z"),
+    };
+
+    vi.mocked(prisma.member.findUnique).mockResolvedValue(existingMember);
+    vi.mocked(prisma.member.update).mockResolvedValue(updatedMember);
+
+    const requestBody = {
+      bloodType: "B_POSITIVE",
+      city: "Ankara",
+    };
+
+    const params = Promise.resolve({ id: "member-1" });
+    const request = new NextRequest("http://localhost:3000/api/members/member-1", {
+      method: "PUT",
+      body: JSON.stringify(requestBody),
+      headers: { "Content-Type": "application/json" },
+    });
+
+    const response = await PUT(request, { params });
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.bloodType).toBe("B_POSITIVE");
+    expect(data.city).toBe("Ankara");
   });
 });
 

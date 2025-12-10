@@ -127,12 +127,10 @@ describe("GET /api/members", () => {
         email: "john@example.com",
         phone: "5551234567",
         birthDate: new Date("1990-01-01T00:00:00Z"),
-        academicLevel: "lisans" as const,
-        maritalStatus: "bekar" as const,
-        hometown: "Istanbul",
         placeOfBirth: "Istanbul",
-        nationality: "TR",
         currentAddress: "Istanbul",
+        bloodType: "A_POSITIVE" as any,
+        city: "Istanbul",
         tcId: "12345678901",
         lastValidDate: null,
         titles: JSON.stringify(["Üye"]),
@@ -276,12 +274,10 @@ describe("POST /api/members", () => {
       email: "jane@example.com",
       phone: "5559876543",
       birthDate: new Date("1995-05-15T00:00:00Z"),
-      academicLevel: "yukseklisans" as const,
-      maritalStatus: "evli" as const,
-      hometown: "Ankara",
       placeOfBirth: "Ankara",
-      nationality: "TR",
       currentAddress: "Ankara",
+      bloodType: "B_POSITIVE" as any,
+      city: "Ankara",
       tcId: null,
       lastValidDate: null,
       titles: JSON.stringify(["Üye"]),
@@ -294,23 +290,21 @@ describe("POST /api/members", () => {
       tags: null,
       createdAt: new Date("2024-01-01T00:00:00Z"),
       updatedAt: new Date("2024-01-01T00:00:00Z"),
-    } as any; // Sprint 5: Mock data için type assertion
+    } as any;
 
     vi.mocked(prisma.member.create).mockResolvedValue(mockMember);
 
     const requestBody = {
       firstName: "Jane",
       lastName: "Smith",
-        gender: "kadın" as const,
+      gender: "kadın" as const,
       email: "jane@example.com",
       phone: "5559876543",
       birthDate: "1995-05-15T00:00:00Z",
-      academicLevel: "yukseklisans",
-      maritalStatus: "evli",
-      hometown: "Ankara",
       placeOfBirth: "Ankara",
-      nationality: "TR",
       currentAddress: "Ankara",
+      bloodType: "B_POSITIVE",
+      city: "Ankara",
       titles: ["Üye"],
       status: "active",
       membershipDate: "2024-06-01T00:00:00Z",
@@ -383,12 +377,10 @@ describe("POST /api/members", () => {
       email: "volunteer@example.com",
       phone: "5551112233",
       birthDate: "1990-01-01T00:00:00Z",
-      academicLevel: "lisans",
-      maritalStatus: "bekar",
-      hometown: "Istanbul",
       placeOfBirth: "Istanbul",
-      nationality: "TR",
       currentAddress: "Istanbul",
+      bloodType: "O_POSITIVE",
+      city: "Istanbul",
       titles: [],
       status: "active",
       membershipDate: "2024-01-01T00:00:00Z",
@@ -687,5 +679,206 @@ describe("POST /api/members", () => {
 
     expect(response.status).toBe(401);
     expect(data).toHaveProperty("error");
+  });
+
+  // Production-level edge case tests
+  it("should automatically set status to ACTIVE for new members", async () => {
+    const mockMember = {
+      id: "member-new",
+      firstName: "Test",
+      lastName: "User",
+      gender: "erkek" as const,
+      email: "test@example.com",
+      phone: "5551234567",
+      birthDate: new Date("1990-01-01T00:00:00Z"),
+      placeOfBirth: "Istanbul",
+      currentAddress: "Istanbul",
+      bloodType: "A_POSITIVE" as any,
+      city: "Istanbul",
+      tcId: null,
+      lastValidDate: null,
+      titles: JSON.stringify([]),
+      status: "ACTIVE" as const,
+      membershipDate: new Date("2024-01-01T00:00:00Z"),
+      membershipKind: "MEMBER" as const,
+      tags: null,
+      createdAt: new Date("2024-01-01T00:00:00Z"),
+      updatedAt: new Date("2024-01-01T00:00:00Z"),
+    } as any;
+
+    vi.mocked(prisma.member.create).mockResolvedValue(mockMember);
+
+    const requestBody = {
+      firstName: "Test",
+      lastName: "User",
+      email: "test@example.com",
+      birthDate: "1990-01-01T00:00:00Z",
+      membershipDate: "2024-01-01T00:00:00Z",
+      membershipKind: "MEMBER",
+      // status not provided - should default to ACTIVE
+    };
+
+    const request = new NextRequest("http://localhost:3000/api/members", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(data.status).toBe("active");
+    const createCall = vi.mocked(prisma.member.create).mock.calls[0][0] as any;
+    expect(createCall.data.status).toBe("ACTIVE");
+  });
+
+  it("should handle whitespace trimming in all string fields", async () => {
+    const mockMember = {
+      id: "member-new",
+      firstName: "Test",
+      lastName: "User",
+      gender: "erkek" as const,
+      email: "test@example.com",
+      phone: "05551234567",
+      birthDate: new Date("1990-01-01T00:00:00Z"),
+      placeOfBirth: "Istanbul",
+      currentAddress: "Istanbul",
+      bloodType: "A_POSITIVE" as any,
+      city: "Istanbul",
+      tcId: null,
+      lastValidDate: null,
+      titles: JSON.stringify([]),
+      status: "ACTIVE" as const,
+      membershipDate: new Date("2024-01-01T00:00:00Z"),
+      membershipKind: "MEMBER" as const,
+      tags: null,
+      department: null,
+      graduationYear: null,
+      occupation: null,
+      createdAt: new Date("2024-01-01T00:00:00Z"),
+      updatedAt: new Date("2024-01-01T00:00:00Z"),
+    } as any;
+
+    vi.mocked(prisma.member.create).mockResolvedValue(mockMember);
+
+    const requestBody = {
+      firstName: "  Test  ",
+      lastName: "  User  ",
+      email: "  test@example.com  ",
+      birthDate: "1990-01-01T00:00:00Z",
+      membershipDate: "2024-01-01T00:00:00Z",
+      membershipKind: "MEMBER",
+    };
+
+    const request = new NextRequest("http://localhost:3000/api/members", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(201);
+    const createCall = vi.mocked(prisma.member.create).mock.calls[0][0] as any;
+    expect(createCall.data.firstName).toBe("Test");
+    expect(createCall.data.lastName).toBe("User");
+    expect(createCall.data.email).toBe("test@example.com");
+  });
+
+  it("should accept future birthDate (no validation at API level)", async () => {
+    const futureDate = new Date();
+    futureDate.setFullYear(futureDate.getFullYear() + 1);
+
+    const mockMember = {
+      id: "member-new",
+      firstName: "Test",
+      lastName: "User",
+      gender: "erkek" as const,
+      email: "test@example.com",
+      phone: null,
+      birthDate: futureDate,
+      placeOfBirth: null,
+      currentAddress: null,
+      bloodType: null,
+      city: null,
+      tcId: null,
+      lastValidDate: null,
+      titles: JSON.stringify([]),
+      status: "ACTIVE" as const,
+      membershipDate: new Date("2024-01-01T00:00:00Z"),
+      membershipKind: "MEMBER" as const,
+      tags: null,
+      department: null,
+      graduationYear: null,
+      occupation: null,
+      createdAt: new Date("2024-01-01T00:00:00Z"),
+      updatedAt: new Date("2024-01-01T00:00:00Z"),
+    } as any;
+
+    vi.mocked(prisma.member.create).mockResolvedValue(mockMember);
+
+    const requestBody = {
+      firstName: "Test",
+      lastName: "User",
+      email: "test@example.com",
+      birthDate: futureDate.toISOString(), // Future date
+      membershipDate: "2024-01-01T00:00:00Z",
+      membershipKind: "MEMBER",
+    };
+
+    const request = new NextRequest("http://localhost:3000/api/members", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const response = await POST(request);
+
+    // Should accept the date (validation happens at business logic level if needed)
+    // But the date should be parsed correctly
+    expect(response.status).toBe(201);
+  });
+
+  it("should return 400 when TC Number is invalid", async () => {
+    const requestBody = {
+      firstName: "Jane",
+      lastName: "Smith",
+      gender: "kadın" as const,
+      email: "jane@example.com",
+      phone: "5559876543",
+      birthDate: "1995-05-15T00:00:00Z",
+      placeOfBirth: "Ankara",
+      currentAddress: "Ankara",
+      bloodType: "B_POSITIVE",
+      city: "Ankara",
+      titles: ["Üye"],
+      status: "active",
+      membershipDate: "2024-06-01T00:00:00Z",
+      membershipKind: "MEMBER",
+      tags: [],
+      tcId: "1234567890", // Invalid (10 digits, should be 11)
+    };
+
+    const request = new NextRequest("http://localhost:3000/api/members", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data).toHaveProperty("error", "Geçerli bir TC Kimlik No giriniz (11 haneli)");
+    expect(prisma.member.create).not.toHaveBeenCalled();
   });
 });

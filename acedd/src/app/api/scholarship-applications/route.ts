@@ -17,6 +17,7 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import type { ScholarshipApplication, ScholarshipRelative, ScholarshipEducationHistory, ScholarshipReference } from "@/lib/types/scholarship";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
+import { validateTCNumber, validatePhoneNumber, validateEmail } from "@/lib/utils/validationHelpers";
 
 /**
  * Helper function to format Prisma ScholarshipApplication to frontend ScholarshipApplication
@@ -255,9 +256,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate email format
+    if (!validateEmail(body.email.trim())) {
+      return NextResponse.json(
+        { error: "Geçerli bir e-posta adresi giriniz" },
+        { status: 400 }
+      );
+    }
+
     if (!body.phone || typeof body.phone !== "string" || body.phone.trim().length === 0) {
       return NextResponse.json(
         { error: "Telefon numarası zorunludur" },
+        { status: 400 }
+      );
+    }
+
+    // Validate phone number format
+    if (!validatePhoneNumber(body.phone.trim())) {
+      return NextResponse.json(
+        { error: "Geçerli bir telefon numarası giriniz (örn: 05551234567)" },
         { status: 400 }
       );
     }
@@ -295,6 +312,16 @@ export async function POST(request: NextRequest) {
         { error: "Kimlik düzenleme tarihi zorunludur" },
         { status: 400 }
       );
+    }
+
+    // Validate TC Number if provided
+    if (body.tcNumber && typeof body.tcNumber === "string" && body.tcNumber.trim().length > 0) {
+      if (!validateTCNumber(body.tcNumber.trim())) {
+        return NextResponse.json(
+          { error: "Geçerli bir TC Kimlik No giriniz (11 haneli)" },
+          { status: 400 }
+        );
+      }
     }
 
     // Parse dates

@@ -1,16 +1,19 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui";
 import { Input } from "@/components/ui";
 import { Textarea } from "@/components/ui";
 import { Select } from "@/components/ui";
 import { Badge } from "@/components/ui";
-import { Plus, Edit, Trash2, User, Mail, Phone, Calendar, MapPin, Search, Filter, ToggleLeft, ToggleRight, Eye } from "lucide-react";
+import { Plus, Edit, Trash2, User, Mail, Phone, Calendar, MapPin, Search, Filter, ToggleLeft, ToggleRight, Eye, Droplet, ChevronDown, ChevronUp } from "lucide-react";
 import { useMembers } from "@/contexts/MembersContext";
-import { Member, CreateMemberData, UpdateMemberData, CreateMemberFormData, MembershipKind, MemberTag, BoardRole } from "@/lib/types/member";
+import { Member, CreateMemberData, UpdateMemberData, CreateMemberFormData, MembershipKind, MemberTag, BoardRole, BloodType } from "@/lib/types/member";
 import { getBoardRoleLabel } from "@/lib/utils/memberHelpers";
+import { formatDateOnly, isoToDateInput } from "@/lib/utils/dateHelpers";
+import { getGenderLabel } from "@/lib/utils/genderHelpers";
+import { getBloodTypeLabel } from "@/lib/utils/bloodTypeHelpers";
 
 interface MemberModalProps {
   member: Member | null;
@@ -31,44 +34,73 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
     gender: member?.gender || "",
     email: member?.email || "",
     phone: member?.phone || "",
-    birthDate: member?.birthDate || "",
-    academicLevel: member?.academicLevel || "",
-    maritalStatus: member?.maritalStatus || "",
-    hometown: member?.hometown || "",
+    birthDate: isoToDateInput(member?.birthDate),
     placeOfBirth: member?.placeOfBirth || "",
-    nationality: member?.nationality || "",
     currentAddress: member?.currentAddress || "",
     tcId: member?.tcId || "",
-    lastValidDate: member?.lastValidDate || "",
+    lastValidDate: isoToDateInput(member?.lastValidDate),
     titles: member?.titles || [],
     status: member?.status || "",
-    membershipDate: member?.membershipDate || "",
+    membershipDate: isoToDateInput(member?.membershipDate),
     // Sprint 5: Yeni alanlar
     membershipKind: member?.membershipKind || "MEMBER",
     tags: member?.tags || [],
+    // Sprint 15: Membership Application'dan gelen yeni alanlar
+    bloodType: member?.bloodType || null,
+    city: member?.city || null,
   });
+
+  // Update formData when member changes
+  useEffect(() => {
+    if (member) {
+      setFormData({
+        firstName: member.firstName || "",
+        lastName: member.lastName || "",
+        gender: member.gender || "",
+        email: member.email || "",
+        phone: member.phone || "",
+        birthDate: isoToDateInput(member.birthDate),
+        placeOfBirth: member.placeOfBirth || "",
+        currentAddress: member.currentAddress || "",
+        tcId: member.tcId || "",
+        lastValidDate: isoToDateInput(member.lastValidDate),
+        titles: member.titles || [],
+        status: member.status || "",
+        membershipDate: isoToDateInput(member.membershipDate),
+        membershipKind: member.membershipKind || "MEMBER",
+        tags: member.tags || [],
+        bloodType: member.bloodType || null,
+        city: member.city || null,
+      });
+    } else {
+      // Reset form when member is null (new member)
+      setFormData({
+        firstName: "",
+        lastName: "",
+        gender: "",
+        email: "",
+        phone: "",
+        birthDate: "",
+        placeOfBirth: "",
+        currentAddress: "",
+        tcId: "",
+        lastValidDate: "",
+        titles: [],
+        status: "",
+        membershipDate: "",
+        membershipKind: "MEMBER",
+        tags: [],
+        bloodType: null,
+        city: null,
+      });
+    }
+  }, [member]);
 
   const genderOptions = [
     { value: "erkek", label: "Erkek" },
     { value: "kadın", label: "Kadın" },
   ];
 
-  const academicLevelOptions = [
-    { value: "ilkokul", label: "İlkokul" },
-    { value: "ortaokul", label: "Ortaokul" },
-    { value: "lise", label: "Lise" },
-    { value: "onlisans", label: "Önlisans" },
-    { value: "lisans", label: "Lisans" },
-    { value: "yukseklisans", label: "Yüksek Lisans" },
-    { value: "doktora", label: "Doktora" },
-  ];
-
-  const maritalStatusOptions = [
-    { value: "bekar", label: "Bekar" },
-    { value: "evli", label: "Evli" },
-    { value: "dul", label: "Dul" },
-    { value: "bosanmis", label: "Boşanmış" },
-  ];
 
   const titleOptions = [
     { value: "Onursal Başkan", label: "Onursal Başkan" },
@@ -102,6 +134,19 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
     { value: "PAST_PRESIDENT", label: "Önceki Başkan" },
   ];
 
+  // Sprint 15: Blood type options
+  const bloodTypeOptions = [
+    { value: "", label: "Seçiniz" },
+    { value: "A_POSITIVE", label: "A Rh+" },
+    { value: "A_NEGATIVE", label: "A Rh-" },
+    { value: "B_POSITIVE", label: "B Rh+" },
+    { value: "B_NEGATIVE", label: "B Rh-" },
+    { value: "AB_POSITIVE", label: "AB Rh+" },
+    { value: "AB_NEGATIVE", label: "AB Rh-" },
+    { value: "O_POSITIVE", label: "0 Rh+" },
+    { value: "O_NEGATIVE", label: "0 Rh-" },
+  ];
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -109,12 +154,10 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
     const memberData: CreateMemberData = {
       ...formData,
       gender: formData.gender as 'erkek' | 'kadın',
-      academicLevel: formData.academicLevel as 'ilkokul' | 'ortaokul' | 'lise' | 'onlisans' | 'lisans' | 'yukseklisans' | 'doktora',
-      maritalStatus: formData.maritalStatus as 'bekar' | 'evli' | 'dul' | 'bosanmis',
       status: formData.status as 'active' | 'inactive',
-      // Sprint 5: membershipKind ve tags
       membershipKind: (formData.membershipKind || "MEMBER") as MembershipKind,
       tags: formData.tags || [],
+      bloodType: formData.bloodType || null,
     };
     
     onSave(memberData);
@@ -139,108 +182,145 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Kişisel Bilgiler */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900">Kişisel Bilgiler</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Ad"
-                  value={formData.firstName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                  required
-                />
-                <Input
-                  label="Soyad"
-                  value={formData.lastName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                  required
-                />
-                <Select
-                  label="Cinsiyet"
-                  value={formData.gender}
-                  onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value as "" | "erkek" | "kadın" }))}
-                  options={genderOptions}
-                  required
-                />
-                <Input
-                  label="Doğum Tarihi"
-                  type="date"
-                  value={formData.birthDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, birthDate: e.target.value }))}
-                  required
-                />
-                <Select
-                  label="Akademik Seviye"
-                  value={formData.academicLevel}
-                  onChange={(e) => setFormData(prev => ({ ...prev, academicLevel: e.target.value as "" | "ilkokul" | "ortaokul" | "lise" | "onlisans" | "lisans" | "yukseklisans" | "doktora" }))}
-                  options={academicLevelOptions}
-                  required
-                />
-                <Select
-                  label="Medeni Hal"
-                  value={formData.maritalStatus}
-                  onChange={(e) => setFormData(prev => ({ ...prev, maritalStatus: e.target.value as "" | "bekar" | "evli" | "bosanmis" | "dul" }))}
-                  options={maritalStatusOptions}
-                  required
-                />
+            {/* Sprint 15: Üyelik başvuru formuna göre düzenlenmiş alanlar */}
+            <div className="space-y-6">
+              {/* Satır 1: Ad Soyad | TC Kimlik No */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex flex-col">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Ad Soyad <span className="text-red-500">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input
+                      value={formData.firstName}
+                      onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                      placeholder="Ad"
+                      required
+                    />
+                    <Input
+                      value={formData.lastName}
+                      onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                      placeholder="Soyad"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    TC Kimlik No
+                  </label>
+                  <Input
+                    value={formData.tcId || ""}
+                    onChange={(e) => setFormData(prev => ({ ...prev, tcId: e.target.value }))}
+                    placeholder="11 haneli TC kimlik numarası"
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* İletişim Bilgileri */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900">İletişim Bilgileri</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  required
-                />
-                <Input
-                  label="Telefon"
-                  value={formData.phone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                  required
-                />
+              {/* Satır 2: Cinsiyet | İkamet Ettiğiniz Şehir */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex flex-col">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Cinsiyet <span className="text-red-500">*</span>
+                  </label>
+                  <Select
+                    value={formData.gender}
+                    onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value as "" | "erkek" | "kadın" }))}
+                    options={genderOptions}
+                    required
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    İkamet Ettiğiniz Şehir
+                  </label>
+                  <Input
+                    value={formData.city || ""}
+                    onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+                    placeholder="İkamet ettiğiniz şehir"
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Adres Bilgileri */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900">Adres Bilgileri</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  label="Memleket"
-                  value={formData.hometown}
-                  onChange={(e) => setFormData(prev => ({ ...prev, hometown: e.target.value }))}
-                  required
-                />
-                <Input
-                  label="Doğum Yeri"
-                  value={formData.placeOfBirth}
-                  onChange={(e) => setFormData(prev => ({ ...prev, placeOfBirth: e.target.value }))}
-                  required
-                />
-                <Input
-                  label="Uyruk"
-                  value={formData.nationality}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nationality: e.target.value }))}
-                  required
-                />
-                <Input
-                  label="TC Kimlik No"
-                  value={formData.tcId}
-                  onChange={(e) => setFormData(prev => ({ ...prev, tcId: e.target.value }))}
+              {/* Satır 3: Doğum Yeri | Doğum Tarihi */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex flex-col">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Doğum Yeri <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    value={formData.placeOfBirth}
+                    onChange={(e) => setFormData(prev => ({ ...prev, placeOfBirth: e.target.value }))}
+                    placeholder="Doğum yeri"
+                    required
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Doğum Tarihi <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="date"
+                    value={formData.birthDate}
+                    onChange={(e) => setFormData(prev => ({ ...prev, birthDate: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Satır 4: E-posta | Telefon Numarası */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex flex-col">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    E-posta <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="ornek@email.com"
+                    required
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Telefon Numarası <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="05551234567"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Satır 5: Kan Grubu (Tam genişlik) */}
+              <div className="flex flex-col">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Kan Grubu
+                </label>
+                <Select
+                  value={formData.bloodType || ""}
+                  onChange={(e) => setFormData(prev => ({ ...prev, bloodType: (e.target.value === "" ? null : e.target.value) as BloodType | null }))}
+                  options={bloodTypeOptions}
                 />
               </div>
-              <Textarea
-                label="Mevcut Adres"
-                value={formData.currentAddress}
-                onChange={(e) => setFormData(prev => ({ ...prev, currentAddress: e.target.value }))}
-                required
-                rows={3}
-              />
+
+              {/* Satır 6: Adres (Tam genişlik) */}
+              <div className="flex flex-col">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Adres <span className="text-red-500">*</span>
+                </label>
+                <Textarea
+                  value={formData.currentAddress}
+                  onChange={(e) => setFormData(prev => ({ ...prev, currentAddress: e.target.value }))}
+                  placeholder="Tam adresinizi girin"
+                  rows={4}
+                  required
+                />
+              </div>
             </div>
 
             {/* Üyelik Bilgileri */}
@@ -348,22 +428,68 @@ function getTagLabel(tag: MemberTag): string {
   return tagMap[tag] || tag;
 }
 
+// CollapsibleSection component for MemberDetailsModal
+function CollapsibleSectionMember({
+  title,
+  icon: Icon,
+  children,
+  defaultOpen = false,
+}: {
+  title: string;
+  icon?: React.ComponentType<{ className?: string }>;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 transition-all flex items-center justify-between group"
+      >
+        <div className="flex items-center space-x-3">
+          {Icon && <Icon className="w-5 h-5 text-gray-600 group-hover:text-gray-900 transition-colors" />}
+          <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+        </div>
+        {isOpen ? (
+          <ChevronUp className="w-5 h-5 text-gray-600 group-hover:text-gray-900 transition-colors" />
+        ) : (
+          <ChevronDown className="w-5 h-5 text-gray-600 group-hover:text-gray-900 transition-colors" />
+        )}
+      </button>
+      {isOpen && <div className="p-6 bg-white">{children}</div>}
+    </div>
+  );
+}
+
 function MemberDetailsModal({ member, onClose }: MemberDetailsModalProps) {
   const { boardMembers } = useMembers();
   
-  // Sprint 6: BoardRole'ü Türkçe'ye çevir - helper fonksiyon kullan
-  // getBoardRoleLabel helper fonksiyonu import edildi, doğrudan kullanılabilir
   if (!member) return null;
+
+  // Get board member role
+  const boardMember = boardMembers.find(bm => bm.memberId === member.id);
+  const boardRoleLabel = boardMember ? getBoardRoleLabel(boardMember.role) : null;
+  const memberTitles = member.titles || [];
 
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-200">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Üye Detayları</h2>
+      <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto border border-gray-200">
+        <div className="p-8">
+          {/* Header */}
+          <div className="flex justify-between items-start mb-8 pb-6 border-b border-gray-200">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900 mb-2">Üye Detayları</h2>
+              <p className="text-gray-600">
+                {member.firstName} {member.lastName}
+                {member.tcId && ` - ${member.tcId}`}
+              </p>
+            </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
+              className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-colors"
+              aria-label="Kapat"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -371,174 +497,154 @@ function MemberDetailsModal({ member, onClose }: MemberDetailsModalProps) {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Sol Kolon - Kişisel Bilgiler */}
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Kişisel Bilgiler</h3>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Ad</label>
-                      <p className="text-gray-900 font-medium">{member.firstName}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Soyad</label>
-                      <p className="text-gray-900 font-medium">{member.lastName}</p>
-                    </div>
+          <div className="space-y-6">
+            {/* Kişisel Bilgiler */}
+            <CollapsibleSectionMember title="Kişisel Bilgiler" icon={User} defaultOpen={true}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Ad</label>
+                  <p className="text-base font-medium text-gray-900">{member.firstName}</p>
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Soyad</label>
+                  <p className="text-base font-medium text-gray-900">{member.lastName}</p>
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">TC Kimlik No</label>
+                  <p className="text-base font-mono text-gray-900 tracking-wider">{member.tcId || "-"}</p>
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Cinsiyet</label>
+                  <p className="text-base text-gray-900 font-medium">{getGenderLabel(member.gender)}</p>
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Doğum Tarihi</label>
+                  <p className="text-base text-gray-900 font-medium">
+                    {member.birthDate && member.birthDate !== "" ? formatDateOnly(member.birthDate) : "-"}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Doğum Yeri</label>
+                  <p className="text-base text-gray-900 font-medium">{member.placeOfBirth || "-"}</p>
+                </div>
+                {member.bloodType && (
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Kan Grubu</label>
+                    <p className="text-base text-gray-900 font-medium flex items-center">
+                      <Droplet className="w-4 h-4 mr-2 text-red-500" />
+                      {getBloodTypeLabel(member.bloodType)}
+                    </p>
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Cinsiyet</label>
-                      <p className="text-gray-900 capitalize">{member.gender}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Doğum Tarihi</label>
-                      <p className="text-gray-900">{new Date(member.birthDate).toLocaleDateString('tr-TR')}</p>
-                    </div>
+                )}
+                {member.city && (
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">İkamet Ettiği Şehir</label>
+                    <p className="text-base text-gray-900 font-medium flex items-center">
+                      <MapPin className="w-4 h-4 mr-2 text-blue-500" />
+                      {member.city}
+                    </p>
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Akademik Seviye</label>
-                      <p className="text-gray-900 capitalize">{member.academicLevel}</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Medeni Hal</label>
-                      <p className="text-gray-900 capitalize">{member.maritalStatus}</p>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">TC Kimlik No</label>
-                    <p className="text-gray-900">{member.tcId || 'Belirtilmemiş'}</p>
-                  </div>
+                )}
+              </div>
+            </CollapsibleSectionMember>
+
+            {/* İletişim Bilgileri */}
+            <CollapsibleSectionMember title="İletişim Bilgileri" icon={Mail} defaultOpen={true}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">E-posta</label>
+                  <p className="text-base text-gray-900 font-medium flex items-center">
+                    <Mail className="w-4 h-4 mr-2 text-blue-500" />
+                    {member.email}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Telefon Numarası</label>
+                  <p className="text-base text-gray-900 font-medium flex items-center">
+                    <Phone className="w-4 h-4 mr-2 text-green-500" />
+                    {member.phone}
+                  </p>
+                </div>
+                <div className="space-y-1 md:col-span-2">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Adres</label>
+                  <p className="text-base text-gray-900 font-medium">{member.currentAddress || "-"}</p>
                 </div>
               </div>
+            </CollapsibleSectionMember>
 
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">İletişim Bilgileri</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <p className="text-gray-900">{member.email}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
-                    <p className="text-gray-900">{member.phone}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Mevcut Adres</label>
-                    <p className="text-gray-900">{member.currentAddress}</p>
-                  </div>
+            {/* Üyelik Bilgileri */}
+            <CollapsibleSectionMember title="Üyelik Bilgileri" icon={Calendar} defaultOpen={true}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Üye Türü</label>
+                  <Badge variant={member.membershipKind === "VOLUNTEER" ? "default" : "success"} className="text-sm">
+                    {getMembershipKindLabel(member.membershipKind)}
+                  </Badge>
                 </div>
-              </div>
-            </div>
-
-            {/* Sağ Kolon - Adres ve Üyelik Bilgileri */}
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Adres Bilgileri</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Memleket</label>
-                    <p className="text-gray-900">{member.hometown}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Doğum Yeri</label>
-                    <p className="text-gray-900">{member.placeOfBirth}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Uyruk</label>
-                    <p className="text-gray-900">{member.nationality}</p>
-                  </div>
-                  {member.lastValidDate && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Son Geçerlilik Tarihi</label>
-                      <p className="text-gray-900">{new Date(member.lastValidDate).toLocaleDateString('tr-TR')}</p>
-                    </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Durum</label>
+                  {member.status === 'active' ? (
+                    <Badge variant="success">Aktif</Badge>
+                  ) : (
+                    <Badge variant="secondary">Pasif</Badge>
                   )}
                 </div>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Üyelik Bilgileri</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Üye Türü</label>
-                    <Badge variant={member.membershipKind === "VOLUNTEER" ? "default" : "success"} className="text-sm">
-                      {getMembershipKindLabel(member.membershipKind)}
-                    </Badge>
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Üyelik Tarihi</label>
+                  <p className="text-base text-gray-900 font-medium flex items-center">
+                    <Calendar className="w-4 h-4 mr-2 text-purple-500" />
+                    {member.membershipDate && member.membershipDate !== "" ? formatDateOnly(member.membershipDate) : "-"}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Kayıt Tarihi</label>
+                  <p className="text-base text-gray-900 font-medium">
+                    {member.createdAt && member.createdAt !== "" ? formatDateOnly(member.createdAt) : "-"}
+                  </p>
+                </div>
+                {member.lastValidDate && (
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Son Geçerlilik Tarihi</label>
+                    <p className="text-base text-gray-900 font-medium">
+                      {formatDateOnly(member.lastValidDate)}
+                    </p>
                   </div>
-                  
-                  {member.tags && member.tags.length > 0 && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Etiketler</label>
-                      <div className="flex flex-wrap gap-2">
-                        {member.tags.map((tag, index) => (
-                          <Badge key={index} variant="default" className="text-sm font-semibold bg-purple-100 text-purple-800">
-                            {getTagLabel(tag)}
+                )}
+                {member.tags && member.tags.length > 0 && (
+                  <div className="space-y-1 md:col-span-2">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Etiketler</label>
+                    <div className="flex flex-wrap gap-2">
+                      {member.tags.map((tag, index) => (
+                        <Badge key={index} variant="default" className="text-sm font-semibold bg-purple-100 text-purple-800">
+                          {getTagLabel(tag)}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="space-y-1 md:col-span-2">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Ünvanlar</label>
+                  <div className="flex flex-wrap gap-2">
+                    {!boardRoleLabel && memberTitles.length === 0 ? (
+                      <span className="text-sm text-gray-400">Ünvan yok</span>
+                    ) : (
+                      <>
+                        {boardRoleLabel && (
+                          <Badge variant="default" className="text-sm font-semibold bg-indigo-100 text-indigo-800">
+                            {boardRoleLabel}
+                          </Badge>
+                        )}
+                        {memberTitles.map((title, index) => (
+                          <Badge key={index} variant="default" className="text-sm font-semibold">
+                            {title}
                           </Badge>
                         ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Ünvanlar</label>
-                    <div className="flex flex-wrap gap-2">
-                      {/* Sprint 5: BoardMember rolü + member.titles */}
-                      {(() => {
-                        const boardMember = boardMembers.find(bm => bm.memberId === member.id);
-                        const boardRoleLabel = boardMember ? getBoardRoleLabel(boardMember.role) : null;
-                        const memberTitles = member.titles || [];
-                        
-                        if (!boardRoleLabel && memberTitles.length === 0) {
-                          return <span className="text-sm text-gray-400">Ünvan yok</span>;
-                        }
-                        
-                        return (
-                          <>
-                            {boardRoleLabel && (
-                              <Badge variant="default" className="text-sm font-semibold bg-indigo-100 text-indigo-800">
-                                {boardRoleLabel}
-                              </Badge>
-                            )}
-                            {memberTitles.map((title, index) => (
-                              <Badge key={index} variant="default" className="text-sm font-semibold">
-                                {title}
-                              </Badge>
-                            ))}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Durum</label>
-                    <div className="flex items-center space-x-2">
-                      {member.status === 'active' ? (
-                        <Badge variant="success">Aktif</Badge>
-                      ) : (
-                        <Badge variant="secondary">Pasif</Badge>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Üyelik Tarihi</label>
-                    <p className="text-gray-900">{new Date(member.membershipDate).toLocaleDateString('tr-TR')}</p>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Kayıt Tarihi</label>
-                    <p className="text-gray-900">{new Date(member.createdAt).toLocaleDateString('tr-TR')}</p>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
-            </div>
+            </CollapsibleSectionMember>
           </div>
         </div>
       </div>
@@ -717,8 +823,7 @@ export default function MemberManagementTab() {
       const matchesSearch = 
         `${member.firstName} ${member.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
         member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        member.phone.includes(searchTerm) ||
-        member.hometown.toLowerCase().includes(searchTerm.toLowerCase());
+        (member.phone && member.phone.includes(searchTerm));
 
       const matchesStatus = statusFilter === 'all' || member.status === statusFilter;
       
@@ -776,7 +881,7 @@ export default function MemberManagementTab() {
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Arama</label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 top-[30%] -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none z-10" />
                 <Input
                   placeholder="Ad, email, telefon, memleket..."
                   value={searchTerm}

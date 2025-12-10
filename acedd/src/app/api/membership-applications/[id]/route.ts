@@ -19,30 +19,27 @@ import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
 
 /**
  * Helper function to format Prisma MembershipApplication to frontend MembershipApplication
+ * Sprint 15.1: Yeni form şeması ile güncellendi
  */
 function formatApplication(prismaApplication: {
   id: string;
   firstName: string;
   lastName: string;
+  identityNumber: string;
   gender: string;
-  email: string;
-  phone: string;
+  bloodType: string | null;
+  birthPlace: string;
   birthDate: Date;
-  academicLevel: string;
-  maritalStatus: string;
-  hometown: string;
-  placeOfBirth: string;
-  nationality: string;
-  currentAddress: string;
-  tcId: string | null;
-  lastValidDate: Date | null;
+  city: string;
+  phone: string;
+  email: string;
+  address: string;
+  conditionsAccepted: boolean;
   status: string;
   applicationDate: Date;
   reviewedAt: Date | null;
   reviewedBy: string | null;
   notes: string | null;
-  department: string | null;
-  reason: string | null;
   createdAt: Date;
   updatedAt: Date;
 }) {
@@ -50,18 +47,16 @@ function formatApplication(prismaApplication: {
     id: prismaApplication.id,
     firstName: prismaApplication.firstName,
     lastName: prismaApplication.lastName,
+    identityNumber: prismaApplication.identityNumber,
     gender: prismaApplication.gender as "erkek" | "kadın",
-    email: prismaApplication.email,
-    phone: prismaApplication.phone,
+    bloodType: prismaApplication.bloodType as MembershipApplication["bloodType"] || null,
+    birthPlace: prismaApplication.birthPlace,
     birthDate: prismaApplication.birthDate.toISOString(),
-    academicLevel: prismaApplication.academicLevel as MembershipApplication["academicLevel"],
-    maritalStatus: prismaApplication.maritalStatus as MembershipApplication["maritalStatus"],
-    hometown: prismaApplication.hometown,
-    placeOfBirth: prismaApplication.placeOfBirth,
-    nationality: prismaApplication.nationality,
-    currentAddress: prismaApplication.currentAddress,
-    tcId: prismaApplication.tcId || undefined,
-    lastValidDate: prismaApplication.lastValidDate?.toISOString() || undefined,
+    city: prismaApplication.city,
+    phone: prismaApplication.phone,
+    email: prismaApplication.email,
+    address: prismaApplication.address,
+    conditionsAccepted: prismaApplication.conditionsAccepted,
     status: prismaApplication.status.toLowerCase() as "pending" | "approved" | "rejected",
     applicationDate: prismaApplication.applicationDate.toISOString(),
     reviewedAt: prismaApplication.reviewedAt?.toISOString() || undefined,
@@ -122,41 +117,121 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Require SUPER_ADMIN role for status updates
-    requireRole(request, ["SUPER_ADMIN"]);
+    // Require SUPER_ADMIN role for status updates and get admin user info
+    const adminUser = requireRole(request, ["SUPER_ADMIN"]);
     
     const { id } = await params;
     const body = await request.json();
 
-    // Validation
-    if (!body.status || !["approved", "rejected"].includes(body.status)) {
-      return NextResponse.json(
-        { error: "Geçersiz durum değeri (approved veya rejected olmalı)" },
-        { status: 400 }
-      );
+    // Validation - status is optional (can just update notes)
+    let prismaStatus: string | null = null;
+    if (body.status) {
+      if (!["approved", "rejected"].includes(body.status)) {
+        return NextResponse.json(
+          { error: "Geçersiz durum değeri (approved veya rejected olmalı)" },
+          { status: 400 }
+        );
+      }
+      // Map frontend status to Prisma enum
+      const statusMap: Record<string, string> = {
+        approved: "APPROVED",
+        rejected: "REJECTED",
+      };
+      prismaStatus = statusMap[body.status];
     }
 
-    // Map frontend status to Prisma enum
-    const statusMap: Record<string, string> = {
-      approved: "APPROVED",
-      rejected: "REJECTED",
-    };
-    const prismaStatus = statusMap[body.status];
+    // Get the application first to check current status and get data
+    const application = await prisma.membershipApplication.findUnique({
+      where: { id },
+    });
+
+    if (!application) {
+      return NextResponse.json(
+        { error: "Başvuru bulunamadı" },
+        { status: 404 }
+      );
+    }
+    
+    // If approved, create a Member from the application FIRST (before updating application)
+    // This ensures member creation happens before status update
+    if (prismaStatus === "APPROVED") {
+      try {
+        // Check if member already exists (by email or identityNumber)
+        // Use lowercase email for comparison to match the stored format
+        const existingMember = await prisma.member.findFirst({
+          where: {
+            OR: [
+              { email: application.email.trim().toLowerCase() },
+              ...(application.identityNumber ? [{ tcId: application.identityNumber }] : []),
+            ],
+          },
+        });
+
+        if (!existingMember) {
+          // Create member from application
+          // Use current date (when approved) as membershipDate
+          // This represents when the person officially became a member
+          const newMember = await prisma.member.create({
+            data: {
+              firstName: application.firstName,
+              lastName: application.lastName,
+              gender: application.gender,
+              email: application.email.trim().toLowerCase(), // Ensure lowercase email
+              phone: application.phone || null,
+              birthDate: application.birthDate, // Already a Date object from Prisma
+              placeOfBirth: application.birthPlace,
+              currentAddress: application.address,
+              tcId: application.identityNumber || null,
+              titles: JSON.stringify([]), // Empty titles array
+              status: "ACTIVE", // Automatically active
+              membershipDate: new Date(), // Use current date (approval date) as membership date
+              membershipKind: "MEMBER", // Default to MEMBER
+              bloodType: application.bloodType || null,
+              city: application.city,
+            },
+          });
+          console.log("[INFO][API][MEMBERSHIP][APPROVE] Member created:", newMember.id, "Email:", newMember.email);
+        } else {
+          console.log("[INFO][API][MEMBERSHIP][APPROVE] Member already exists:", existingMember.id);
+        }
+      } catch (memberError) {
+        // Log member creation error and fail the request
+        const errorDetails = memberError instanceof Error ? memberError.stack : String(memberError);
+        console.error("[ERROR][API][MEMBERSHIP][APPROVE] Failed to create member:", memberError);
+        console.error("[ERROR][API][MEMBERSHIP][APPROVE] Details:", errorDetails);
+        console.error("[ERROR][API][MEMBERSHIP][APPROVE] Application data:", {
+          email: application.email,
+          identityNumber: application.identityNumber,
+          firstName: application.firstName,
+          lastName: application.lastName,
+        });
+        // Fail the request if member creation fails
+        return NextResponse.json(
+          {
+            error: "Üye oluşturulurken hata oluştu",
+            message: memberError instanceof Error ? memberError.message : String(memberError),
+          },
+          { status: 500 }
+        );
+      }
+    }
 
     // Prepare update data
     const updateData: any = {
-      status: prismaStatus,
-      reviewedAt: new Date(),
+      reviewedBy: adminUser.adminUserId || body.reviewedBy || null,
     };
+
+    // Only update status if provided
+    if (prismaStatus) {
+      updateData.status = prismaStatus;
+      updateData.reviewedAt = new Date(); // Only set reviewedAt when status changes
+    }
 
     if (body.notes !== undefined) {
       updateData.notes = body.notes || null;
     }
 
-    if (body.reviewedBy !== undefined) {
-      updateData.reviewedBy = body.reviewedBy || null;
-    }
-
+    // Update application
     const updatedApplication = await prisma.membershipApplication.update({
       where: { id },
       data: updateData,
@@ -204,6 +279,24 @@ export async function DELETE(
     
     const { id } = await params;
 
+    // Get application first
+    const application = await prisma.membershipApplication.findUnique({
+      where: { id },
+    });
+
+    if (!application) {
+      return NextResponse.json(
+        { error: "Başvuru bulunamadı" },
+        { status: 404 }
+      );
+    }
+
+    // Note: We do NOT delete the member even if the application was approved
+    // Once a member is created from an approved application, they remain a member
+    // even if the application record is deleted. This is intentional to preserve
+    // member data integrity.
+
+    // Delete the application
     await prisma.membershipApplication.delete({
       where: { id },
     });

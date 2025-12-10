@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useTransition } from "react";
+import React, { useState, useEffect, useTransition, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button, Badge, Input, Select } from "@/components/ui";
 import { 
@@ -34,12 +34,28 @@ function ContactMessageModal({
 }: ContactMessageModalProps) {
   const [action, setAction] = useState<'read' | 'archive' | 'delete' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const confirmationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (message) {
       setAction(null);
     }
   }, [message]);
+
+  // Auto-scroll to confirmation message when action is set
+  useEffect(() => {
+    if (action && confirmationRef.current && modalRef.current) {
+      // Small delay to ensure DOM has updated
+      setTimeout(() => {
+        confirmationRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'nearest',
+          inline: 'nearest'
+        });
+      }, 100);
+    }
+  }, [action]);
 
   if (!message) return null;
 
@@ -79,7 +95,24 @@ function ContactMessageModal({
 
   return (
     <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-gray-200">
+      <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 relative">
+        {/* Success Message Toast */}
+        {successMessage && (
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4">
+            <div className="bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3 animate-in slide-in-from-top-5">
+              <CheckCircle className="w-5 h-5 flex-shrink-0" />
+              <p className="font-medium flex-1">{successMessage}</p>
+              <button
+                onClick={() => setSuccessMessage(null)}
+                className="text-white hover:text-gray-200 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Mesaj Detayları</h2>
@@ -219,7 +252,7 @@ function ContactMessageModal({
                 </Button>
               </div>
               {action && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <div ref={confirmationRef} className="mt-4 p-4 bg-gray-50 rounded-lg">
                   <p className="text-sm text-gray-600 mb-2">
                     {action === 'read' && 'Mesajı okundu olarak işaretlemek istediğinizden emin misiniz?'}
                     {action === 'archive' && 'Mesajı arşive taşımak istediğinizden emin misiniz?'}
