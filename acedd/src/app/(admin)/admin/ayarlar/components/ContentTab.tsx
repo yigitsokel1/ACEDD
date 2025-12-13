@@ -8,6 +8,7 @@ import type { PageIdentifier } from "@/lib/types/setting";
 import { getContentPrefix, getContentKey } from "@/lib/settings/keys";
 import EnhancedJsonEditor from "./EnhancedJsonEditor";
 import { PAGE_SCHEMAS } from "@/lib/constants/settingsSchema";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 const PAGES: Array<{ key: PageIdentifier; label: string }> = [
   { key: "home", label: "Ana Sayfa" },
@@ -172,7 +173,7 @@ export default function ContentTab() {
 
       setFormData(initialFormData);
     } catch (error) {
-      console.error("Error fetching settings:", error);
+      logClientError("[ContentTab][FETCH]", error);
     } finally {
       setIsLoading(false);
     }
@@ -301,7 +302,7 @@ export default function ContentTab() {
       // Show success message
       alert(`İçerik ayarları başarıyla kaydedildi! (${settingsToUpdate.length} ayar güncellendi)`);
     } catch (error) {
-      console.error("Error saving content settings:", error);
+      logClientError("[ContentTab][SAVE]", error);
       setErrors({ 
         general: error instanceof Error ? error.message : "İçerik ayarları kaydedilirken bir hata oluştu." 
       });

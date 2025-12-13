@@ -18,6 +18,7 @@ export interface AdminSession {
   role: AdminRole;
   email: string;
   name: string;
+  issuedAt: number; // Unix timestamp (seconds) - when the session was created/refreshed
 }
 
 const SESSION_COOKIE_NAME = "admin_session";
@@ -86,6 +87,10 @@ function decryptSession(encrypted: string): AdminSession | null {
       typeof session.email === "string" &&
       typeof session.name === "string"
     ) {
+      // Backward compatibility: if issuedAt is missing, set it to now
+      if (typeof session.issuedAt !== "number") {
+        session.issuedAt = Math.floor(Date.now() / 1000);
+      }
       return session;
     }
     return null;
@@ -99,7 +104,12 @@ function decryptSession(encrypted: string): AdminSession | null {
  */
 export async function createSession(session: AdminSession): Promise<void> {
   const cookieStore = await cookies();
-  const encrypted = encryptSession(session);
+  // Ensure issuedAt is set
+  const sessionWithTimestamp: AdminSession = {
+    ...session,
+    issuedAt: session.issuedAt || Math.floor(Date.now() / 1000),
+  };
+  const encrypted = encryptSession(sessionWithTimestamp);
   
   cookieStore.set(SESSION_COOKIE_NAME, encrypted, {
     httpOnly: true,

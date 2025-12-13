@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 /**
  * Helper function to parse JSON string to array
@@ -97,9 +98,7 @@ export async function GET(
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][DATASETS][GET_BY_ID]", error);
-    console.error("[ERROR][API][DATASETS][GET_BY_ID] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][DATASETS][GET_BY_ID]", error);
 
     return NextResponse.json(
       {
@@ -164,9 +163,7 @@ export async function PUT(
       );
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][DATASETS][UPDATE]", error);
-    console.error("[ERROR][API][DATASETS][UPDATE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][DATASETS][UPDATE]", error);
 
     return NextResponse.json(
       {
@@ -209,9 +206,7 @@ export async function DELETE(
       );
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][DATASETS][DELETE]", error);
-    console.error("[ERROR][API][DATASETS][DELETE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][DATASETS][DELETE]", error);
 
     return NextResponse.json(
       {

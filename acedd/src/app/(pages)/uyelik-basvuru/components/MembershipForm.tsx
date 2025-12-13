@@ -15,6 +15,7 @@ import {
   MembershipApplicationSchema,
   type MembershipApplicationInput,
 } from "@/modules/membership/schemas";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 type MembershipFormSchema = MembershipApplicationInput;
 
@@ -162,7 +163,7 @@ export function MembershipForm({
         setSubmitSuccess(false);
       }, 15000);
     } catch (error) {
-      console.error("Error submitting application:", error);
+      logClientError("[MembershipForm][SUBMIT]", error);
       const errorMessage = error instanceof Error ? error.message : "Başvuru gönderilirken bir hata oluştu. Lütfen tekrar deneyin.";
       setSubmitError(errorMessage);
       

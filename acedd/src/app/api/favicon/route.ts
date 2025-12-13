@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 /**
  * Dynamic Favicon API Route
@@ -63,9 +64,7 @@ export async function GET(request: NextRequest) {
     // Fallback: return 404
     return new NextResponse(null, { status: 404 });
   } catch (error) {
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][FAVICON][GET]", error);
-    console.error("[ERROR][API][FAVICON][GET] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][FAVICON][GET]", error);
 
     return new NextResponse(null, { status: 500 });
   }

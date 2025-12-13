@@ -232,11 +232,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Log successful validation (metadata only, no sensitive data)
-    console.log("[API][MEMBERSHIP][CREATE] Validation successful", {
-      ipAddress: clientIp,
-      emailDomain: validatedData.email.split("@")[1], // Only domain, not full email
-    });
 
     // Check for duplicate applications (TC, email, phone)
     const trimmedIdentityNumber = validatedData.identityNumber.trim();

@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 export async function GET(
   request: NextRequest,
@@ -29,26 +30,16 @@ export async function GET(
     
     // Validate fileUrl format
     if (!dataset.fileUrl || typeof dataset.fileUrl !== 'string') {
-      console.error(`[Dataset Image API] Invalid fileUrl for dataset ${id}:`, dataset.fileUrl);
+      logErrorSecurely("[ERROR][API][DATASETS][IMAGE][GET_BY_ID] Invalid fileUrl", new Error(`Invalid fileUrl for dataset ${id}`));
       return NextResponse.json(
         { error: 'Invalid file URL in dataset' },
         { status: 500 }
       );
     }
     
-    // Log fileUrl format for debugging
-    const fileUrlLength = dataset.fileUrl.length;
-    const fileUrlPreview = dataset.fileUrl.substring(0, 100);
-    const fileUrlEnd = dataset.fileUrl.substring(Math.max(0, fileUrlLength - 50));
-    console.log(`[Dataset Image API] Dataset ${id}:`);
-    console.log(`  - fileUrl length: ${fileUrlLength} chars`);
-    console.log(`  - fileUrl starts with: ${fileUrlPreview}...`);
-    console.log(`  - fileUrl ends with: ...${fileUrlEnd}`);
-    console.log(`  - fileUrl is data URL: ${dataset.fileUrl.startsWith('data:')}`);
-    
     // Check if fileUrl is a valid Base64 data URL
     if (!dataset.fileUrl.startsWith('data:image/') && !dataset.fileUrl.startsWith('data:')) {
-      console.error(`[Dataset Image API] fileUrl is not a data URL:`, dataset.fileUrl.substring(0, 200));
+      logErrorSecurely("[ERROR][API][DATASETS][IMAGE][GET_BY_ID] Invalid data URL format", new Error(`fileUrl is not a data URL for dataset ${id}`));
       return NextResponse.json(
         { error: 'Invalid file URL format (not a data URL)' },
         { status: 500 }
@@ -63,7 +54,7 @@ export async function GET(
       fileType: dataset.fileType,
     });
   } catch (error) {
-    console.error('Error fetching dataset:', error);
+    logErrorSecurely("[ERROR][API][DATASETS][IMAGE][GET_BY_ID]", error);
     return NextResponse.json(
       { 
         error: 'Failed to fetch dataset',

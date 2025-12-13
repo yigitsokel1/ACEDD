@@ -10,6 +10,7 @@
 
 import { prisma } from "@/lib/db";
 import { ENTITY_TYPE, FILE_SOURCE, type EntityType } from "./constants";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 // Re-export EntityType for backward compatibility
 export type { EntityType };
@@ -56,7 +57,7 @@ export async function linkFileToEntity(
       });
     }
   } catch (error) {
-    console.error("[fileService][linkFileToEntity] Error:", error);
+    logErrorSecurely("[ERROR][fileService][linkFileToEntity]", error);
     // Non-critical error, don't throw
   }
 }
@@ -113,11 +114,10 @@ export async function unlinkAndDeleteFilesForEntity(
       where: whereClause,
     });
     
-    console.log(`[fileService][unlinkAndDeleteFilesForEntity] Deleted ${deleteResult.count} datasets for ${usage.entityType}:${usage.entityId}`);
     
     return deleteResult.count;
   } catch (error) {
-    console.error("[fileService][unlinkAndDeleteFilesForEntity] Error:", error);
+    logErrorSecurely("[ERROR][fileService][unlinkAndDeleteFilesForEntity]", error);
     // Non-critical error, return 0
     return 0;
   }
@@ -155,7 +155,6 @@ export async function replaceSingleFile(
         await (prisma as any).dataset.delete({
           where: { id: oldDatasetId },
         });
-        console.log(`[fileService][replaceSingleFile] Deleted old dataset: ${oldDatasetId}`);
       } catch (deleteError) {
         // Dataset bulunamadı veya zaten silinmiş, non-critical
         console.warn(`[fileService][replaceSingleFile] Could not delete old dataset ${oldDatasetId}:`, deleteError);
@@ -165,10 +164,10 @@ export async function replaceSingleFile(
     // Yeni dosyayı bağla
     if (newDatasetId) {
       await linkFileToEntity(newDatasetId, usage);
-      console.log(`[fileService][replaceSingleFile] Linked new dataset: ${newDatasetId} to ${usage.entityType}:${usage.entityId}`);
+      // Linked new dataset (removed debug log for production)
     }
   } catch (error) {
-    console.error("[fileService][replaceSingleFile] Error:", error);
+    logErrorSecurely("[ERROR][fileService][replaceSingleFile]", error);
     // Non-critical error, don't throw
   }
 }
@@ -191,7 +190,6 @@ export async function replaceMemberCV(
       await (prisma as any).dataset.delete({
         where: { id: oldDatasetId },
       });
-      console.log(`[fileService][replaceMemberCV] Deleted old CV dataset: ${oldDatasetId} for member: ${memberId}`);
     } catch (deleteError) {
       console.warn(`[fileService][replaceMemberCV] Could not delete old CV dataset ${oldDatasetId}:`, deleteError);
     }
@@ -241,7 +239,6 @@ export async function replaceFaviconOrLogo(
         await (prisma as any).dataset.delete({
           where: { id: oldDatasets[0].id },
         });
-        console.log(`[fileService][replaceFaviconOrLogo] Deleted old ${source} dataset: ${oldDatasets[0].id}`);
       }
     } catch (cleanupError) {
       // Non-critical error

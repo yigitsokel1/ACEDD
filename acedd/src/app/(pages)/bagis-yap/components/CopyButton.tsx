@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui";
 import { Copy, CheckCircle } from "lucide-react";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 interface CopyButtonProps {
   text: string;
@@ -18,7 +19,7 @@ export function CopyButton({ text, fieldId }: CopyButtonProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy: ', err);
+      logClientError("[CopyButton][COPY]", err, { fieldId });
     }
   };
 

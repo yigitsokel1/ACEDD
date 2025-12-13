@@ -9,6 +9,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 declare global {
   interface Window {
@@ -79,7 +80,7 @@ export function Recaptcha({ siteKey, onVerify, onExpire, onError, className }: R
         // These are handled via the callback returning empty string on expire/error
         setWidgetId(id);
       } catch (err) {
-        console.error("reCAPTCHA render error:", err);
+        logClientError("[Recaptcha][RENDER]", err);
         setError("reCAPTCHA başlatılamadı.");
         onError?.();
       }
@@ -120,7 +121,7 @@ export function Recaptcha({ siteKey, onVerify, onExpire, onError, className }: R
     <div className={className}>
       <div ref={containerRef} className="g-recaptcha" />
       <p className="text-xs text-gray-500 mt-2">
-        Bu site, spam'a karşı korumak için reCAPTCHA kullanıyor. Google'ın{" "}
+        Bu site, spam&apos;a karşı korumak için reCAPTCHA kullanıyor. Google&apos;ın{" "}
         <a
           href="https://policies.google.com/privacy"
           target="_blank"

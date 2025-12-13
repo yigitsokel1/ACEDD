@@ -8,6 +8,7 @@ import { type Event } from "../constants";
 import { Button } from "@/components/ui";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { useEvents } from "@/contexts/EventsContext";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 interface EventDetailProps {
   eventId: string;
@@ -33,7 +34,7 @@ export function EventDetail({ eventId }: EventDetailProps) {
         return data.fileUrl;
       }
     } catch (error) {
-      console.error('Error fetching image:', error);
+      logClientError("[EventDetail][FETCH_IMAGE]", error, { datasetId });
     }
     return null;
   };
@@ -78,11 +79,10 @@ export function EventDetail({ eventId }: EventDetailProps) {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('tr-TR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
   };
 
   const allImages = event.featuredImage ? [event.featuredImage, ...(event.images || [])] : (event.images || []);

@@ -13,9 +13,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
-// Security check: Only allow in development or if explicitly enabled
-const ALLOW_CREATE_INITIAL = process.env.ALLOW_CREATE_INITIAL === "true" || process.env.NODE_ENV === "development";
+// Security check: Only allow if explicitly enabled (production-safe default)
+// Default: false (even in development, use npm run create-admin instead)
+const ALLOW_CREATE_INITIAL = process.env.ALLOW_CREATE_INITIAL === "true";
 
 export async function POST(request: NextRequest) {
   // Security check
@@ -108,7 +110,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("[Create Initial Admin API] Error:", error);
+    logErrorSecurely("[ERROR][API][ADMIN][CREATE_INITIAL]", error);
     return NextResponse.json(
       { error: "Admin kullanıcısı oluşturulurken bir hata oluştu" },
       { status: 500 }

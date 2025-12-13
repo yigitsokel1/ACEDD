@@ -11,6 +11,7 @@ import { ReferencesList } from "./components/ReferencesList";
 import type { ScholarshipApplication, ScholarshipApplicationStatus } from "@/lib/types/scholarship";
 import { formatDateOnly } from "@/lib/utils/dateHelpers";
 import { getGenderLabel } from "@/lib/utils/genderHelpers";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 /**
  * Scholarship Application Detail Page (V2)
@@ -85,7 +86,7 @@ export default function ScholarshipApplicationDetailPage() {
       setApplication(data);
       setReviewNotes(data.reviewNotes || "");
     } catch (err) {
-      console.error("Error fetching application:", err);
+      logClientError("[ScholarshipApplicationDetailPage][FETCH]", err);
       setError(err instanceof Error ? err.message : "Bilinmeyen bir hata oluştu.");
     } finally {
       setLoading(false);
@@ -137,7 +138,7 @@ export default function ScholarshipApplicationDetailPage() {
       // Auto-scroll to success message (no auto-redirect)
       // Scroll will happen in useEffect when successMessage changes
     } catch (err) {
-      console.error("Error updating application:", err);
+      logClientError("[ScholarshipApplicationDetailPage][UPDATE]", err);
       setError(err instanceof Error ? err.message : "Başvuru güncellenirken bir hata oluştu.");
       setSuccessMessage(null);
     } finally {
@@ -170,7 +171,7 @@ export default function ScholarshipApplicationDetailPage() {
         router.push("/admin/burs-basvurulari");
       }, 1500);
     } catch (err) {
-      console.error("Error deleting application:", err);
+      logClientError("[ScholarshipApplicationDetailPage][DELETE]", err);
       setError(err instanceof Error ? err.message : "Başvuru silinirken bir hata oluştu.");
       setSuccessMessage(null);
       setIsSubmitting(false);

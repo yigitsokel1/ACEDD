@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
 import { FILE_SOURCE } from "@/modules/files/constants";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 export async function POST(request: NextRequest) {
   try {
@@ -89,9 +90,7 @@ export async function POST(request: NextRequest) {
 
         uploadedDatasetIds.push(dataset.id);
       } catch (dbError) {
-        const dbErrorDetails = dbError instanceof Error ? dbError.stack : String(dbError);
-        console.error("[ERROR][API][UPLOAD][CREATE_DATASET]", dbError);
-        console.error("[ERROR][API][UPLOAD][CREATE_DATASET] Details:", dbErrorDetails);
+        logErrorSecurely("[ERROR][API][UPLOAD][CREATE_DATASET]", dbError);
         return NextResponse.json(
           { error: "Dosya kaydedilirken bir hata oluştu" },
           { status: 500 }
@@ -110,9 +109,7 @@ export async function POST(request: NextRequest) {
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][UPLOAD][POST]", error);
-    console.error("[ERROR][API][UPLOAD][POST] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][UPLOAD][POST]", error);
 
     return NextResponse.json(
       {

@@ -8,6 +8,7 @@ import { type Event } from "../constants";
 import { Button } from "@/components/ui";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { useEvents } from "@/contexts/EventsContext";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 export function EventsGrid() {
   const { events } = useEvents();
@@ -25,10 +26,10 @@ export function EventsGrid() {
         setImageUrls(prev => ({ ...prev, [datasetId]: data.fileUrl }));
         return data.fileUrl;
       } else {
-        console.error('Failed to fetch image:', response.status, response.statusText);
+        logClientError("[EventsGrid][FETCH_IMAGE]", new Error(`Failed to fetch image: ${response.status} ${response.statusText}`), { datasetId, status: response.status });
       }
     } catch (error) {
-      console.error('Error fetching image:', error);
+      logClientError("[EventsGrid][FETCH_IMAGE]", error, { datasetId });
     }
     return null;
   };
@@ -53,11 +54,10 @@ export function EventsGrid() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('tr-TR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
   };
 
   // Fotoğraf kaydırma fonksiyonları

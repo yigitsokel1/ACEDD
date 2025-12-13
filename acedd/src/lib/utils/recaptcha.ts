@@ -6,6 +6,8 @@
  * Verifies reCAPTCHA tokens with Google's reCAPTCHA API
  */
 
+import { logErrorSecurely } from "./secureLogging";
+
 /**
  * Verifies a reCAPTCHA token with Google's reCAPTCHA API
  * 
@@ -19,7 +21,10 @@ export async function verifyRecaptchaToken(
 ): Promise<boolean> {
   // If no secret key is configured, skip verification (development mode)
   if (!secretKey) {
-    console.warn("[RECAPTCHA] Secret key not configured, skipping verification");
+    // Warning: secret key not configured (non-critical, allow in dev)
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[RECAPTCHA] Secret key not configured, skipping verification");
+    }
     return true;
   }
 
@@ -41,7 +46,7 @@ export async function verifyRecaptchaToken(
     });
 
     if (!response.ok) {
-      console.error("[RECAPTCHA] Verification request failed:", response.status);
+      logErrorSecurely("[RECAPTCHA][VERIFY]", new Error(`Verification request failed: ${response.status}`));
       return false;
     }
 
@@ -54,12 +59,15 @@ export async function verifyRecaptchaToken(
 
     // Log error codes for debugging (but don't expose to client)
     if (data["error-codes"] && Array.isArray(data["error-codes"])) {
-      console.warn("[RECAPTCHA] Verification failed with errors:", data["error-codes"]);
+      // Warning: verification failed (non-critical, return false)
+      if (process.env.NODE_ENV === "development") {
+        console.warn("[RECAPTCHA] Verification failed with errors:", data["error-codes"]);
+      }
     }
 
     return false;
   } catch (error) {
-    console.error("[RECAPTCHA] Verification error:", error);
+    logErrorSecurely("[RECAPTCHA][VERIFY]", error);
     return false;
   }
 }

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -51,7 +52,7 @@ export default function AdminLoginPage() {
       router.push("/admin");
       router.refresh();
     } catch (err) {
-      console.error("[Admin Login] Error:", err);
+      logClientError("[AdminLogin][SUBMIT]", err);
       setError("Bir hata oluştu. Lütfen tekrar deneyin.");
       setIsLoading(false);
     }

@@ -27,11 +27,10 @@ export function UpcomingEvents({ data }: UpcomingEventsProps) {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return new Intl.DateTimeFormat("tr-TR", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      }).format(date);
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}.${month}.${year}`;
     } catch {
       return dateString;
     }

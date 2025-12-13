@@ -11,6 +11,7 @@
 
 import { prisma } from "../db";
 import type { Prisma } from "@prisma/client";
+import { logErrorSecurely } from "../utils/secureLogging";
 
 export type SettingValue = string | number | boolean | object | null | undefined;
 export type SettingsMap = Record<string, SettingValue>;
@@ -36,7 +37,7 @@ export async function getSetting(key: string): Promise<SettingValue> {
 
     return setting.value as SettingValue;
   } catch (error) {
-    console.error(`[Settings] Error fetching setting "${key}":`, error);
+    logErrorSecurely(`[Settings][GET_SETTING] key: ${key}`, error);
     return null;
   }
 }
@@ -68,7 +69,7 @@ export async function getSettings(prefix: string): Promise<SettingsMap> {
 
     return settingsToMap(settings);
   } catch (error) {
-    console.error(`[Settings] Error fetching settings with prefix "${prefix}":`, error);
+    logErrorSecurely(`[Settings][GET_SETTINGS_BY_PREFIX] prefix: ${prefix}`, error);
     // Return empty object on error to prevent breaking the app
     return {};
   }
@@ -90,7 +91,7 @@ export async function getAllSettings(): Promise<SettingsMap> {
 
     return settingsToMap(allSettings);
   } catch (error) {
-    console.error("[Settings] Error fetching all settings:", error);
+    logErrorSecurely("[Settings][GET_ALL_SETTINGS]", error);
     return {};
   }
 }

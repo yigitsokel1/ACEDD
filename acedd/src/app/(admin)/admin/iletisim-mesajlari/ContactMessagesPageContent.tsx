@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type { ContactMessage, ContactMessageStatus } from "@/lib/types/contact";
 import { formatDateTimeShort } from "@/lib/utils/dateHelpers";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 interface ContactMessageModalProps {
   message: ContactMessage | null;
@@ -74,7 +75,7 @@ function ContactMessageModal({
       onClose();
       setAction(null);
     } catch (error) {
-      console.error("Error performing action:", error);
+      logClientError("[ContactMessagesPageContent][PERFORM_ACTION]", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -368,7 +369,7 @@ export default function ContactMessagesPageContent() {
             }
           }
         } catch (parseError) {
-          console.error("Failed to read error response:", parseError);
+          logClientError("[ContactMessagesPageContent][PARSE_ERROR]", parseError);
         }
 
         throw new Error(errorMessage);
@@ -383,7 +384,7 @@ export default function ContactMessagesPageContent() {
         }
       });
     } catch (err) {
-      console.error("Error fetching contact messages:", err);
+      logClientError("[ContactMessagesPageContent][FETCH]", err);
       setError(err instanceof Error ? err.message : "Bilinmeyen bir hata oluştu.");
       if (isInitialLoad) {
         setLoading(false);
@@ -412,7 +413,7 @@ export default function ContactMessagesPageContent() {
         setSelectedMessage(updatedMessage);
       }
     } catch (err) {
-      console.error("Error marking message as read:", err);
+      logClientError("[ContactMessagesPageContent][MARK_AS_READ]", err);
       alert(err instanceof Error ? err.message : "Bir hata oluştu.");
     }
   };
@@ -436,7 +437,7 @@ export default function ContactMessagesPageContent() {
       setAllMessages(prev => prev.map(msg => msg.id === id ? updatedMessage : msg));
       setSelectedMessage(null);
     } catch (err) {
-      console.error("Error archiving message:", err);
+      logClientError("[ContactMessagesPageContent][ARCHIVE]", err);
       alert(err instanceof Error ? err.message : "Bir hata oluştu.");
     }
   };
@@ -455,7 +456,7 @@ export default function ContactMessagesPageContent() {
       setAllMessages(prev => prev.filter(msg => msg.id !== id));
       setSelectedMessage(null);
     } catch (err) {
-      console.error("Error deleting message:", err);
+      logClientError("[ContactMessagesPageContent][DELETE]", err);
       alert(err instanceof Error ? err.message : "Bir hata oluştu.");
     }
   };

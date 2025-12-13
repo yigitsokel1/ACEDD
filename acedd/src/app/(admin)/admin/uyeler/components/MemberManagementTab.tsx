@@ -15,6 +15,7 @@ import { formatDateOnly, isoToDateInput } from "@/lib/utils/dateHelpers";
 import { getGenderLabel } from "@/lib/utils/genderHelpers";
 import { getBloodTypeLabel } from "@/lib/utils/bloodTypeHelpers";
 import { FileUpload } from "@/components/ui/FileUpload";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 interface MemberModalProps {
   member: Member | null;
@@ -719,7 +720,7 @@ export default function MemberManagementTab() {
       setIsModalOpen(false);
       setEditingMember(null);
     } catch (error) {
-      console.error('Error saving member:', error);
+      logClientError("[MemberManagementTab][SAVE_MEMBER]", error);
     }
   };
 
@@ -737,7 +738,7 @@ export default function MemberManagementTab() {
       try {
         await deleteMember(id);
       } catch (error) {
-        console.error('Error deleting member:', error);
+        logClientError("[MemberManagementTab][DELETE_MEMBER]", error);
       }
     }
   };
@@ -766,7 +767,7 @@ export default function MemberManagementTab() {
         titles: updatedTitles
       });
     } catch (error) {
-      console.error('Error updating member status:', error);
+      logClientError("[MemberManagementTab][UPDATE_STATUS]", error);
     }
   };
 

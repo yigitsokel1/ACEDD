@@ -4,6 +4,7 @@ import React, { useState, useRef } from 'react';
 import { Button } from './Button';
 import { Image as ImageIcon, Plus, X, UploadCloud, Loader2, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { logClientError } from '@/lib/utils/clientLogging';
 
 interface FileUploadProps {
   label: string;
@@ -45,7 +46,7 @@ export function FileUpload({
         // Check if response is JSON
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
-          console.error('Invalid response type from image API:', contentType);
+          logClientError("[FileUpload][FETCH_IMAGE]", new Error("Invalid response type from image API"), { contentType, datasetId });
           setImageUrls(prev => ({ ...prev, [datasetId]: null }));
           setFileNames(prev => ({ ...prev, [datasetId]: null }));
           return null;
@@ -59,7 +60,6 @@ export function FileUpload({
           const isPdf = fileUrl.startsWith('data:application/pdf');
           
           if (isImage || isPdf || fileUrl.startsWith('data:')) {
-            console.log(`[FileUpload] Valid Base64 URL for ${datasetId}:`, fileUrl.substring(0, 50) + '...');
             setImageUrls(prev => ({ ...prev, [datasetId]: fileUrl }));
             // Sprint 17: PDF için dosya adını da kaydet
             if (data.fileName) {
@@ -67,23 +67,23 @@ export function FileUpload({
             }
             return fileUrl;
           } else {
-            console.error('Invalid fileUrl format (not a data URL):', fileUrl.substring(0, 100));
+            logClientError("[FileUpload][FETCH_IMAGE]", new Error("Invalid fileUrl format (not a data URL)"), { datasetId, fileUrlPreview: fileUrl.substring(0, 100) });
             setImageUrls(prev => ({ ...prev, [datasetId]: null }));
             setFileNames(prev => ({ ...prev, [datasetId]: null }));
           }
         } else {
-          console.error('Invalid response format from image API:', data);
+          logClientError("[FileUpload][FETCH_IMAGE]", new Error("Invalid response format from image API"), { datasetId, responseData: data });
           setImageUrls(prev => ({ ...prev, [datasetId]: null }));
           setFileNames(prev => ({ ...prev, [datasetId]: null }));
         }
       } else {
-        console.error('Failed to fetch image:', response.status, response.statusText);
+        logClientError("[FileUpload][FETCH_IMAGE]", new Error(`Failed to fetch image: ${response.status} ${response.statusText}`), { datasetId, status: response.status });
         // Hata durumunda placeholder göster
         setImageUrls(prev => ({ ...prev, [datasetId]: null }));
         setFileNames(prev => ({ ...prev, [datasetId]: null }));
       }
     } catch (error) {
-      console.error('Error fetching image:', error);
+      logClientError("[FileUpload][FETCH_IMAGE]", error, { datasetId });
       // Hata durumunda placeholder göster
       setImageUrls(prev => ({ ...prev, [datasetId]: null }));
       setFileNames(prev => ({ ...prev, [datasetId]: null }));
@@ -93,13 +93,9 @@ export function FileUpload({
 
   // Component mount olduğunda mevcut dataset ID'lerini çek
   React.useEffect(() => {
-    console.log('[FileUpload] Component mounted/updated, value:', value);
     value.forEach(datasetId => {
       if (datasetId && datasetId.trim() && !imageUrls[datasetId]) {
-        console.log('[FileUpload] Fetching image for datasetId:', datasetId);
         fetchImageUrl(datasetId);
-      } else if (!datasetId || !datasetId.trim()) {
-        console.warn('[FileUpload] Empty or invalid datasetId:', datasetId);
       }
     });
   }, [value]);
@@ -163,7 +159,7 @@ export function FileUpload({
         onFileSelect(results);
         setUploadError(null);
       } catch (error) {
-        console.error('Error processing files for preview:', error);
+        logClientError("[FileUpload][PROCESS_PREVIEW]", error);
         setUploadError(error instanceof Error ? error.message : 'Dosyalar işlenirken bir hata oluştu.');
       } finally {
         setIsUploading(false);
@@ -207,7 +203,7 @@ export function FileUpload({
       const newDatasetIds = multiple ? [...value, ...data.datasetIds] : data.datasetIds;
       onChange(newDatasetIds);
     } catch (error: unknown) {
-      console.error('Upload error:', error);
+      logClientError("[FileUpload][UPLOAD]", error);
       setUploadError((error as Error)?.message || 'Dosya yüklenirken bir hata oluştu.');
     } finally {
       setIsUploading(false);

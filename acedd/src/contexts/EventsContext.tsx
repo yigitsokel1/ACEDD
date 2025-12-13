@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Event } from "@/app/(pages)/etkinlikler/constants";
+import { logClientError, logClientWarn } from "@/lib/utils/clientLogging";
 
 interface EventsContextType {
   events: Event[];
@@ -47,10 +48,10 @@ export function EventsProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("acedd-events", JSON.stringify(data));
       } catch (localError) {
         // localStorage might be unavailable (e.g., in private mode)
-        console.warn("Could not save events to localStorage:", localError);
+        logClientWarn("[EventsContext][FETCH]", "Could not save events to localStorage", { error: localError });
       }
     } catch (err) {
-      console.error('Error fetching events:', err);
+      logClientError("[EventsContext][FETCH]", err);
       setError(err instanceof Error ? err.message : 'Failed to fetch events');
       
       // Fallback: Try to load from localStorage if API fails
@@ -59,12 +60,12 @@ export function EventsProvider({ children }: { children: React.ReactNode }) {
         if (savedEvents) {
           const parsedEvents = JSON.parse(savedEvents);
           setEvents(parsedEvents);
-          console.warn("Loaded events from localStorage cache (API unavailable)");
+          logClientWarn("[EventsContext][INIT]", "Loaded events from localStorage cache (API unavailable)");
         } else {
           setEvents([]);
         }
       } catch (localError) {
-        console.error("Error loading events from localStorage:", localError);
+        logClientError("[EventsContext][INIT]", localError);
         setEvents([]);
       }
     } finally {
@@ -101,10 +102,10 @@ export function EventsProvider({ children }: { children: React.ReactNode }) {
         const updatedEvents = [newEvent, ...events];
         localStorage.setItem("acedd-events", JSON.stringify(updatedEvents));
       } catch (localError) {
-        console.warn("Could not update localStorage:", localError);
+        logClientWarn("[EventsContext][ADD]", "Could not update localStorage", { error: localError });
       }
     } catch (err) {
-      console.error('Error creating event:', err);
+      logClientError("[EventsContext][ADD]", err);
       setError(err instanceof Error ? err.message : 'Failed to create event');
       throw err;
     } finally {
@@ -139,10 +140,10 @@ export function EventsProvider({ children }: { children: React.ReactNode }) {
         const updatedEvents = events.map(event => event.id === id ? updatedEvent : event);
         localStorage.setItem("acedd-events", JSON.stringify(updatedEvents));
       } catch (localError) {
-        console.warn("Could not update localStorage:", localError);
+        logClientWarn("[EventsContext][UPDATE]", "Could not update localStorage", { error: localError });
       }
     } catch (err) {
-      console.error('Error updating event:', err);
+      logClientError("[EventsContext][UPDATE]", err);
       setError(err instanceof Error ? err.message : 'Failed to update event');
       throw err;
     } finally {
@@ -170,10 +171,10 @@ export function EventsProvider({ children }: { children: React.ReactNode }) {
         const updatedEvents = events.filter(event => event.id !== id);
         localStorage.setItem("acedd-events", JSON.stringify(updatedEvents));
       } catch (localError) {
-        console.warn("Could not update localStorage:", localError);
+        logClientWarn("[EventsContext][DELETE]", "Could not update localStorage", { error: localError });
       }
     } catch (err) {
-      console.error('Error deleting event:', err);
+      logClientError("[EventsContext][DELETE]", err);
       setError(err instanceof Error ? err.message : 'Failed to delete event');
       throw err;
     } finally {

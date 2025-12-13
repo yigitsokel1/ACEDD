@@ -19,6 +19,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import type { BoardMember } from "@/lib/types/member";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 /**
  * Helper function to format Prisma BoardMember to frontend BoardMember
@@ -92,9 +93,7 @@ export async function GET(
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][BOARD_MEMBERS][GET_BY_ID]", error);
-    console.error("[ERROR][API][BOARD_MEMBERS][GET_BY_ID] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][BOARD_MEMBERS][GET_BY_ID]", error);
 
     return NextResponse.json(
       {
@@ -182,9 +181,7 @@ export async function PUT(
       );
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][BOARD_MEMBERS][UPDATE]", error);
-    console.error("[ERROR][API][BOARD_MEMBERS][UPDATE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][BOARD_MEMBERS][UPDATE]", error);
 
     return NextResponse.json(
       {
@@ -227,9 +224,7 @@ export async function DELETE(
       );
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][BOARD_MEMBERS][DELETE]", error);
-    console.error("[ERROR][API][BOARD_MEMBERS][DELETE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][BOARD_MEMBERS][DELETE]", error);
 
     return NextResponse.json(
       {

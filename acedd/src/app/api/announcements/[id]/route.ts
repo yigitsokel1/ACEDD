@@ -31,6 +31,7 @@ import type {
   UpdateAnnouncementRequest,
 } from "@/lib/types/announcement";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 /**
  * GET /api/announcements/[id]
@@ -78,9 +79,7 @@ export async function GET(
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][ANNOUNCEMENTS][GET_BY_ID]", error);
-    console.error("[ERROR][API][ANNOUNCEMENTS][GET_BY_ID] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][ANNOUNCEMENTS][GET_BY_ID]", error);
 
     return NextResponse.json(
       {
@@ -260,9 +259,7 @@ export async function PUT(
       );
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][ANNOUNCEMENTS][UPDATE]", error);
-    console.error("[ERROR][API][ANNOUNCEMENTS][UPDATE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][ANNOUNCEMENTS][UPDATE]", error);
 
     return NextResponse.json(
       {
@@ -320,9 +317,7 @@ export async function DELETE(
       );
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][ANNOUNCEMENTS][DELETE]", error);
-    console.error("[ERROR][API][ANNOUNCEMENTS][DELETE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][ANNOUNCEMENTS][DELETE]", error);
 
     return NextResponse.json(
       {

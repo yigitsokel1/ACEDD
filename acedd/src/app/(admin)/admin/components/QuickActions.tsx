@@ -7,6 +7,7 @@ import { FileText, Users, Calendar, Megaphone, Settings } from "lucide-react";
 import Link from "next/link";
 import type { AdminRole } from "@/lib/types/admin";
 import { canAccessQuickAction } from "@/lib/auth/rolePermissions";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 interface QuickAction {
   title: string;
@@ -29,7 +30,7 @@ export function QuickActions() {
           setUserRole(data.user?.role || null);
         }
       } catch (error) {
-        console.error("Error fetching user role:", error);
+        logClientError("[QuickActions][FETCH_USER_ROLE]", error);
       } finally {
         setLoading(false);
       }

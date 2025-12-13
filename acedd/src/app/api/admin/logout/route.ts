@@ -7,6 +7,7 @@
  */
 
 import { NextResponse } from "next/server";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 export async function POST() {
   try {
@@ -18,9 +19,7 @@ export async function POST() {
     
     return response;
   } catch (error) {
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][ADMIN][LOGOUT]", error);
-    console.error("[ERROR][API][ADMIN][LOGOUT] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][ADMIN][LOGOUT]", error);
 
     return NextResponse.json(
       {

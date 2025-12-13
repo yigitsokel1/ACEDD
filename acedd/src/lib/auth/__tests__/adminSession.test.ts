@@ -59,7 +59,17 @@ describe("Admin Session Security (Sprint 6)", () => {
       // Decode payload and verify content
       const decoded = Buffer.from(payload, "base64").toString("utf-8");
       const session = JSON.parse(decoded);
-      expect(session).toEqual(mockSession);
+      
+      // Verify session contains all mockSession fields
+      expect(session.adminUserId).toBe(mockSession.adminUserId);
+      expect(session.role).toBe(mockSession.role);
+      expect(session.email).toBe(mockSession.email);
+      expect(session.name).toBe(mockSession.name);
+      
+      // Verify issuedAt is present and is a valid timestamp (number)
+      expect(session).toHaveProperty("issuedAt");
+      expect(typeof session.issuedAt).toBe("number");
+      expect(session.issuedAt).toBeGreaterThan(0);
     });
 
     it("should verify valid HMAC signature", async () => {
@@ -109,11 +119,15 @@ describe("Admin Session Security (Sprint 6)", () => {
       await createSession(mockSession);
       
       const cookieValue = (mockCookieStore.set as any).mock.calls[0][1] as string;
-      const [, originalSignature] = cookieValue.split(".");
+      const [originalPayload, originalSignature] = cookieValue.split(".");
 
-      // Create tampered payload (change role to SUPER_ADMIN)
+      // Decode original payload to get the session with issuedAt
+      const originalSession = JSON.parse(Buffer.from(originalPayload, "base64").toString("utf-8"));
+
+      // Create tampered payload (change role to SUPER_ADMIN, keep issuedAt)
+      const tamperedSession = { ...originalSession, role: "SUPER_ADMIN" as const };
       const tamperedPayload = Buffer.from(
-        JSON.stringify({ ...mockSession, role: "SUPER_ADMIN" })
+        JSON.stringify(tamperedSession)
       ).toString("base64");
       
       // Original signature won't match tampered payload
@@ -133,7 +147,9 @@ describe("Admin Session Security (Sprint 6)", () => {
       const { getSession } = await import("../adminSession");
       
       // Create payload without signature
-      const payload = Buffer.from(JSON.stringify(mockSession)).toString("base64");
+      // Note: issuedAt must be included for proper session format
+      const sessionWithTimestamp = { ...mockSession, issuedAt: Math.floor(Date.now() / 1000) };
+      const payload = Buffer.from(JSON.stringify(sessionWithTimestamp)).toString("base64");
       const invalidCookie = payload; // No signature part
       
       (mockCookieStore.get as any).mockReturnValue({

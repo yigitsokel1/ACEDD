@@ -8,6 +8,7 @@ import { Button } from "@/components/ui";
 import { Input } from "@/components/ui";
 import { Textarea } from "@/components/ui";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import { logClientError } from "@/lib/utils/clientLogging";
 import { CONTACT_FORM_FIELDS } from "../constants";
 
 const contactFormSchema = z.object({
@@ -77,7 +78,7 @@ export function ContactForm() {
       setIsSubmitted(true);
       reset();
     } catch (error) {
-      console.error("Error submitting contact form:", error);
+      logClientError("[ContactForm][SUBMIT]", error);
       setSubmitError("Şu an bir sorun oluştu, lütfen daha sonra tekrar deneyin.");
     } finally {
       setIsSubmitting(false);

@@ -31,6 +31,7 @@ import type {
 } from "@/lib/types/announcement";
 import { isAnnouncementActive } from "@/lib/utils/isAnnouncementActive";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 /**
  * GET /api/announcements
@@ -89,9 +90,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(formattedAnnouncements);
   } catch (error) {
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][ANNOUNCEMENTS][GET]", error);
-    console.error("[ERROR][API][ANNOUNCEMENTS][GET] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][ANNOUNCEMENTS][GET]", error);
 
     return NextResponse.json(
       {
@@ -205,9 +204,7 @@ export async function POST(request: NextRequest) {
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][ANNOUNCEMENTS][CREATE]", error);
-    console.error("[ERROR][API][ANNOUNCEMENTS][CREATE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][ANNOUNCEMENTS][CREATE]", error);
 
     return NextResponse.json(
       {

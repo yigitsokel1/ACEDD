@@ -18,6 +18,7 @@ import {
 import type { ScholarshipApplication, ScholarshipApplicationStatus } from "@/lib/types/scholarship";
 import { formatDateOnly } from "@/lib/utils/dateHelpers";
 import { getGenderLabel } from "@/lib/utils/genderHelpers";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 interface ScholarshipApplicationModalProps {
   application: ScholarshipApplication | null;
@@ -153,7 +154,7 @@ function ScholarshipApplicationModal({
       
       // Scroll to message (message will appear and scroll happens in useEffect)
     } catch (error) {
-      console.error("Error performing action:", error);
+      logClientError("[ScholarshipApplicationsPageContent][PERFORM_ACTION]", error);
       setErrorMessage(error instanceof Error ? error.message : "İşlem sırasında bir hata oluştu");
     } finally {
       setIsSubmitting(false);
@@ -696,7 +697,7 @@ export default function ScholarshipApplicationsPageContent() {
           }
         } catch (parseError) {
           // If text() fails, use default message
-          console.error("Failed to read error response:", parseError);
+          logClientError("[ScholarshipApplicationsPageContent][PARSE_ERROR]", parseError);
         }
 
         throw new Error(errorMessage);
@@ -711,7 +712,7 @@ export default function ScholarshipApplicationsPageContent() {
         }
       });
     } catch (err) {
-      console.error("Error fetching scholarship applications:", err);
+      logClientError("[ScholarshipApplicationsPageContent][FETCH]", err);
       setError(err instanceof Error ? err.message : "Bilinmeyen bir hata oluştu.");
       if (isInitialLoad) {
         setLoading(false);
@@ -744,7 +745,7 @@ export default function ScholarshipApplicationsPageContent() {
       setAllApplications(prev => prev.map(app => app.id === id ? updatedApplication : app));
       setSelectedApplication(null);
     } catch (err) {
-      console.error("Error approving application:", err);
+      logClientError("[ScholarshipApplicationsPageContent][APPROVE]", err);
       alert(err instanceof Error ? err.message : "Başvuru onaylanırken bir hata oluştu.");
     }
   };
@@ -774,7 +775,7 @@ export default function ScholarshipApplicationsPageContent() {
       setAllApplications(prev => prev.map(app => app.id === id ? updatedApplication : app));
       setSelectedApplication(null);
     } catch (err) {
-      console.error("Error rejecting application:", err);
+      logClientError("[ScholarshipApplicationsPageContent][REJECT]", err);
       alert(err instanceof Error ? err.message : "Başvuru reddedilirken bir hata oluştu.");
     }
   };
@@ -804,7 +805,7 @@ export default function ScholarshipApplicationsPageContent() {
       setAllApplications(prev => prev.map(app => app.id === id ? updatedApplication : app));
       setSelectedApplication(null);
     } catch (err) {
-      console.error("Error setting under review:", err);
+      logClientError("[ScholarshipApplicationsPageContent][SET_UNDER_REVIEW]", err);
       alert(err instanceof Error ? err.message : "Başvuru incelemeye alınırken bir hata oluştu.");
     }
   };
@@ -826,7 +827,7 @@ export default function ScholarshipApplicationsPageContent() {
       setAllApplications(prev => prev.filter(app => app.id !== id));
       setSelectedApplication(null);
     } catch (err) {
-      console.error("Error deleting application:", err);
+      logClientError("[ScholarshipApplicationsPageContent][DELETE]", err);
       alert(err instanceof Error ? err.message : "Başvuru silinirken bir hata oluştu.");
     }
   };

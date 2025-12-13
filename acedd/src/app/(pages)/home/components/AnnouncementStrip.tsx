@@ -49,11 +49,13 @@ function AnnouncementModal({
                 {announcement.title}
               </h2>
               <p className="text-sm text-gray-500 mt-2">
-                {new Date(announcement.createdAt).toLocaleDateString("tr-TR", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
+                {(() => {
+                  const date = new Date(announcement.createdAt);
+                  const day = String(date.getDate()).padStart(2, '0');
+                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                  const year = date.getFullYear();
+                  return `${day}.${month}.${year}`;
+                })()}
               </p>
             </div>
             <button
@@ -301,11 +303,13 @@ export function AnnouncementStrip({ announcements }: AnnouncementStripProps) {
                       {/* Footer */}
                       <div className="flex items-center justify-between pt-4 md:pt-6 border-t-2 border-orange-50 flex-shrink-0">
                         <span className="text-xs md:text-sm lg:text-base text-gray-600 font-medium">
-                          {new Date(announcement.createdAt).toLocaleDateString("tr-TR", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          })}
+                          {(() => {
+                            const date = new Date(announcement.createdAt);
+                            const day = String(date.getDate()).padStart(2, '0');
+                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                            const year = date.getFullYear();
+                            return `${day}.${month}.${year}`;
+                          })()}
                         </span>
                         <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-orange-500 flex-shrink-0" />
                       </div>
@@ -325,8 +329,8 @@ export function AnnouncementStrip({ announcements }: AnnouncementStripProps) {
                   onClick={() => handleDotClick(index)}
                   className={`h-2 rounded-full transition-all duration-300 ${
                     index === currentIndex
-                      ? "w-8 bg-orange-600"
-                      : "w-2 bg-orange-300 hover:bg-orange-400"
+                    ? "w-8 bg-orange-600"
+                    : "w-2 bg-orange-300 hover:bg-orange-400"
                   }`}
                   aria-label={`Duyuru ${index + 1}`}
                 />

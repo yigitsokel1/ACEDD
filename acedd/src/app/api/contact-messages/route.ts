@@ -16,6 +16,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import type { ContactMessage } from "@/lib/types/contact";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 /**
  * Helper function to format Prisma ContactMessage to frontend ContactMessage
@@ -113,9 +114,7 @@ export async function GET(request: NextRequest) {
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][CONTACT][GET]", error);
-    console.error("[ERROR][API][CONTACT][GET] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][CONTACT][GET]", error);
 
     return NextResponse.json(
       {
@@ -185,9 +184,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(formattedMessage, { status: 201 });
   } catch (error) {
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][CONTACT][CREATE]", error);
-    console.error("[ERROR][API][CONTACT][CREATE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][CONTACT][CREATE]", error);
 
     return NextResponse.json(
       {

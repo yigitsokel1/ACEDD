@@ -3,6 +3,7 @@ import { AnnouncementStrip } from "./AnnouncementStrip";
 import { prisma } from "@/lib/db";
 import type { Announcement } from "@/lib/types/announcement";
 import { isAnnouncementActive } from "@/lib/utils/isAnnouncementActive";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 async function fetchActiveAnnouncements(): Promise<Announcement[]> {
   try {
@@ -31,7 +32,7 @@ async function fetchActiveAnnouncements(): Promise<Announcement[]> {
 
     return formattedAnnouncements;
   } catch (error) {
-    console.error("Error fetching announcements:", error);
+    logErrorSecurely("[AnnouncementStripSection][FETCH]", error);
     return [];
   }
 }

@@ -9,6 +9,7 @@ import { Plus, Edit, Trash2, Shield, Search, CheckCircle } from "lucide-react";
 import { useMembers } from "@/contexts/MembersContext";
 import { BoardMember, CreateBoardMemberData, BoardRole, Member } from "@/lib/types/member";
 import { sortBoardMembersByRole, getBoardRoleLabel, getBoardMemberFullName } from "@/lib/utils/memberHelpers";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 interface BoardMemberModalProps {
   boardMember: BoardMember | null;
@@ -205,7 +206,7 @@ export default function BoardMembersTab() {
       setIsModalOpen(false);
       setEditingMember(null);
     } catch (error) {
-      console.error('Error saving board member:', error);
+      logClientError("[BoardMembersTab][SAVE]", error);
     }
   };
 
@@ -219,7 +220,7 @@ export default function BoardMembersTab() {
       try {
         await deleteBoardMember(id);
       } catch (error) {
-        console.error('Error deleting board member:', error);
+        logClientError("[BoardMembersTab][DELETE]", error);
       }
     }
   };

@@ -17,6 +17,7 @@ import { prisma } from "@/lib/db";
 import type { Event } from "@/app/(pages)/etkinlikler/constants";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
 import { deleteEventFiles } from "@/modules/files/fileService";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 /**
  * Helper function to parse JSON string to array
@@ -96,9 +97,7 @@ export async function GET(
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][EVENTS][GET_BY_ID]", error);
-    console.error("[ERROR][API][EVENTS][GET_BY_ID] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][EVENTS][GET_BY_ID]", error);
 
     return NextResponse.json(
       {
@@ -290,9 +289,7 @@ export async function PUT(
       );
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][EVENTS][UPDATE]", error);
-    console.error("[ERROR][API][EVENTS][UPDATE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][EVENTS][UPDATE]", error);
 
     return NextResponse.json(
       {
@@ -334,11 +331,10 @@ export async function DELETE(
     try {
       const deletedCount = await deleteEventFiles(id);
       if (deletedCount > 0) {
-        console.log(`[API][EVENTS][DELETE] Cleaned up ${deletedCount} files for event ${id}`);
       }
     } catch (cleanupError) {
       // File cleanup hatası kritik değil, log'la ama devam et
-      console.error("[API][EVENTS][DELETE] Error cleaning up event files:", cleanupError);
+      logErrorSecurely("[API][EVENTS][DELETE] Error cleaning up event files", cleanupError);
     }
 
     // Delete event
@@ -361,9 +357,7 @@ export async function DELETE(
       );
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][EVENTS][DELETE]", error);
-    console.error("[ERROR][API][EVENTS][DELETE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][EVENTS][DELETE]", error);
 
     return NextResponse.json(
       {

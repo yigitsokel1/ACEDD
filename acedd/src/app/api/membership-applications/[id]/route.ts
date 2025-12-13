@@ -16,6 +16,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import type { MembershipApplication } from "@/lib/types/member";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 /**
  * Helper function to format Prisma MembershipApplication to frontend MembershipApplication
@@ -97,9 +98,7 @@ export async function GET(
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][MEMBERSHIP][GET_BY_ID]", error);
-    console.error("[ERROR][API][MEMBERSHIP][GET_BY_ID] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][MEMBERSHIP][GET_BY_ID]", error);
 
     return NextResponse.json(
       {
@@ -190,16 +189,13 @@ export async function PUT(
               city: application.city,
             },
           });
-          console.log("[INFO][API][MEMBERSHIP][APPROVE] Member created:", newMember.id, "Email:", newMember.email);
         } else {
-          console.log("[INFO][API][MEMBERSHIP][APPROVE] Member already exists:", existingMember.id);
         }
       } catch (memberError) {
         // Log member creation error and fail the request
-        const errorDetails = memberError instanceof Error ? memberError.stack : String(memberError);
-        console.error("[ERROR][API][MEMBERSHIP][APPROVE] Failed to create member:", memberError);
-        console.error("[ERROR][API][MEMBERSHIP][APPROVE] Details:", errorDetails);
-        console.error("[ERROR][API][MEMBERSHIP][APPROVE] Application data:", {
+        // Use secureLogging to sanitize sensitive data (email, identityNumber, etc.)
+        logErrorSecurely("[ERROR][API][MEMBERSHIP][APPROVE] Failed to create member", memberError, {
+          applicationId: application.id,
           email: application.email,
           identityNumber: application.identityNumber,
           firstName: application.firstName,
@@ -254,9 +250,7 @@ export async function PUT(
       );
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][MEMBERSHIP][UPDATE]", error);
-    console.error("[ERROR][API][MEMBERSHIP][UPDATE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][MEMBERSHIP][UPDATE]", error);
 
     return NextResponse.json(
       {
@@ -317,9 +311,7 @@ export async function DELETE(
       );
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][MEMBERSHIP][DELETE]", error);
-    console.error("[ERROR][API][MEMBERSHIP][DELETE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][MEMBERSHIP][DELETE]", error);
 
     return NextResponse.json(
       {

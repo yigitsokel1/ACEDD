@@ -9,6 +9,7 @@ import {
   getBoardRoleLabel,
 } from "@/lib/utils/memberHelpers";
 import type { BoardMember, Member } from "@/lib/types/member";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 // Sprint 5: Fetch board members (BoardMember modelinden, Member ile ilişkili)
 // Sprint 6: isActive ve order alanları Prisma modelinde yok, TS tipinde de yok (tutarlılık sağlandı)
@@ -52,7 +53,7 @@ async function fetchBoardMembers(): Promise<BoardMember[]> {
       updatedAt: bm.updatedAt.toISOString(),
     }));
   } catch (error) {
-    console.error("Error fetching board members:", error);
+    logErrorSecurely("[TeamSection][FETCH_BOARD_MEMBERS]", error);
     return [];
   }
 }

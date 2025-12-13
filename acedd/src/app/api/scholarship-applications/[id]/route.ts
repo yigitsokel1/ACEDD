@@ -285,8 +285,7 @@ export async function GET(
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    logErrorSecurely("[API][SCHOLARSHIP][GET_BY_ID]", error, { errorDetails });
+    logErrorSecurely("[ERROR][API][SCHOLARSHIP][GET_BY_ID]", error);
 
     return NextResponse.json(
       {

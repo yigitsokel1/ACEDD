@@ -11,6 +11,7 @@ import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import type { AdminSession } from "@/lib/auth/adminSession";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 export async function POST(request: NextRequest) {
   try {
@@ -72,12 +73,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create session
+    // Create session with issuedAt timestamp
     const session: AdminSession = {
       adminUserId: adminUser.id,
       role: adminUser.role,
       email: adminUser.email,
       name: adminUser.name,
+      issuedAt: Math.floor(Date.now() / 1000), // Unix timestamp in seconds
     };
 
     // Create response
@@ -116,9 +118,7 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][ADMIN][LOGIN]", error);
-    console.error("[ERROR][API][ADMIN][LOGIN] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][ADMIN][LOGIN]", error);
 
     return NextResponse.json(
       {

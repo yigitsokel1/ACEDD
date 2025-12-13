@@ -10,6 +10,7 @@ import { MembershipApplication } from "@/lib/types/member";
 import { formatDateOnly } from "@/lib/utils/dateHelpers";
 import { getGenderLabel } from "@/lib/utils/genderHelpers";
 import { getBloodTypeLabel } from "@/lib/utils/bloodTypeHelpers";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 interface ApplicationModalProps {
   application: MembershipApplication | null;
@@ -97,7 +98,7 @@ function ApplicationModal({ application, onClose, onApprove, onReject, onSaveNot
       onClose();
       setAction(null);
     } catch (error) {
-      console.error('Error performing action:', error);
+      logClientError("[MembershipApplicationsTab][PERFORM_ACTION]", error);
     }
   };
 

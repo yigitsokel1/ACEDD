@@ -10,11 +10,12 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 import { getDashboardStats } from "@/lib/dashboard/getDashboardStats";
 
 export async function GET(request: NextRequest) {
   try {
-    // Require admin role
+    // Require admin role (GET operation - no database check needed for performance)
     requireRole(request, ["SUPER_ADMIN", "ADMIN"]);
 
     // Get dashboard stats from helper/service layer
@@ -27,9 +28,7 @@ export async function GET(request: NextRequest) {
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][DASHBOARD][GET]", error);
-    console.error("[ERROR][API][DASHBOARD][GET] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][DASHBOARD][GET]", error);
 
     return NextResponse.json(
       {

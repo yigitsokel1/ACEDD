@@ -250,8 +250,7 @@ export async function GET(request: NextRequest) {
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    logErrorSecurely("[API][SCHOLARSHIP][GET]", error, { errorDetails });
+    logErrorSecurely("[ERROR][API][SCHOLARSHIP][GET]", error);
 
     return NextResponse.json(
       {
@@ -342,14 +341,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Log successful validation (metadata only, no sensitive data)
-    console.log("[API][SCHOLARSHIP][CREATE] Validation successful", {
-      ipAddress,
-      emailDomain: validatedData.email.split("@")[1], // Only domain, not full email
-      relativesCount: validatedData.relatives.length,
-      educationHistoryCount: validatedData.educationHistory.length,
-      referencesCount: validatedData.references.length,
-    });
 
     // Transform form data to Prisma format
     // Map form field names to Prisma field names
@@ -499,15 +490,6 @@ export async function POST(request: NextRequest) {
       throw new Error("Transaction completed but application not found");
     }
 
-    // Log successful creation (metadata only)
-    console.log("[API][SCHOLARSHIP][CREATE] Application created successfully", {
-      applicationId: result.id,
-      ipAddress,
-      createdAt: result.createdAt.toISOString(),
-      relativesCount: result.relatives.length,
-      educationHistoryCount: result.educationHistory.length,
-      referencesCount: result.references.length,
-    });
 
     // Return success response (minimal data)
     return NextResponse.json(

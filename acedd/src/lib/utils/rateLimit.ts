@@ -6,6 +6,8 @@
  * For production with multiple server instances, consider using Redis or a distributed cache.
  */
 
+import { logErrorSecurely } from "./secureLogging";
+
 interface RateLimitEntry {
   count: number;
   resetAt: number; // Timestamp when the limit resets
@@ -67,7 +69,7 @@ export function checkRateLimit(ip: string | null): {
 } {
   // If IP is not available, allow the request (but log warning)
   if (!ip) {
-    console.warn("[WARNING][RATE_LIMIT] IP address not available, allowing request");
+    logErrorSecurely("[RATE_LIMIT][WARNING]", new Error("IP address not available, allowing request"));
     return {
       allowed: true,
       remaining: RATE_LIMIT_MAX_REQUESTS,

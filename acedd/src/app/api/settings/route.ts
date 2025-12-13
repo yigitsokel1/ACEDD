@@ -26,6 +26,7 @@ import { prisma } from "@/lib/db";
 import type { Setting, UpsertSettingRequest } from "@/lib/types/setting";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
 import { Prisma } from "@prisma/client";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 import { replaceFaviconOrLogo } from "@/modules/files/fileService";
 
 /**
@@ -34,8 +35,8 @@ import { replaceFaviconOrLogo } from "@/modules/files/fileService";
  */
 export async function GET(request: NextRequest) {
   try {
-    // Require SUPER_ADMIN role
-    const session = requireRole(request, ["SUPER_ADMIN"]);
+    // Require SUPER_ADMIN role (GET operation - no database check needed for performance)
+    requireRole(request, ["SUPER_ADMIN"]);
 
     const searchParams = request.nextUrl.searchParams;
     const prefix = searchParams.get("prefix");
@@ -74,9 +75,7 @@ export async function GET(request: NextRequest) {
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][SETTINGS][GET]", error);
-    console.error("[ERROR][API][SETTINGS][GET] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][SETTINGS][GET]", error);
 
     return NextResponse.json(
       {
@@ -94,7 +93,7 @@ export async function GET(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    // Require SUPER_ADMIN role
+    // Require SUPER_ADMIN role (PUT operation - cookie-only auth, database check done in /api/admin/me)
     const session = requireRole(request, ["SUPER_ADMIN"]);
 
     const body: UpsertSettingRequest = await request.json();
@@ -176,7 +175,7 @@ export async function PUT(request: NextRequest) {
           );
         } catch (cleanupError) {
           // Non-critical error
-          console.error("[API][SETTINGS][PUT] Error cleaning up old favicon/logo:", cleanupError);
+          logErrorSecurely("[API][SETTINGS][PUT] Error cleaning up old favicon/logo", cleanupError);
         }
       }
     }
@@ -197,9 +196,7 @@ export async function PUT(request: NextRequest) {
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][SETTINGS][PUT]", error);
-    console.error("[ERROR][API][SETTINGS][PUT] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][SETTINGS][PUT]", error);
 
     // Prisma unique constraint error (shouldn't happen with upsert, but handle anyway)
     if (error instanceof Error && error.message.includes("Unique constraint")) {

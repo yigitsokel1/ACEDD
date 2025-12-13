@@ -15,6 +15,7 @@ import {
   ScholarshipApplicationSchema, 
   ScholarshipApplicationInput 
 } from "@/modules/scholarship/schemas";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 type ScholarshipFormData = ScholarshipApplicationInput;
 
@@ -140,7 +141,7 @@ export function ScholarshipForm() {
       reset();
       setRecaptchaToken(null);
     } catch (error) {
-      console.error("Error submitting scholarship application:", error);
+      logClientError("[ScholarshipForm][SUBMIT]", error);
       
       // Network error or other unexpected errors
       if (error instanceof TypeError && error.message.includes("fetch")) {
@@ -248,7 +249,6 @@ export function ScholarshipForm() {
                 {...register("birthDate")}
                 type="date"
                 label={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.birthDate.label}
-                placeholder={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.birthDate.placeholder}
                 error={errors.birthDate?.message}
                 required={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.birthDate.required}
               />
@@ -287,7 +287,6 @@ export function ScholarshipForm() {
                   {...register("idIssueDate")}
                   type="date"
                   label={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.idIssueDate.label}
-                  placeholder={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.idIssueDate.placeholder}
                   error={errors.idIssueDate?.message}
                   required={SCHOLARSHIP_FORM_FIELDS.generalInfo.fields.idIssueDate.required}
                 />
@@ -537,7 +536,6 @@ export function ScholarshipForm() {
                       {...register(`relatives.${index}.birthDate`)}
                       type="date"
                       label={SCHOLARSHIP_FORM_FIELDS.relativesInfo.fields.birthDate.label}
-                      placeholder={SCHOLARSHIP_FORM_FIELDS.relativesInfo.fields.birthDate.placeholder}
                       error={itemErrors?.birthDate?.message as string | undefined}
                       required={SCHOLARSHIP_FORM_FIELDS.relativesInfo.fields.birthDate.required}
                     />
@@ -636,7 +634,6 @@ export function ScholarshipForm() {
                     {...register(`educationHistory.${index}.startDate`)}
                     type="date"
                     label={SCHOLARSHIP_FORM_FIELDS.educationHistory.fields.startDate.label}
-                    placeholder={SCHOLARSHIP_FORM_FIELDS.educationHistory.fields.startDate.placeholder}
                     error={itemErrors?.startDate?.message as string | undefined}
                     required={SCHOLARSHIP_FORM_FIELDS.educationHistory.fields.startDate.required}
                   />
@@ -644,7 +641,6 @@ export function ScholarshipForm() {
                     {...register(`educationHistory.${index}.endDate`)}
                     type="date"
                     label={SCHOLARSHIP_FORM_FIELDS.educationHistory.fields.endDate.label}
-                    placeholder={SCHOLARSHIP_FORM_FIELDS.educationHistory.fields.endDate.placeholder}
                     error={itemErrors?.endDate?.message as string | undefined}
                     required={SCHOLARSHIP_FORM_FIELDS.educationHistory.fields.endDate.required}
                   />

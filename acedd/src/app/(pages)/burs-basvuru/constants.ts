@@ -29,8 +29,7 @@ export const SCHOLARSHIP_FORM_FIELDS = {
         required: true,
       },
       birthDate: {
-        label: "Doğum Tarihi (Ör: 10.20.2020)",
-        placeholder: "mm/dd/yyyy",
+        label: "Doğum Tarihi",
         type: "date",
         required: true,
       },
@@ -51,7 +50,6 @@ export const SCHOLARSHIP_FORM_FIELDS = {
       },
       idIssueDate: {
         label: "Kimlik veriliş tarihi",
-        placeholder: "mm/dd/yyyy",
         type: "date",
         required: true,
       },
@@ -184,7 +182,6 @@ export const SCHOLARSHIP_FORM_FIELDS = {
       },
       birthDate: {
         label: "Doğum Tarihi",
-        placeholder: "mm/dd/yyyy",
         type: "date",
         required: true,
       },
@@ -238,13 +235,11 @@ export const SCHOLARSHIP_FORM_FIELDS = {
       },
       startDate: {
         label: "Başlama",
-        placeholder: "mm/dd/yyyy",
         type: "date",
         required: true,
       },
       endDate: {
         label: "Bitiş",
-        placeholder: "mm/dd/yyyy (opsiyonel)",
         type: "date",
         required: false,
       },

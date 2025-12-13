@@ -6,6 +6,7 @@ import { Save, Loader2 } from "lucide-react";
 import type { Setting } from "@/lib/types/setting";
 import type { PageIdentifier } from "@/lib/types/setting";
 import { getSeoPrefix, getSeoKey } from "@/lib/settings/keys";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 const PAGES: Array<{ key: PageIdentifier; label: string }> = [
   { key: "home", label: "Ana Sayfa" },
@@ -56,7 +57,7 @@ export default function SEOTab() {
         description: settingsMap[getSeoKey(selectedPage, "description")] || "",
       });
     } catch (error) {
-      console.error("Error fetching settings:", error);
+      logClientError("[SEOTab][FETCH]", error);
     } finally {
       setIsLoading(false);
     }
@@ -121,7 +122,7 @@ export default function SEOTab() {
       // Show success message
       alert("SEO ayarları başarıyla kaydedildi!");
     } catch (error) {
-      console.error("Error saving SEO settings:", error);
+      logClientError("[SEOTab][SAVE]", error);
       setErrors({ general: "SEO ayarları kaydedilirken bir hata oluştu." });
     } finally {
       setIsSaving(false);

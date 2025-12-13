@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { ADMIN_NAVIGATION_ITEMS } from "../constants";
 import { MembersProvider } from "@/contexts/MembersContext";
 import type { AdminRole } from "@/lib/types/admin";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -40,7 +41,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           router.push("/admin-login");
         }
       } catch (error) {
-        console.error("[Admin Layout] Error fetching admin:", error);
+        logClientError("[AdminLayout][FETCH_ADMIN]", error);
       }
     };
     
@@ -60,11 +61,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         router.push("/admin-login");
         router.refresh();
       } else {
-        console.error("[Admin Layout] Logout failed");
+        logClientError("[AdminLayout][LOGOUT]", new Error("Logout failed"));
         setIsLoggingOut(false);
       }
     } catch (error) {
-      console.error("[Admin Layout] Logout error:", error);
+      logClientError("[AdminLayout][LOGOUT]", error);
       setIsLoggingOut(false);
     }
   };
@@ -172,7 +173,13 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             </button>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-500">
-                Son güncelleme: {new Date().toLocaleDateString("tr-TR")}
+                Son güncelleme: {(() => {
+                  const date = new Date();
+                  const day = String(date.getDate()).padStart(2, '0');
+                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                  const year = date.getFullYear();
+                  return `${day}.${month}.${year}`;
+                })()}
               </span>
             </div>
           </div>

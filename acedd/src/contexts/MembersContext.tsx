@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Member, MembershipApplication, BoardMember, CreateMemberData, UpdateMemberData, CreateApplicationData, CreateBoardMemberData } from "@/lib/types/member";
 import { sortBoardMembersByRole } from "@/lib/utils/memberHelpers";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 export interface MembersContextType {
   // Members
@@ -84,7 +85,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json();
       setMembers(data);
     } catch (err) {
-      console.error('Error fetching members:', err);
+      logClientError("[MembersContext][FETCH_MEMBERS]", err);
       setMembersError(err instanceof Error ? err.message : 'Failed to fetch members');
     } finally {
       setMembersLoading(false);
@@ -119,7 +120,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json();
       setApplications(data);
     } catch (err) {
-      console.error('Error fetching applications:', err);
+      logClientError("[MembersContext][FETCH_APPLICATIONS]", err);
       setApplicationsError(err instanceof Error ? err.message : 'Failed to fetch applications');
     } finally {
       setApplicationsLoading(false);
@@ -149,7 +150,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json();
       setBoardMembers(data);
     } catch (err) {
-      console.error('Error fetching board members:', err);
+      logClientError("[MembersContext][FETCH_BOARD_MEMBERS]", err);
       setBoardMembersError(err instanceof Error ? err.message : 'Failed to fetch board members');
     } finally {
       setBoardMembersLoading(false);
@@ -192,7 +193,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       const newMember = await response.json();
       setMembers(prev => [newMember, ...prev]);
     } catch (err) {
-      console.error('Error creating member:', err);
+      logClientError("[MembersContext][ADD_MEMBER]", err);
       setMembersError(err instanceof Error ? err.message : 'Failed to create member');
       throw err;
     } finally {
@@ -230,7 +231,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
         prev.map(member => member.id === id ? updatedMember : member)
       );
     } catch (err) {
-      console.error('Error updating member:', err);
+      logClientError("[MembersContext][UPDATE_MEMBER]", err);
       setMembersError(err instanceof Error ? err.message : 'Failed to update member');
       throw err;
     } finally {
@@ -261,7 +262,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
 
       setMembers(prev => prev.filter(member => member.id !== id));
     } catch (err) {
-      console.error('Error deleting member:', err);
+      logClientError("[MembersContext][DELETE_MEMBER]", err);
       setMembersError(err instanceof Error ? err.message : 'Failed to delete member');
       throw err;
     } finally {
@@ -306,7 +307,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       const newApplication = await response.json();
       setApplications(prev => [newApplication, ...prev]);
     } catch (err) {
-      console.error('Error creating application:', err);
+      logClientError("[MembersContext][ADD_APPLICATION]", err);
       setApplicationsError(err instanceof Error ? err.message : 'Failed to create application');
       throw err;
     } finally {
@@ -349,7 +350,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
         await fetchMembers();
       }
     } catch (err) {
-      console.error('Error updating application:', err);
+      logClientError("[MembersContext][UPDATE_APPLICATION]", err);
       setApplicationsError(err instanceof Error ? err.message : 'Failed to update application');
       throw err;
     } finally {
@@ -380,7 +381,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
 
       setApplications(prev => prev.filter(application => application.id !== id));
     } catch (err) {
-      console.error('Error deleting application:', err);
+      logClientError("[MembersContext][DELETE_APPLICATION]", err);
       setApplicationsError(err instanceof Error ? err.message : 'Failed to delete application');
       throw err;
     } finally {
@@ -426,7 +427,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
       // Sprint 6: Helper fonksiyonla sıralama
       setBoardMembers(prev => sortBoardMembersByRole([...prev, newBoardMember]));
     } catch (err) {
-      console.error('Error creating board member:', err);
+      logClientError("[MembersContext][ADD_BOARD_MEMBER]", err);
       setBoardMembersError(err instanceof Error ? err.message : 'Failed to create board member');
       throw err;
     } finally {
@@ -465,7 +466,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
         prev.map(boardMember => boardMember.id === id ? updatedBoardMember : boardMember)
       ));
     } catch (err) {
-      console.error('Error updating board member:', err);
+      logClientError("[MembersContext][UPDATE_BOARD_MEMBER]", err);
       setBoardMembersError(err instanceof Error ? err.message : 'Failed to update board member');
       throw err;
     } finally {
@@ -496,7 +497,7 @@ export function MembersProvider({ children }: { children: React.ReactNode }) {
 
       setBoardMembers(prev => prev.filter(boardMember => boardMember.id !== id));
     } catch (err) {
-      console.error('Error deleting board member:', err);
+      logClientError("[MembersContext][DELETE_BOARD_MEMBER]", err);
       setBoardMembersError(err instanceof Error ? err.message : 'Failed to delete board member');
       throw err;
     } finally {

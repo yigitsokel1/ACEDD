@@ -18,6 +18,7 @@ import type { Member } from "@/lib/types/member";
 import { requireRole, createAuthErrorResponse, getAdminFromRequest } from "@/lib/auth/adminAuth";
 import { validateMemberTags } from "@/lib/utils/memberHelpers";
 import { replaceMemberCV } from "@/modules/files/fileService";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 /**
  * Helper function to parse JSON string to array
@@ -95,7 +96,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Sprint 14.7: Members GET requires ADMIN or SUPER_ADMIN (admin sayfasında kullanılıyor)
+    // Sprint 14.7: Members GET requires ADMIN or SUPER_ADMIN (GET operation - no database check)
     requireRole(request, ["SUPER_ADMIN", "ADMIN"]);
     
     const { id } = await params;
@@ -119,9 +120,7 @@ export async function GET(
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][MEMBERS][GET_BY_ID]", error);
-    console.error("[ERROR][API][MEMBERS][GET_BY_ID] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][MEMBERS][GET_BY_ID]", error);
 
     return NextResponse.json(
       {
@@ -142,7 +141,7 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
     
-    // Sprint 6: All member updates require SUPER_ADMIN
+    // Sprint 6: All member updates require SUPER_ADMIN (PUT operation - cookie-only auth, database check done in /api/admin/me)
     requireRole(request, ["SUPER_ADMIN"]);
 
     // Prepare update data
@@ -268,14 +267,14 @@ export async function PUT(
           await replaceMemberCV(id, oldDatasetId, newDatasetId);
         } catch (cleanupError) {
           // Dataset silme hatası log'lanır ama işlemi durdurmaz (non-critical)
-          console.error("[WARNING][API][MEMBERS][UPDATE][CV_CLEANUP] Failed to cleanup old CV:", cleanupError);
+          logErrorSecurely("[WARNING][API][MEMBERS][UPDATE][CV_CLEANUP] Failed to cleanup old CV", cleanupError);
         }
       } else if (newDatasetId) {
         // Sadece yeni CV varsa, bağla
         try {
           await replaceMemberCV(id, null, newDatasetId);
         } catch (linkError) {
-          console.error("[WARNING][API][MEMBERS][UPDATE][CV_LINK] Failed to link new CV:", linkError);
+          logErrorSecurely("[WARNING][API][MEMBERS][UPDATE][CV_LINK] Failed to link new CV", linkError);
         }
       }
       
@@ -318,9 +317,7 @@ export async function PUT(
       }
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][MEMBERS][UPDATE]", error);
-    console.error("[ERROR][API][MEMBERS][UPDATE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][MEMBERS][UPDATE]", error);
 
     return NextResponse.json(
       {
@@ -338,7 +335,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Require SUPER_ADMIN role for deletion
+    // Require SUPER_ADMIN role for deletion (DELETE operation - cookie-only auth, database check done in /api/admin/me)
     requireRole(request, ["SUPER_ADMIN"]);
     
     const { id } = await params;
@@ -352,10 +349,9 @@ export async function DELETE(
     if (member?.cvDatasetId) {
       try {
         await replaceMemberCV(id, member.cvDatasetId, null);
-        console.log(`[API][MEMBERS][DELETE] Cleaned up CV dataset ${member.cvDatasetId} for member ${id}`);
       } catch (cleanupError) {
         // Dataset silme hatası kritik değil, log'la ama devam et
-        console.error("[API][MEMBERS][DELETE] Error cleaning up CV dataset:", cleanupError);
+        logErrorSecurely("[API][MEMBERS][DELETE] Error cleaning up CV dataset", cleanupError);
       }
     }
 
@@ -379,9 +375,7 @@ export async function DELETE(
       );
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][MEMBERS][DELETE]", error);
-    console.error("[ERROR][API][MEMBERS][DELETE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][MEMBERS][DELETE]", error);
 
     return NextResponse.json(
       {

@@ -11,6 +11,7 @@ import { SITE_CONFIG, CONTACT_INFO } from "../constants";
 import { DEFAULT_PAGE_CONTENT } from "../constants/defaultContent";
 import type { PageIdentifier, PageContent, PageSEO } from "../types/setting";
 import { getContentPrefix, getSeoPrefix, getSeoKey } from "./keys";
+import { logErrorSecurely } from "../utils/secureLogging";
 
 /**
  * Get site name from settings (with fallback)
@@ -143,7 +144,7 @@ export async function getFaviconUrlWithTimestamp(): Promise<{ url: string | null
       timestamp,
     };
   } catch (error) {
-    console.error('[getFaviconUrlWithTimestamp] Error:', error);
+    logErrorSecurely("[Settings][getFaviconUrlWithTimestamp]", error);
     return { url: null, timestamp: null };
   }
 }

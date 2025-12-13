@@ -1,6 +1,7 @@
 import React from "react";
 import { Metadata } from "next";
 import { headers } from "next/headers";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 import {
   DashboardStats,
   RecentApplications,
@@ -37,13 +38,13 @@ async function fetchDashboardData(): Promise<DashboardData | null> {
     });
 
     if (!response.ok) {
-      console.error("Failed to fetch dashboard data:", response.status);
+      logErrorSecurely("[AdminPage][FETCH_DASHBOARD]", new Error(`Failed to fetch dashboard data: ${response.status}`));
       return null;
     }
 
     return await response.json();
   } catch (error) {
-    console.error("Error fetching dashboard data:", error);
+    logErrorSecurely("[AdminPage][FETCH_DASHBOARD]", error);
     return null;
   }
 }

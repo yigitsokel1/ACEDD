@@ -5,6 +5,7 @@ import { Button, Input, Textarea } from "@/components/ui";
 import { FileUpload } from "@/components/ui";
 import { Save, Loader2 } from "lucide-react";
 import type { Setting } from "@/lib/types/setting";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 export default function SiteInfoTab() {
   const [isLoading, setIsLoading] = useState(false);
@@ -61,7 +62,7 @@ export default function SiteInfoTab() {
         footerText: settingsMap["footer.text"] || "",
       });
     } catch (error) {
-      console.error("Error fetching settings:", error);
+      logClientError("[SiteInfoTab][FETCH]", error);
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +110,7 @@ export default function SiteInfoTab() {
           datasetIds.push(data.datasetIds[0]);
         }
       } catch (error) {
-        console.error('Error uploading preview file:', error);
+        logClientError("[SiteInfoTab][UPLOAD_PREVIEW]", error);
         throw error;
       }
     }
@@ -163,7 +164,7 @@ export default function SiteInfoTab() {
             }
           }
         } catch (error) {
-          console.error("[SiteInfoTab] Error uploading logo preview:", error);
+          logClientError("[SiteInfoTab][UPLOAD_LOGO]", error);
           setErrors({ general: "Logo yüklenirken bir hata oluştu." });
           return;
         }
@@ -183,7 +184,7 @@ export default function SiteInfoTab() {
             }
           }
         } catch (error) {
-          console.error("[SiteInfoTab] Error uploading favicon preview:", error);
+          logClientError("[SiteInfoTab][UPLOAD_FAVICON]", error);
           setErrors({ general: "Favicon yüklenirken bir hata oluştu." });
           return;
         }
@@ -242,7 +243,7 @@ export default function SiteInfoTab() {
       // Show success message
       alert("Ayarlar başarıyla kaydedildi!");
     } catch (error) {
-      console.error("Error saving settings:", error);
+      logClientError("[SiteInfoTab][SAVE]", error);
       setErrors({ general: "Ayarlar kaydedilirken bir hata oluştu." });
     } finally {
       setIsSaving(false);

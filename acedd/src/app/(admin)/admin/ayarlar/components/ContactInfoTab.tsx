@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Button, Input, Textarea } from "@/components/ui";
 import { Save, Loader2 } from "lucide-react";
 import type { Setting } from "@/lib/types/setting";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 export default function ContactInfoTab() {
   const [isLoading, setIsLoading] = useState(false);
@@ -47,7 +48,7 @@ export default function ContactInfoTab() {
         address: settingsMap["contact.address"] || "",
       });
     } catch (error) {
-      console.error("Error fetching settings:", error);
+      logClientError("[ContactInfoTab][FETCH]", error);
     } finally {
       setIsLoading(false);
     }
@@ -110,7 +111,7 @@ export default function ContactInfoTab() {
       // Show success message
       alert("İletişim bilgileri başarıyla kaydedildi!");
     } catch (error) {
-      console.error("Error saving settings:", error);
+      logClientError("[ContactInfoTab][SAVE]", error);
       setErrors({ general: "Ayarlar kaydedilirken bir hata oluştu." });
     } finally {
       setIsSaving(false);

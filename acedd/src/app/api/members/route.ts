@@ -16,6 +16,7 @@ import type { Member } from "@/lib/types/member";
 import { requireRole, createAuthErrorResponse, getAdminFromRequest } from "@/lib/auth/adminAuth";
 import { validateMemberTags } from "@/lib/utils/memberHelpers";
 import { validateTCNumber } from "@/lib/utils/validationHelpers";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 /**
  * Helper function to parse JSON string to array
@@ -90,7 +91,7 @@ function formatMember(prismaMember: {
 // GET - Tüm üyeleri getir
 export async function GET(request: NextRequest) {
   try {
-    // Sprint 14.7: Members GET requires ADMIN or SUPER_ADMIN (admin sayfasında kullanılıyor)
+    // Sprint 14.7: Members GET requires ADMIN or SUPER_ADMIN (GET operation - no database check)
     requireRole(request, ["SUPER_ADMIN", "ADMIN"]);
     
     const { searchParams } = new URL(request.url);
@@ -133,9 +134,7 @@ export async function GET(request: NextRequest) {
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][MEMBERS][GET]", error);
-    console.error("[ERROR][API][MEMBERS][GET] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][MEMBERS][GET]", error);
 
     return NextResponse.json(
       {
@@ -150,7 +149,7 @@ export async function GET(request: NextRequest) {
 // POST - Yeni üye oluştur
 export async function POST(request: NextRequest) {
   try {
-    // Require SUPER_ADMIN role for creating members
+    // Require SUPER_ADMIN role for creating members (POST operation - cookie-only auth, database check done in /api/admin/me)
     requireRole(request, ["SUPER_ADMIN"]);
     
     const body = await request.json();
@@ -285,9 +284,7 @@ export async function POST(request: NextRequest) {
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][MEMBERS][CREATE]", error);
-    console.error("[ERROR][API][MEMBERS][CREATE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][MEMBERS][CREATE]", error);
 
     // Prisma unique constraint error (email)
     if (error && typeof error === "object" && "code" in error && error.code === "P2002") {

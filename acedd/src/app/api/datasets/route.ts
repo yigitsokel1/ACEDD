@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 /**
  * Helper function to parse JSON string to array
@@ -85,9 +86,7 @@ export async function GET() {
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][DATASETS][GET]", error);
-    console.error("[ERROR][API][DATASETS][GET] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][DATASETS][GET]", error);
 
     return NextResponse.json(
       {
@@ -150,9 +149,7 @@ export async function POST(request: NextRequest) {
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][DATASETS][CREATE]", error);
-    console.error("[ERROR][API][DATASETS][CREATE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][DATASETS][CREATE]", error);
 
     return NextResponse.json(
       {

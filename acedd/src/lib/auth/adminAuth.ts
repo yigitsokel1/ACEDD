@@ -3,10 +3,15 @@
  * 
  * Provides utilities for extracting admin session from requests
  * and enforcing role-based access control in API routes.
+ * 
+ * OPTIMIZATION: Database verification is done only in /api/admin/me endpoint
+ * (called once per page load by AdminLayout). All other API routes use
+ * cookie-only authentication (requireRole) for performance.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { prisma } from "@/lib/db";
 import type { AdminRole } from "@/lib/types/admin";
 import type { AdminSession } from "./adminSession";
 
@@ -66,6 +71,10 @@ function decryptSession(encrypted: string): AdminSession | null {
       typeof session.email === "string" &&
       typeof session.name === "string"
     ) {
+      // Backward compatibility: if issuedAt is missing, set it to now
+      if (typeof session.issuedAt !== "number") {
+        session.issuedAt = Math.floor(Date.now() / 1000);
+      }
       return session;
     }
     return null;
@@ -141,6 +150,93 @@ export function hasRole(session: AdminSession | null, allowedRoles: AdminRole[])
   
   // Check if user's role is in allowed roles
   return allowedRoles.includes(session.role);
+}
+
+/**
+ * Require admin authentication with database verification
+ * 
+ * @deprecated This function is no longer used. Database verification is now done
+ * only in /api/admin/me endpoint (called once per page load). All other API routes
+ * use requireRole() for performance (cookie-only auth).
+ * 
+ * CRITICAL: This function verifies that:
+ * 1. Session cookie is valid (HMAC signature)
+ * 2. User exists in database
+ * 3. User is active
+ * 
+ * @param request - NextRequest object
+ * @returns AdminSession if authenticated and user exists and is active
+ * @throws Error with "UNAUTHORIZED" if session invalid, user not found, or user inactive
+ */
+export async function requireAuthWithDatabaseCheck(
+  request: NextRequest
+): Promise<AdminSession> {
+  const session = getAdminFromRequest(request);
+  
+  if (!session) {
+    throw new Error("UNAUTHORIZED");
+  }
+  
+  // Verify user exists in database and is active
+  const adminUser = await prisma.adminUser.findUnique({
+    where: { id: session.adminUserId },
+    select: { id: true, isActive: true, role: true },
+  });
+  
+  if (!adminUser) {
+    // User doesn't exist (may have been deleted)
+    throw new Error("UNAUTHORIZED");
+  }
+  
+  if (!adminUser.isActive) {
+    // User exists but is deactivated
+    throw new Error("UNAUTHORIZED");
+  }
+  
+  // Verify role matches (in case role was changed after session creation)
+  // This prevents privilege escalation
+  if (adminUser.role !== session.role) {
+    throw new Error("UNAUTHORIZED");
+  }
+  
+  return session;
+}
+
+/**
+ * Require specific role(s) with database verification
+ * 
+ * @deprecated This function is no longer used. Database verification is now done
+ * only in /api/admin/me endpoint (called once per page load). All other API routes
+ * use requireRole() for performance (cookie-only auth).
+ * 
+ * CRITICAL: This function verifies that:
+ * 1. Session cookie is valid (HMAC signature)
+ * 2. User exists in database
+ * 3. User is active
+ * 4. User has required role
+ * 
+ * @param request - NextRequest object
+ * @param allowedRoles - Array of allowed roles
+ * @returns AdminSession if authorized
+ * @throws Error with "UNAUTHORIZED" or "FORBIDDEN" message
+ */
+export async function requireRoleWithDatabaseCheck(
+  request: NextRequest,
+  allowedRoles: AdminRole[]
+): Promise<AdminSession> {
+  const session = await requireAuthWithDatabaseCheck(request);
+  
+  // SUPER_ADMIN has access to everything
+  if (session.role === "SUPER_ADMIN") {
+    return session;
+  }
+  
+  // Check if user's role is in allowed roles
+  if (!allowedRoles.includes(session.role)) {
+    throw new Error("FORBIDDEN");
+  }
+  
+  return session;
 }
 
 /**

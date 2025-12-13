@@ -25,6 +25,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import type { Event } from "@/app/(pages)/etkinlikler/constants";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 /**
  * Helper function to parse JSON string to array
@@ -96,9 +97,7 @@ export async function GET() {
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][EVENTS][GET]", error);
-    console.error("[ERROR][API][EVENTS][GET] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][EVENTS][GET]", error);
 
     return NextResponse.json(
       {
@@ -207,9 +206,7 @@ export async function POST(request: NextRequest) {
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][EVENTS][CREATE]", error);
-    console.error("[ERROR][API][EVENTS][CREATE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][EVENTS][CREATE]", error);
 
     return NextResponse.json(
       {

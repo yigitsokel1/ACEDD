@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 // Local storage hook
 export function useLocalStorage<T>(key: string, initialValue: T) {
@@ -12,7 +13,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
       const item = window.localStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
-      console.error(`Error reading localStorage key "${key}":`, error);
+      logClientError(`[useLocalStorage][READ] key: ${key}`, error);
       return initialValue;
     }
   });
@@ -26,7 +27,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
           window.localStorage.setItem(key, JSON.stringify(valueToStore));
         }
       } catch (error) {
-        console.error(`Error setting localStorage key "${key}":`, error);
+        logClientError(`[useLocalStorage][SET] key: ${key}`, error);
       }
     },
     [key, storedValue]
@@ -45,7 +46,7 @@ export function useSessionStorage<T>(key: string, initialValue: T) {
       const item = window.sessionStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
-      console.error(`Error reading sessionStorage key "${key}":`, error);
+      logClientError(`[useSessionStorage][READ] key: ${key}`, error);
       return initialValue;
     }
   });
@@ -59,7 +60,7 @@ export function useSessionStorage<T>(key: string, initialValue: T) {
           window.sessionStorage.setItem(key, JSON.stringify(valueToStore));
         }
       } catch (error) {
-        console.error(`Error setting sessionStorage key "${key}":`, error);
+        logClientError(`[useSessionStorage][SET] key: ${key}`, error);
       }
     },
     [key, storedValue]

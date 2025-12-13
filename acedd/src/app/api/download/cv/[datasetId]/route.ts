@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 export async function GET(
   request: NextRequest,
@@ -81,7 +82,7 @@ export async function GET(
         },
       });
     } catch (decodeError) {
-      console.error('[ERROR][API][DOWNLOAD][CV][DECODE]', decodeError);
+      logErrorSecurely("[ERROR][API][DOWNLOAD][CV][DECODE]", decodeError);
       return NextResponse.json(
         { 
           error: 'CV decode edilirken bir hata oluştu',
@@ -91,7 +92,7 @@ export async function GET(
       );
     }
   } catch (error) {
-    console.error('[ERROR][API][DOWNLOAD][CV]', error);
+    logErrorSecurely("[ERROR][API][DOWNLOAD][CV]", error);
     return NextResponse.json(
       { 
         error: 'CV indirilirken bir hata oluştu',

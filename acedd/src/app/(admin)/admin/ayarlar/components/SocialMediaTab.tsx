@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Button, Input } from "@/components/ui";
 import { Save, Loader2, Instagram, Twitter, Facebook, Linkedin, Youtube } from "lucide-react";
 import type { Setting } from "@/lib/types/setting";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 export default function SocialMediaTab() {
   const [isLoading, setIsLoading] = useState(false);
@@ -51,7 +52,7 @@ export default function SocialMediaTab() {
         youtube: settingsMap["social.youtube"] || "",
       });
     } catch (error) {
-      console.error("Error fetching settings:", error);
+      logClientError("[SocialMediaTab][FETCH]", error);
     } finally {
       setIsLoading(false);
     }
@@ -116,7 +117,7 @@ export default function SocialMediaTab() {
       // Show success message
       alert("Sosyal medya linkleri başarıyla kaydedildi!");
     } catch (error) {
-      console.error("Error saving settings:", error);
+      logClientError("[SocialMediaTab][SAVE]", error);
       setErrors({ general: "Ayarlar kaydedilirken bir hata oluştu." });
     } finally {
       setIsSaving(false);

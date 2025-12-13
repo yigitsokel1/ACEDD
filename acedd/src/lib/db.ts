@@ -55,19 +55,26 @@ if (process.env.NODE_ENV !== "production") {
  * Configuration:
  * - Uses MariaDB adapter for database connections
  * - Logging:
- *   - Development: query, error, warn (for debugging)
  *   - Production: error only (for performance)
+ *   - Development: Controlled by PRISMA_LOG_QUERIES env var
+ *     - PRISMA_LOG_QUERIES=true: query, error, warn (verbose debugging)
+ *     - PRISMA_LOG_QUERIES=false or unset: error, warn (minimal logging)
  * 
  * Singleton pattern in development prevents multiple instances during hot reload.
  */
+const shouldLogQueries = 
+  process.env.NODE_ENV === "production"
+    ? false // Production: never log queries
+    : process.env.PRISMA_LOG_QUERIES === "true"; // Development: only if explicitly enabled
+
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
     adapter,
     log:
-      process.env.NODE_ENV === "development"
+      shouldLogQueries
         ? ["query", "error", "warn"]
-        : ["error"],
+        : ["error", "warn"],
   });
 
 if (process.env.NODE_ENV !== "production") {

@@ -18,6 +18,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import type { BoardMember } from "@/lib/types/member";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 /**
  * Helper function to format Prisma BoardMember to frontend BoardMember
@@ -98,12 +99,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(formattedBoardMembers);
   } catch (error) {
-    console.error("Error fetching board members:", error);
+    logErrorSecurely("[ERROR][API][BOARD_MEMBERS][GET]", error);
 
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
     const errorDetails = error instanceof Error ? error.stack : String(error);
-
-    console.error("Error details:", errorDetails);
 
     return NextResponse.json(
       {
@@ -181,9 +180,7 @@ export async function POST(request: NextRequest) {
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][BOARD_MEMBERS][CREATE]", error);
-    console.error("[ERROR][API][BOARD_MEMBERS][CREATE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][BOARD_MEMBERS][CREATE]", error);
 
     return NextResponse.json(
       {

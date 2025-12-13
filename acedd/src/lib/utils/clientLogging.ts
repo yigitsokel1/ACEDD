@@ -1,15 +1,16 @@
 /**
- * Secure logging helper
- * Sprint 15.2: Filter sensitive data from logs (TC kimlik, form data, etc.)
+ * Client-side logging helper
+ * Standardized error/warn logging for React components
+ * Production-safe: sanitizes sensitive data but keeps logs visible for debugging
  */
 
 /**
- * Masks sensitive data in strings (e.g., TC kimlik numbers)
+ * Masks sensitive data in strings (e.g., TC kimlik numbers, emails)
  * @param value - Value to mask
  * @param visibleChars - Number of characters to show at the start and end (default: 2)
  * @returns Masked string
  */
-export function maskSensitiveValue(value: string | null | undefined, visibleChars: number = 2): string {
+function maskSensitiveValue(value: string | null | undefined, visibleChars: number = 2): string {
   if (!value || typeof value !== "string") {
     return "[REDACTED]";
   }
@@ -27,12 +28,12 @@ export function maskSensitiveValue(value: string | null | undefined, visibleChar
 }
 
 /**
- * Sanitizes an object by removing or masking sensitive fields
+ * Sanitizes an object by masking sensitive fields
  * @param obj - Object to sanitize
- * @param sensitiveFields - Array of field names to mask/remove
+ * @param sensitiveFields - Array of field names to mask
  * @returns Sanitized object
  */
-export function sanitizeObjectForLogging<T extends Record<string, any>>(
+function sanitizeObjectForClientLogging<T extends Record<string, any>>(
   obj: T,
   sensitiveFields: string[] = [
     "identityNumber", "tcId", "tcNumber", "nationalId",
@@ -41,6 +42,7 @@ export function sanitizeObjectForLogging<T extends Record<string, any>>(
     "iban", "ibanNumber", "bankName", "bankAccount",
     "birthDate", "birthPlace", "hometown",
     "permanentAddress", "currentAccommodation",
+    "password", "passwordHash", "token",
   ]
 ): Partial<T> {
   const sanitized: Partial<T> = {};
@@ -55,7 +57,7 @@ export function sanitizeObjectForLogging<T extends Record<string, any>>(
       }
     } else if (typeof value === "object" && value !== null && !Array.isArray(value)) {
       // Recursively sanitize nested objects
-      sanitized[key as keyof T] = sanitizeObjectForLogging(value, sensitiveFields) as T[keyof T];
+      sanitized[key as keyof T] = sanitizeObjectForClientLogging(value, sensitiveFields) as T[keyof T];
     } else {
       // Keep non-sensitive fields as-is
       sanitized[key as keyof T] = value;
@@ -66,42 +68,51 @@ export function sanitizeObjectForLogging<T extends Record<string, any>>(
 }
 
 /**
- * Logs an error with sanitized data
- * Production-safe: Stack traces only shown in development
- * @param context - Context identifier (e.g., "[API][MEMBERSHIP][CREATE]")
+ * Logs an error on the client side with sanitized data
+ * Production-safe: masks sensitive data but keeps logs visible for debugging
+ * 
+ * @param context - Context identifier (e.g., "[EventsContext][FETCH]", "[ScholarshipForm][SUBMIT]")
  * @param error - Error object or message
  * @param data - Optional data object to log (will be sanitized)
  */
-export function logErrorSecurely(context: string, error: unknown, data?: Record<string, any>): void {
+export function logClientError(
+  context: string,
+  error: unknown,
+  data?: Record<string, any>
+): void {
   const errorMessage = error instanceof Error ? error.message : String(error);
   const errorStack = error instanceof Error ? error.stack : undefined;
-  const isDevelopment = process.env.NODE_ENV === "development";
 
   // Always log error message
-  console.error(`${context}`, errorMessage);
-  
-  // Stack traces only in development (security: don't expose internals in production)
-  if (errorStack && isDevelopment) {
-    console.error(`${context} Stack:`, errorStack);
+  console.error(`[CLIENT_ERROR]${context}`, errorMessage);
+
+  // Stack trace is visible in client-side (useful for debugging, not a security risk)
+  if (errorStack) {
+    console.error(`[CLIENT_ERROR]${context} Stack:`, errorStack);
   }
 
   if (data) {
-    const sanitized = sanitizeObjectForLogging(data);
-    // Pretty print only in development
-    if (isDevelopment) {
-      console.error(`${context} Data:`, JSON.stringify(sanitized, null, 2));
-    } else {
-      console.error(`${context} Data:`, JSON.stringify(sanitized));
-    }
+    const sanitized = sanitizeObjectForClientLogging(data);
+    console.error(`[CLIENT_ERROR]${context} Data:`, sanitized);
   }
 }
 
 /**
- * Production-safe error logging helper
- * Replaces direct console.error + errorDetails pattern
- * Usage: logErrorSafe("[ERROR][API][ENDPOINT]", error)
+ * Logs a warning on the client side with sanitized data
+ * 
+ * @param context - Context identifier
+ * @param message - Warning message
+ * @param data - Optional data object to log (will be sanitized)
  */
-export function logErrorSafe(context: string, error: unknown): void {
-  logErrorSecurely(context, error);
-}
+export function logClientWarn(
+  context: string,
+  message: string,
+  data?: Record<string, any>
+): void {
+  console.warn(`[CLIENT_WARN]${context}`, message);
 
+  if (data) {
+    const sanitized = sanitizeObjectForClientLogging(data);
+    console.warn(`[CLIENT_WARN]${context} Data:`, sanitized);
+  }
+}

@@ -19,6 +19,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import type { ContactMessage } from "@/lib/types/contact";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 /**
  * Helper function to format Prisma ContactMessage to frontend ContactMessage
@@ -84,9 +85,7 @@ export async function GET(
       return createAuthErrorResponse(error.message);
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][CONTACT][GET_BY_ID]", error);
-    console.error("[ERROR][API][CONTACT][GET_BY_ID] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][CONTACT][GET_BY_ID]", error);
 
     return NextResponse.json(
       {
@@ -152,9 +151,7 @@ export async function PUT(
       );
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][CONTACT][UPDATE]", error);
-    console.error("[ERROR][API][CONTACT][UPDATE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][CONTACT][UPDATE]", error);
 
     return NextResponse.json(
       {
@@ -199,9 +196,7 @@ export async function DELETE(
       );
     }
 
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][CONTACT][DELETE]", error);
-    console.error("[ERROR][API][CONTACT][DELETE] Details:", errorDetails);
+    logErrorSecurely("[ERROR][API][CONTACT][DELETE]", error);
 
     return NextResponse.json(
       {

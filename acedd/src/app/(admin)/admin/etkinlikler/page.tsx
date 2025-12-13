@@ -9,6 +9,7 @@ import { FileUpload } from "@/components/ui";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { type Event } from "@/app/(pages)/etkinlikler/constants";
 import { useEvents } from "@/contexts/EventsContext";
+import { logClientError } from "@/lib/utils/clientLogging";
 
 export default function EventsAdminPage() {
   const { events, addEvent, updateEvent, deleteEvent, loading, error } = useEvents();
@@ -62,7 +63,7 @@ export default function EventsAdminPage() {
           datasetIds.push(data.datasetIds[0]);
         }
       } catch (error) {
-        console.error('Error uploading preview file:', error);
+        logClientError("[EventsAdminPage][UPLOAD_PREVIEW]", error);
         throw error;
       }
     }
@@ -205,7 +206,7 @@ export default function EventsAdminPage() {
       setPreviewFiles({});
       setIsAddingEvent(false);
     } catch (error) {
-      console.error('Error saving event:', error);
+      logClientError("[EventsAdminPage][SAVE]", error);
       alert(error instanceof Error ? error.message : 'Etkinlik kaydedilirken bir hata oluştu.');
     }
   };
@@ -237,7 +238,7 @@ export default function EventsAdminPage() {
     try {
       await deleteEvent(eventId);
     } catch (error) {
-      console.error('Error deleting event:', error);
+      logClientError("[EventsAdminPage][DELETE]", error);
       alert(error instanceof Error ? error.message : 'Etkinlik silinirken bir hata oluştu.');
     }
   };
@@ -528,7 +529,13 @@ export default function EventsAdminPage() {
               <div className="space-y-2 text-sm text-gray-600">
                 <div className="flex items-center space-x-2">
                   <Calendar className="w-4 h-4" />
-                  <span>{new Date(event.date).toLocaleDateString('tr-TR')}</span>
+                  <span>{(() => {
+                    const date = new Date(event.date);
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const year = date.getFullYear();
+                    return `${day}.${month}.${year}`;
+                  })()}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <MapPin className="w-4 h-4" />
