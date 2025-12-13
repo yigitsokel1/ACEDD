@@ -516,7 +516,7 @@ function normalizeValuesArray(value: any): Array<{ id: string; icon: string; tit
       icon: typeof item.icon === "string" && item.icon.trim() ? item.icon : getIconByKeyword(item.title, 'value'),
       title: item.title.trim(),
       description: item.description.trim(),
-      color: defaultColor, // Always use indigo for consistency - ignore stored color
+      color: typeof item.color === "string" && item.color.trim() ? item.color : defaultColor, // Use stored color if exists, otherwise default
     }));
 }
 
@@ -547,7 +547,7 @@ function normalizeGoalsArray(value: any): Array<{ id: string; icon: string; titl
       icon: typeof item.icon === "string" && item.icon.trim() ? item.icon : getIconByKeyword(item.title, 'goal'),
       title: item.title.trim(),
       description: item.description.trim(),
-      color: typeof item.color === "string" && item.color.trim() ? item.color : defaultColor,
+      color: typeof item.color === "string" && item.color.trim() ? item.color : defaultColor, // Use stored color if exists, otherwise default
     }));
 }
 
@@ -618,7 +618,7 @@ function normalizeJobDescriptionsArray(value: any): Array<{ id: string; icon: st
       icon: typeof item.icon === "string" && item.icon.trim() ? item.icon : getIconByKeyword(item.title, 'job'),
       title: item.title.trim(),
       description: item.description.trim(),
-      color: typeof item.color === "string" && item.color.trim() ? item.color : getJobDescriptionColor(item.title),
+      color: typeof item.color === "string" && item.color.trim() ? item.color : getJobDescriptionColor(item.title), // Use stored color if exists, otherwise calculate from title
     }));
 }
 
