@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "vitest",
     "test:watch": "vitest --watch",
+    "postinstall": "prisma generate",
     "create-admin": "tsx scripts/create-admin.ts",
     "generate-session-secret": "node scripts/generate-session-secret.js",
     "seed:settings": "tsx scripts/seed-settings.ts",
