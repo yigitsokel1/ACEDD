@@ -97,7 +97,7 @@ function ScholarshipApplicationModal({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             status: "APPROVED",
-            reviewNotes: _reviewNotes || undefined,
+            reviewNotes: reviewNotes || undefined,
           }),
         });
         successMsg = 'Başvuru başarıyla onaylandı';
@@ -107,7 +107,7 @@ function ScholarshipApplicationModal({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             status: "REJECTED",
-            reviewNotes: _reviewNotes || undefined,
+            reviewNotes: reviewNotes || undefined,
           }),
         });
         successMsg = 'Başvuru başarıyla reddedildi';
@@ -117,7 +117,7 @@ function ScholarshipApplicationModal({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             status: "UNDER_REVIEW",
-            reviewNotes: _reviewNotes || undefined,
+            reviewNotes: reviewNotes || undefined,
           }),
         });
         successMsg = 'Başvuru incelemeye alındı';
@@ -731,7 +731,7 @@ export default function ScholarshipApplicationsPageContent() {
         },
         body: JSON.stringify({
           status: "APPROVED",
-          reviewNotes: _reviewNotes || undefined,
+          reviewNotes: reviewNotes || undefined,
         }),
       });
 
@@ -833,7 +833,7 @@ export default function ScholarshipApplicationsPageContent() {
       }
 
       // Sprint 14.6: Remove application from state directly (client-side filtering)
-      setAllApplications(prev => prev.filter(app => app.id !== id));
+      setAllApplications(prev => prev.filter(app => app.id !== _id));
       setSelectedApplication(null);
     } catch (err) {
       logClientError("[ScholarshipApplicationsPageContent][DELETE]", err);
