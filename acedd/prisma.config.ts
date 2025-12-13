@@ -3,13 +3,17 @@
 import "dotenv/config";
 import { defineConfig, env } from "prisma/config";
 
+// For prisma generate, DATABASE_URL is not strictly required
+// Use a dummy URL if not set (only needed for generate, actual connection happens at runtime)
+const databaseUrl = process.env.DATABASE_URL || "mysql://user:password@localhost:3306/dummy";
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: env("DATABASE_URL"),
+    url: databaseUrl,
     // Shadow database: Opsiyonel (sadece prisma migrate dev için gerekli)
     // prisma db push shadow DB kullanmaz, bu yüzden tanımlamaya gerek yok
     ...(process.env.SHADOW_DATABASE_URL && {
