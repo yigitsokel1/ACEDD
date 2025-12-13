@@ -117,7 +117,9 @@ describe("unlinkAndDeleteFilesForEntity", () => {
       { id: "dataset-2" },
     ];
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(prisma.dataset.findMany).mockResolvedValue(mockDatasets as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(prisma.dataset.deleteMany).mockResolvedValue({ count: 2 } as any);
 
     const result = await unlinkAndDeleteFilesForEntity({
@@ -205,7 +207,9 @@ describe("replaceSingleFile", () => {
     const newDatasetId = "dataset-2";
     const eventId = "event-1";
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(prisma.dataset.delete).mockResolvedValue({} as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(prisma.dataset.update).mockResolvedValue({} as any);
 
     await replaceSingleFile(oldDatasetId, newDatasetId, {
@@ -230,6 +234,7 @@ describe("replaceSingleFile", () => {
     const newDatasetId = "dataset-2";
     const eventId = "event-1";
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(prisma.dataset.update).mockResolvedValue({} as any);
 
     await replaceSingleFile(null, newDatasetId, {
@@ -252,6 +257,7 @@ describe("replaceSingleFile", () => {
     const newDatasetId = "dataset-2";
 
     vi.mocked(prisma.dataset.delete).mockRejectedValue(new Error("Not found"));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(prisma.dataset.update).mockResolvedValue({} as any);
 
     // Should not throw
@@ -277,7 +283,9 @@ describe("replaceMemberCV", () => {
     const oldDatasetId = "dataset-1";
     const newDatasetId = "dataset-2";
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(prisma.dataset.delete).mockResolvedValue({} as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(prisma.dataset.update).mockResolvedValue({} as any);
 
     await replaceMemberCV(memberId, oldDatasetId, newDatasetId);
@@ -298,6 +306,7 @@ describe("replaceMemberCV", () => {
     const memberId = "member-1";
     const newDatasetId = "dataset-2";
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(prisma.dataset.update).mockResolvedValue({} as any);
 
     await replaceMemberCV(memberId, null, newDatasetId);
@@ -317,7 +326,9 @@ describe("replaceFaviconOrLogo", () => {
     const newDataUrl = "data:image/png;base64,new";
     const oldDataset = [{ id: "dataset-1", updatedAt: new Date() }];
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(prisma.dataset.findMany).mockResolvedValue(oldDataset as any);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(prisma.dataset.delete).mockResolvedValue({} as any);
 
     await replaceFaviconOrLogo("site.faviconUrl", oldDataUrl, newDataUrl);

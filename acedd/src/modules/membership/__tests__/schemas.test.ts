@@ -273,6 +273,7 @@ describe("MembershipApplicationSchema", () => {
         lastName: "Yılmaz",
         identityNumber: "12345678950",
         gender: "erkek" as const,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         bloodType: bloodType as any,
         birthPlace: "Ankara",
         birthDate: "2000-01-15",

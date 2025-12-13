@@ -11,6 +11,7 @@
 import { prisma } from "@/lib/db";
 import { ENTITY_TYPE, FILE_SOURCE, type EntityType } from "./constants";
 import { logErrorSecurely } from "@/lib/utils/secureLogging";
+import type { Prisma } from "@prisma/client";
 
 // Re-export EntityType for backward compatibility
 export type { EntityType };
@@ -36,7 +37,7 @@ export async function linkFileToEntity(
 ): Promise<void> {
   try {
     // Dataset'i güncelle - eventId veya source ile ilişkilendir
-    const updateData: any = {};
+    const updateData: Prisma.DatasetUpdateInput = {};
     
     if (usage.entityType === ENTITY_TYPE.EVENT) {
       updateData.eventId = usage.entityId;
@@ -51,7 +52,7 @@ export async function linkFileToEntity(
     }
     
     if (Object.keys(updateData).length > 0) {
-      await (prisma as any).dataset.update({
+      await prisma.dataset.update({
         where: { id: datasetId },
         data: updateData,
       });
@@ -72,7 +73,7 @@ export async function unlinkAndDeleteFilesForEntity(
   usage: FileUsage
 ): Promise<number> {
   try {
-    let whereClause: any = {};
+    let whereClause: Prisma.DatasetWhereInput = {};
     
     if (usage.entityType === ENTITY_TYPE.EVENT) {
       // Event için eventId ile bul
@@ -100,7 +101,7 @@ export async function unlinkAndDeleteFilesForEntity(
     }
     
     // İlgili dataset'leri bul
-    const datasets = await (prisma as any).dataset.findMany({
+    const datasets = await prisma.dataset.findMany({
       where: whereClause,
       select: { id: true },
     });
@@ -110,7 +111,7 @@ export async function unlinkAndDeleteFilesForEntity(
     }
     
     // Dataset'leri sil (CASCADE ile fileUrl'ler de temizlenir)
-    const deleteResult = await (prisma as any).dataset.deleteMany({
+    const deleteResult = await prisma.dataset.deleteMany({
       where: whereClause,
     });
     
@@ -152,7 +153,7 @@ export async function replaceSingleFile(
     // Eski dosyayı sil
     if (oldDatasetId) {
       try {
-        await (prisma as any).dataset.delete({
+        await prisma.dataset.delete({
           where: { id: oldDatasetId },
         });
       } catch (deleteError) {
@@ -228,7 +229,7 @@ export async function replaceFaviconOrLogo(
     
     // Source ile eski dosyaları bul ve sil (sadece 1 tane olması gerektiği için)
     try {
-      const oldDatasets = await (prisma as any).dataset.findMany({
+      const oldDatasets = await prisma.dataset.findMany({
         where: { source },
         orderBy: { updatedAt: "desc" },
         take: 1, // En son güncellenen dosyayı al
@@ -236,7 +237,7 @@ export async function replaceFaviconOrLogo(
       
       if (oldDatasets.length > 0) {
         // En son güncellenen dosyayı sil
-        await (prisma as any).dataset.delete({
+        await prisma.dataset.delete({
           where: { id: oldDatasets[0].id },
         });
       }
