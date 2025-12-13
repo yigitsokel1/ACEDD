@@ -170,7 +170,7 @@ export async function PUT(
           // Create member from application
           // Use current date (when approved) as membershipDate
           // This represents when the person officially became a member
-          const newMember = await prisma.member.create({
+          await prisma.member.create({
             data: {
               firstName: application.firstName,
               lastName: application.lastName,

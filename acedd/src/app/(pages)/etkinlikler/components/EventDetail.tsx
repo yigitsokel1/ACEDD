@@ -4,9 +4,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Calendar, MapPin, Camera, ArrowLeft, ChevronLeft, ChevronRight, X, ExternalLink } from "lucide-react";
-import { type Event } from "../constants";
 import { Button } from "@/components/ui";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { useEvents } from "@/contexts/EventsContext";
 import { logClientError } from "@/lib/utils/clientLogging";
 
@@ -53,6 +51,7 @@ export function EventDetail({ eventId }: EventDetailProps) {
         });
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event]);
 
   if (!event) {

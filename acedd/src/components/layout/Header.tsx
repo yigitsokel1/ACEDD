@@ -70,7 +70,7 @@ export function Header({ siteName, logoUrl }: HeaderProps) {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
-            {NAVIGATION_ITEMS.map((item, index) => (
+            {NAVIGATION_ITEMS.map((item) => (
               <React.Fragment key={item.name}>
                 <Link
                   href={item.href}

@@ -12,7 +12,7 @@ import {
   validateMemberTags,
   VALID_MEMBER_TAGS,
 } from "../memberHelpers";
-import type { Member, MemberTag } from "@/lib/types/member";
+import type { Member } from "@/lib/types/member";
 
 describe("memberHelpers", () => {
   const baseMember: Member = {

@@ -7,7 +7,7 @@ import { Select } from "@/components/ui";
 import { Badge } from "@/components/ui";
 import { Plus, Edit, Trash2, Shield, Search, CheckCircle } from "lucide-react";
 import { useMembers } from "@/contexts/MembersContext";
-import { BoardMember, CreateBoardMemberData, BoardRole, Member } from "@/lib/types/member";
+import { BoardMember, CreateBoardMemberData, BoardRole } from "@/lib/types/member";
 import { sortBoardMembersByRole, getBoardRoleLabel, getBoardMemberFullName } from "@/lib/utils/memberHelpers";
 import { logClientError } from "@/lib/utils/clientLogging";
 
@@ -192,7 +192,7 @@ function BoardMemberModal({ boardMember, onClose, onSave, isEditing }: BoardMemb
 const getRoleLabel = getBoardRoleLabel;
 
 export default function BoardMembersTab() {
-  const { boardMembers, boardMembersLoading, boardMembersError, addBoardMember, updateBoardMember, deleteBoardMember, members } = useMembers();
+  const { boardMembers, boardMembersLoading, boardMembersError, addBoardMember, updateBoardMember, deleteBoardMember } = useMembers();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<BoardMember | null>(null);
 

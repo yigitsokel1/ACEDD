@@ -1,4 +1,3 @@
-import { Calendar, MapPin, Users, Clock, Camera, ExternalLink } from "lucide-react";
 
 /**
  * Event interface - matches Prisma Event model

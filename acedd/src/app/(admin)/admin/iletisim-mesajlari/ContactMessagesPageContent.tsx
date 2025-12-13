@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useTransition, useRef } from "react";
-import { Card, CardContent } from "@/components/ui/Card";
-import { Button, Badge, Input, Select } from "@/components/ui";
+import { Button, Badge, Input } from "@/components/ui";
 import { 
   Eye, 
   Mail, 
@@ -285,7 +284,7 @@ export default function ContactMessagesPageContent() {
   const [activeTab, setActiveTab] = useState<"inbox" | "archived">("inbox");
   const [searchQuery, setSearchQuery] = useState("");
   // Sprint 14.6: useTransition ile smooth tab/filter geçişleri (client-side)
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const isInitialLoadRef = React.useRef(true);
   // Sprint 14.7: Scroll pozisyonunu korumak için ref
   const tableContainerRef = React.useRef<HTMLDivElement>(null);

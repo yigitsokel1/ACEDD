@@ -22,7 +22,7 @@ if (!process.env.DATABASE_URL) {
       const { resolve } = require("path");
       config({ path: resolve(process.cwd(), ".env") });
     }
-  } catch (error) {
+  } catch {
     // dotenv might not be available, that's okay
   }
 }

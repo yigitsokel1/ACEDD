@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
     let body: unknown;
     try {
       body = await request.json();
-    } catch (parseError) {
+    } catch {
       return NextResponse.json(
         { error: "Geçersiz JSON formatı" },
         { status: 400 }

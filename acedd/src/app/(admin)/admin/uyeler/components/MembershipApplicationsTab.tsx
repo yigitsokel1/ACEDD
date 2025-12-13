@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui";
 import { Badge } from "@/components/ui";
-import { CheckCircle, XCircle, Eye, Phone, Calendar, FileText, ChevronDown, ChevronUp, Mail, MapPin, User, Droplet } from "lucide-react";
+import { CheckCircle, XCircle, Eye, Phone, Calendar, FileText, ChevronDown, ChevronUp, Mail, MapPin, User } from "lucide-react";
 import { useMembers } from "@/contexts/MembersContext";
 import { MembershipApplication } from "@/lib/types/member";
 import { formatDateOnly } from "@/lib/utils/dateHelpers";
@@ -351,7 +350,7 @@ export default function MembershipApplicationsTab() {
       // Refresh members list to show the newly created member
       await refreshMembers();
       setSelectedApplication(null);
-    } catch (error) {
+    } catch {
       // Error is already handled in context
     }
   };
@@ -360,7 +359,7 @@ export default function MembershipApplicationsTab() {
     try {
       await updateApplicationStatus(id, 'rejected', notes, 'Admin');
       setSelectedApplication(null);
-    } catch (error) {
+    } catch {
       // Error is already handled in context
     }
   };
@@ -371,7 +370,7 @@ export default function MembershipApplicationsTab() {
       // Refresh applications to show updated notes
       await refreshApplications();
       setSelectedApplication(null);
-    } catch (error) {
+    } catch {
       // Error is already handled in context
     }
   };
@@ -380,7 +379,7 @@ export default function MembershipApplicationsTab() {
     if (confirm('Bu başvuruyu silmek istediğinizden emin misiniz?')) {
       try {
         await deleteApplication(id);
-      } catch (error) {
+      } catch {
         // Error is already handled in context
       }
     }

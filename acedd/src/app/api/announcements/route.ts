@@ -27,7 +27,6 @@ import { prisma } from "@/lib/db";
 import type {
   Announcement,
   CreateAnnouncementRequest,
-  GetAnnouncementsQuery,
 } from "@/lib/types/announcement";
 import { isAnnouncementActive } from "@/lib/utils/isAnnouncementActive";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";

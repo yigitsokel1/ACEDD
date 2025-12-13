@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui";
@@ -136,7 +136,7 @@ export function ScholarshipForm() {
       }
 
       // Success
-      const result = await response.json();
+      await response.json();
       setIsSubmitted(true);
       reset();
       setRecaptchaToken(null);

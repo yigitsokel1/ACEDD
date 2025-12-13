@@ -42,7 +42,7 @@ function formatBoardMember(prismaBoardMember: {
   createdAt: Date;
   updatedAt: Date;
 }) {
-  const fullName = `${prismaBoardMember.member.firstName} ${prismaBoardMember.member.lastName}`.trim();
+  // fullName is computed inline where needed
   const tags = prismaBoardMember.member.tags ? (Array.isArray(prismaBoardMember.member.tags) ? prismaBoardMember.member.tags : JSON.parse(prismaBoardMember.member.tags as string)) : [];
   
   return {

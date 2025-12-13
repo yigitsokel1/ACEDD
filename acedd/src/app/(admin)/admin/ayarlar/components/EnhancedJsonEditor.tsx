@@ -108,7 +108,7 @@ export default function EnhancedJsonEditor({ fieldSchema, value, onChange, error
       setIsValid(true);
       setParseError(null);
       setValidationErrors([]);
-    } catch (err) {
+    } catch {
       setJsonString("");
       setIsValid(false);
       setParseError("Geçersiz JSON değeri");

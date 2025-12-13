@@ -4,9 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Calendar, MapPin, ExternalLink } from "lucide-react";
-import { type Event } from "../constants";
 import { Button } from "@/components/ui";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { useEvents } from "@/contexts/EventsContext";
 import { logClientError } from "@/lib/utils/clientLogging";
 
@@ -50,6 +48,7 @@ export function EventsGrid() {
         });
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events]);
 
   const formatDate = (dateString: string) => {

@@ -36,7 +36,7 @@ export default function AdminLoginPage() {
       let data;
       try {
         data = await response.json();
-      } catch (jsonError) {
+      } catch {
         setError("Sunucudan geçersiz yanıt alındı.");
         setIsLoading(false);
         return;

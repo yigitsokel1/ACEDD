@@ -38,6 +38,7 @@ export default function ScholarshipApplicationDetailPage() {
 
   useEffect(() => {
     fetchApplication();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   // Auto-scroll to top of page when success message appears

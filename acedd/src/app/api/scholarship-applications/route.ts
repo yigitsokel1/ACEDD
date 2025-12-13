@@ -14,12 +14,11 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { Prisma } from "@prisma/client";
 import type { ScholarshipApplication, ScholarshipRelative, ScholarshipEducationHistory, ScholarshipReference } from "@/lib/types/scholarship";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
 import { ScholarshipApplicationSchema, ScholarshipApplicationInput } from "@/modules/scholarship/schemas";
 import { verifyRecaptchaToken } from "@/lib/utils/recaptcha";
-import { logErrorSecurely, sanitizeObjectForLogging } from "@/lib/utils/secureLogging";
+import { logErrorSecurely } from "@/lib/utils/secureLogging";
 import { z } from "zod";
 
 /**
@@ -275,7 +274,7 @@ export async function POST(request: NextRequest) {
     let body: unknown;
     try {
       body = await request.json();
-    } catch (parseError) {
+    } catch {
       return NextResponse.json(
         { error: "Geçersiz JSON formatı" },
         { status: 400 }

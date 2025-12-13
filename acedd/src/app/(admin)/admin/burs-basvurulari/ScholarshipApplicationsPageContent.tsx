@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useTransition, useRef } from "react";
-import { Card, CardContent } from "@/components/ui/Card";
 import { Button, Badge, Input, Select, Textarea } from "@/components/ui";
+import { Card } from "@/components/ui/Card";
 import { 
   CheckCircle, 
   XCircle, 
@@ -97,7 +97,7 @@ function ScholarshipApplicationModal({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             status: "APPROVED",
-            reviewNotes: reviewNotes || undefined,
+            reviewNotes: _reviewNotes || undefined,
           }),
         });
         successMsg = 'Başvuru başarıyla onaylandı';
@@ -107,7 +107,7 @@ function ScholarshipApplicationModal({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             status: "REJECTED",
-            reviewNotes: reviewNotes || undefined,
+            reviewNotes: _reviewNotes || undefined,
           }),
         });
         successMsg = 'Başvuru başarıyla reddedildi';
@@ -117,7 +117,7 @@ function ScholarshipApplicationModal({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             status: "UNDER_REVIEW",
-            reviewNotes: reviewNotes || undefined,
+            reviewNotes: _reviewNotes || undefined,
           }),
         });
         successMsg = 'Başvuru incelemeye alındı';
@@ -620,7 +620,7 @@ export default function ScholarshipApplicationsPageContent() {
   const [statusFilter, setStatusFilter] = useState<ScholarshipApplicationStatus | "ALL">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   // Sprint 14.6: useTransition ile smooth filtre güncellemeleri (client-side)
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   // Sprint 14.6: İlk yükleme kontrolü için ref
   const isInitialLoadRef = React.useRef(true);
   // Sprint 14.7: Scroll pozisyonunu korumak için ref
@@ -720,6 +720,8 @@ export default function ScholarshipApplicationsPageContent() {
     }
   };
 
+  // Unused handler - keeping for potential future use
+  /*
   const handleApprove = async (id: string, reviewNotes?: string) => {
     try {
       const response = await fetch(`/api/scholarship-applications/${id}`, {
@@ -729,7 +731,7 @@ export default function ScholarshipApplicationsPageContent() {
         },
         body: JSON.stringify({
           status: "APPROVED",
-          reviewNotes: reviewNotes || undefined,
+          reviewNotes: _reviewNotes || undefined,
         }),
       });
 
@@ -742,24 +744,27 @@ export default function ScholarshipApplicationsPageContent() {
 
       // Sprint 14.6: Update application in state directly (client-side filtering)
       const updatedApplication = await response.json();
-      setAllApplications(prev => prev.map(app => app.id === id ? updatedApplication : app));
+      setAllApplications(prev => prev.map(app => app.id === _id ? updatedApplication : app));
       setSelectedApplication(null);
     } catch (err) {
       logClientError("[ScholarshipApplicationsPageContent][APPROVE]", err);
       alert(err instanceof Error ? err.message : "Başvuru onaylanırken bir hata oluştu.");
     }
   };
+  */
 
-  const handleReject = async (id: string, reviewNotes?: string) => {
+  // Unused handler - keeping for potential future use
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleReject = async (_id: string, _reviewNotes?: string) => {
     try {
-      const response = await fetch(`/api/scholarship-applications/${id}`, {
+      const response = await fetch(`/api/scholarship-applications/${_id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           status: "REJECTED",
-          reviewNotes: reviewNotes || undefined,
+          reviewNotes: _reviewNotes || undefined,
         }),
       });
 
@@ -772,7 +777,7 @@ export default function ScholarshipApplicationsPageContent() {
 
       // Sprint 14.6: Update application in state directly (client-side filtering)
       const updatedApplication = await response.json();
-      setAllApplications(prev => prev.map(app => app.id === id ? updatedApplication : app));
+      setAllApplications(prev => prev.map(app => app.id === _id ? updatedApplication : app));
       setSelectedApplication(null);
     } catch (err) {
       logClientError("[ScholarshipApplicationsPageContent][REJECT]", err);
@@ -780,16 +785,18 @@ export default function ScholarshipApplicationsPageContent() {
     }
   };
 
-  const handleUnderReview = async (id: string, reviewNotes?: string) => {
+  // Unused handler - keeping for potential future use
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleUnderReview = async (_id: string, _reviewNotes?: string) => {
     try {
-      const response = await fetch(`/api/scholarship-applications/${id}`, {
+      const response = await fetch(`/api/scholarship-applications/${_id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           status: "UNDER_REVIEW",
-          reviewNotes: reviewNotes || undefined,
+          reviewNotes: _reviewNotes || undefined,
         }),
       });
 
@@ -802,7 +809,7 @@ export default function ScholarshipApplicationsPageContent() {
 
       // Sprint 14.6: Update application in state directly (client-side filtering)
       const updatedApplication = await response.json();
-      setAllApplications(prev => prev.map(app => app.id === id ? updatedApplication : app));
+      setAllApplications(prev => prev.map(app => app.id === _id ? updatedApplication : app));
       setSelectedApplication(null);
     } catch (err) {
       logClientError("[ScholarshipApplicationsPageContent][SET_UNDER_REVIEW]", err);
@@ -810,9 +817,11 @@ export default function ScholarshipApplicationsPageContent() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  // Unused handler - keeping for potential future use
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleDelete = async (_id: string) => {
     try {
-      const response = await fetch(`/api/scholarship-applications/${id}`, {
+      const response = await fetch(`/api/scholarship-applications/${_id}`, {
         method: "DELETE",
       });
 

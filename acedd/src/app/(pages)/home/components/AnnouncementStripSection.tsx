@@ -2,7 +2,6 @@ import React from "react";
 import { AnnouncementStrip } from "./AnnouncementStrip";
 import { prisma } from "@/lib/db";
 import type { Announcement } from "@/lib/types/announcement";
-import { isAnnouncementActive } from "@/lib/utils/isAnnouncementActive";
 import { logErrorSecurely } from "@/lib/utils/secureLogging";
 
 async function fetchActiveAnnouncements(): Promise<Announcement[]> {

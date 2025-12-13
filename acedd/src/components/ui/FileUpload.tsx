@@ -98,6 +98,7 @@ export function FileUpload({
         fetchImageUrl(datasetId);
       }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,8 +122,6 @@ export function FileUpload({
     // Preview mode: Sadece Base64'e çevir, database'e kaydetme
     if (previewMode && onFileSelect) {
       try {
-        const previewData: { id: string; preview: string; file: File }[] = [];
-        
         // Tüm dosyaları paralel olarak işle
         const filePromises = Array.from(files).map(async (file, index) => {
           // Dosya türünü kontrol et

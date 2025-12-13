@@ -264,7 +264,7 @@ export function AnnouncementStrip({ announcements }: AnnouncementStripProps) {
                 msOverflowStyle: 'none'
               }}
             >
-              {activeAnnouncements.map((announcement, index) => {
+              {activeAnnouncements.map((announcement) => {
                 // Kartlarda: özet varsa özet göster, yoksa içerik göster
                 const displayText = announcement.summary?.trim() || announcement.content.trim();
                 // İçeriği kısalt (çok uzunsa)

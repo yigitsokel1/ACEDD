@@ -155,7 +155,7 @@ async function seedSimpleSettings(
   category: string,
   options: SeedOptions = {}
 ) {
-  let stats = { created: 0, updated: 0, skipped: 0 };
+  const stats = { created: 0, updated: 0, skipped: 0 };
   
   for (const [key, value] of Object.entries(settings)) {
     const existing = await prisma.setting.findUnique({ where: { key } });

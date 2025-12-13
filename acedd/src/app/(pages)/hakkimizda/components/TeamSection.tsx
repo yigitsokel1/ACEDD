@@ -1,4 +1,4 @@
-import { Users, Users2, HandHeart, Shield, Crown, UserCheck, History, User, FileText } from "lucide-react";
+import { Users, Shield, Crown, UserCheck, History, User, FileText } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { getPageContent } from "@/lib/settings/convenience";
 import {
@@ -113,20 +113,9 @@ export async function TeamSection() {
   const sortedBoardMembers = sortBoardMembersByRole(boardMembers);
   
   // Get hierarchical level based on job title (matching HTML structure)
-  const getJobLevel = (title: string): number => {
-    const lowerTitle = title.toLowerCase();
-    
-    if (lowerTitle.includes('genel kurul')) return 1;
-    if (lowerTitle.includes('yönetim kurulu') || lowerTitle.includes('denetim kurulu')) return 2;
-    if (lowerTitle.includes('başkan') && !lowerTitle.includes('yardımcı')) return 3;
-    if (lowerTitle.includes('sekreter') || lowerTitle.includes('sayman') || 
-        lowerTitle.includes('komisyon') || lowerTitle.includes('koordinatör')) return 4;
-    if (lowerTitle.includes('üye') || lowerTitle.includes('eğitim') || 
-        lowerTitle.includes('takip') || lowerTitle.includes('bursiyer')) return 5;
-    if (lowerTitle.includes('gönüllü') || lowerTitle.includes('eğitmen')) return 6;
-    
-    return 0; // Default
-  };
+  // Unused - keeping for potential future use
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const getJobLevel = (_title: string): number => 0;
 
   // Color palette for job description cards (based on color field from settings)
   const getCardColor = (color: string) => {

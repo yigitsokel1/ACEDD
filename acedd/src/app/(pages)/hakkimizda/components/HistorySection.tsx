@@ -56,7 +56,7 @@ export async function HistorySection() {
               </div>
               {goalsMainDescription && (
                 <p className="text-lg text-gray-700 leading-relaxed mb-6 text-center">
-                  <strong className="text-emerald-700">Acıpayam Çevresi Eğitimi Destekleme Derneği'nin ana hedefi,</strong> {goalsMainDescription}
+                  <strong className="text-emerald-700">Acıpayam Çevresi Eğitimi Destekleme Derneği&apos;nin ana hedefi,</strong> {goalsMainDescription}
                 </p>
               )}
               <div className="bg-gradient-to-r from-emerald-50 to-teal-50 p-6 rounded-2xl border border-emerald-100">

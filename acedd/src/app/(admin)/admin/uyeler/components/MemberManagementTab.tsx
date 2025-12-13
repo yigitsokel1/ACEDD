@@ -1,15 +1,14 @@
 "use client";
 
 import React, { useState, useTransition, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui";
 import { Input } from "@/components/ui";
 import { Textarea } from "@/components/ui";
 import { Select } from "@/components/ui";
 import { Badge } from "@/components/ui";
-import { Plus, Edit, Trash2, User, Mail, Phone, Calendar, MapPin, Search, Filter, ToggleLeft, ToggleRight, Eye, Droplet, ChevronDown, ChevronUp, FileText } from "lucide-react";
+import { Plus, Edit, Trash2, User, Mail, Phone, Calendar, MapPin, Search, ToggleLeft, ToggleRight, Eye, ChevronDown, ChevronUp, Droplet } from "lucide-react";
 import { useMembers } from "@/contexts/MembersContext";
-import { Member, CreateMemberData, UpdateMemberData, CreateMemberFormData, MembershipKind, MemberTag, BoardRole, BloodType } from "@/lib/types/member";
+import { Member, CreateMemberData, UpdateMemberData, CreateMemberFormData, MembershipKind, MemberTag, BloodType } from "@/lib/types/member";
 import { getBoardRoleLabel } from "@/lib/utils/memberHelpers";
 import { formatDateOnly, isoToDateInput } from "@/lib/utils/dateHelpers";
 import { getGenderLabel } from "@/lib/utils/genderHelpers";
@@ -108,18 +107,19 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
   ];
 
 
-  const titleOptions = [
-    { value: "Onursal Başkan", label: "Onursal Başkan" },
-    { value: "Kurucu Başkan", label: "Kurucu Başkan" },
-    { value: "Önceki Başkan", label: "Önceki Başkan" },
-    { value: "Başkan", label: "Başkan" },
-    { value: "Kurucu Üye", label: "Kurucu Üye" },
-    { value: "Başkan Yardımcısı", label: "Başkan Yardımcısı" },
-    { value: "Sayman", label: "Sayman" },
-    { value: "Genel Sekreter", label: "Genel Sekreter" },
-    { value: "Üye", label: "Üye" },
-    { value: "Gönüllü", label: "Gönüllü" },
-  ];
+  // Unused - keeping for potential future use
+  // const titleOptions = [
+  //   { value: "Onursal Başkan", label: "Onursal Başkan" },
+  //   { value: "Kurucu Başkan", label: "Kurucu Başkan" },
+  //   { value: "Önceki Başkan", label: "Önceki Başkan" },
+  //   { value: "Başkan", label: "Başkan" },
+  //   { value: "Kurucu Üye", label: "Kurucu Üye" },
+  //   { value: "Başkan Yardımcısı", label: "Başkan Yardımcısı" },
+  //   { value: "Sayman", label: "Sayman" },
+  //   { value: "Genel Sekreter", label: "Genel Sekreter" },
+  //   { value: "Üye", label: "Üye" },
+  //   { value: "Gönüllü", label: "Gönüllü" },
+  // ];
 
   const statusOptions = [
     { value: "active", label: "Aktif" },
@@ -690,7 +690,7 @@ export default function MemberManagementTab() {
   const [membershipKindFilter, setMembershipKindFilter] = useState<'all' | 'MEMBER' | 'VOLUNTEER'>('all');
   const [tagFilter, setTagFilter] = useState<MemberTag | 'all'>('all');
   // Sprint 14.5: useTransition ile smooth filtre güncellemeleri
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   // Sprint 14.7: Scroll pozisyonunu korumak için ref
   const tableContainerRef = React.useRef<HTMLDivElement>(null);
 

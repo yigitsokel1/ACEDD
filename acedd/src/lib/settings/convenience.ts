@@ -6,7 +6,7 @@
  * Sprint 12: Using centralized key management
  */
 
-import { getSetting, getSettings, getSettingValue } from "./getSetting";
+import { getSettings, getSettingValue } from "./getSetting";
 import { SITE_CONFIG, CONTACT_INFO } from "../constants";
 import { DEFAULT_PAGE_CONTENT } from "../constants/defaultContent";
 import type { PageIdentifier, PageContent, PageSEO } from "../types/setting";

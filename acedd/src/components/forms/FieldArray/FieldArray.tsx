@@ -27,7 +27,7 @@
 "use client";
 
 import React from "react";
-import { useFieldArray, Control, FieldErrors, FieldPath, FieldValues, ArrayPath } from "react-hook-form";
+import { useFieldArray, Control, FieldErrors, FieldValues, ArrayPath } from "react-hook-form";
 import { Button } from "@/components/ui/Button";
 import { Plus, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/Card";

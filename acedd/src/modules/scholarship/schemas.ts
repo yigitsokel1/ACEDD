@@ -21,7 +21,6 @@ import {
   nameSchema,
   citySchema,
   addressSchema,
-  genderSchema,
   positiveFloatSchema,
   percentageSchema,
   ibanSchema,

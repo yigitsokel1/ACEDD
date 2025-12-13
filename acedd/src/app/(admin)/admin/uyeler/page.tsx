@@ -1,10 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Metadata } from "next";
-import { Users, FileText, Shield, UserPlus } from "lucide-react";
-import { Button } from "@/components/ui";
-import { useMembers } from "@/contexts/MembersContext";
+import { Users, FileText, Shield } from "lucide-react";
 
 // Components
 import MemberManagementTab from "./components/MemberManagementTab";

@@ -1,6 +1,5 @@
 import React from "react";
 import { getPageContent } from "@/lib/settings/convenience";
-import { SITE_CONFIG } from "@/lib/constants";
 
 export async function HeroSection() {
   const content = await getPageContent("about");
