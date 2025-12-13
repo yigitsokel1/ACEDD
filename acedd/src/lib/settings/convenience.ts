@@ -8,7 +8,7 @@
 
 import { getSettings, getSettingValue } from "./getSetting";
 import { SITE_CONFIG, CONTACT_INFO } from "../constants";
-import { DEFAULT_PAGE_CONTENT } from "../constants/defaultContent";
+import { DEFAULT_PAGE_CONTENT, DEFAULT_SITE_INFO, DEFAULT_CONTACT_INFO } from "../constants/defaultContent";
 import type { PageIdentifier, PageContent, PageSEO } from "../types/setting";
 import { getContentPrefix, getSeoPrefix, getSeoKey } from "./keys";
 import { logErrorSecurely } from "../utils/secureLogging";
@@ -18,7 +18,9 @@ import { logErrorSecurely } from "../utils/secureLogging";
  */
 export async function getSiteName(): Promise<string> {
   const settings = await getSettings("site");
-  return getSettingValue(settings, "site.name", SITE_CONFIG.shortName);
+  // Use DEFAULT_SITE_INFO directly, but fallback to SITE_CONFIG for backward compatibility
+  const defaultValue = (DEFAULT_SITE_INFO["site.name"] || SITE_CONFIG.shortName).replace(/^"|"$/g, "");
+  return getSettingValue(settings, "site.name", defaultValue);
 }
 
 /**
@@ -26,10 +28,12 @@ export async function getSiteName(): Promise<string> {
  */
 export async function getSiteDescription(): Promise<string> {
   const settings = await getSettings("site");
+  // Use DEFAULT_SITE_INFO directly, but fallback to SITE_CONFIG for backward compatibility
+  const defaultValue = (DEFAULT_SITE_INFO["site.description"] || SITE_CONFIG.description).replace(/^"|"$/g, "");
   return getSettingValue(
     settings,
     "site.description",
-    SITE_CONFIG.description
+    defaultValue
   );
 }
 
@@ -73,18 +77,22 @@ export async function getContactInfo(): Promise<{
   address?: string;
 }> {
   const settings = await getSettings("contact");
+  // Use DEFAULT_CONTACT_INFO directly, but fallback to CONTACT_INFO for backward compatibility
+  const defaultEmail = (DEFAULT_CONTACT_INFO["contact.email"] || CONTACT_INFO.email).replace(/^"|"$/g, "");
+  const defaultPhone = (DEFAULT_CONTACT_INFO["contact.phone"] || CONTACT_INFO.phone).replace(/^"|"$/g, "");
+  const defaultAddress = (DEFAULT_CONTACT_INFO["contact.address"] || CONTACT_INFO.address).replace(/^"|"$/g, "");
 
   return {
-    email: getSettingValue(settings, "contact.email", CONTACT_INFO.email) as
+    email: getSettingValue(settings, "contact.email", defaultEmail) as
       | string
       | undefined,
-    phone: getSettingValue(settings, "contact.phone", CONTACT_INFO.phone) as
+    phone: getSettingValue(settings, "contact.phone", defaultPhone) as
       | string
       | undefined,
     address: getSettingValue(
       settings,
       "contact.address",
-      CONTACT_INFO.address
+      defaultAddress
     ) as string | undefined,
   };
 }
@@ -126,23 +134,30 @@ export async function getFaviconUrlWithTimestamp(): Promise<{ url: string | null
   const { prisma } = await import("../db");
   
   try {
-    const faviconSetting = await prisma.setting.findUnique({
-      where: { key: 'site.faviconUrl' },
-      select: { value: true, updatedAt: true },
+    // Add timeout to prevent waiting for full Prisma timeout (10s)
+    const timeoutPromise = new Promise<{ url: null; timestamp: null }>((_, reject) => {
+      setTimeout(() => reject(new Error("Favicon fetch timeout")), 2000);
     });
 
-    const faviconUrl = faviconSetting?.value && typeof faviconSetting.value === 'string' 
-      ? faviconSetting.value 
-      : null;
+    const fetchPromise = prisma.setting.findUnique({
+      where: { key: 'site.faviconUrl' },
+      select: { value: true, updatedAt: true },
+    }).then(faviconSetting => {
+      const faviconUrl = faviconSetting?.value && typeof faviconSetting.value === 'string' 
+        ? faviconSetting.value 
+        : null;
 
-    const timestamp = faviconSetting?.updatedAt 
-      ? faviconSetting.updatedAt.getTime() 
-      : null;
+      const timestamp = faviconSetting?.updatedAt 
+        ? faviconSetting.updatedAt.getTime() 
+        : null;
 
-    return {
-      url: faviconUrl && faviconUrl.trim() ? faviconUrl : null,
-      timestamp,
-    };
+      return {
+        url: faviconUrl && faviconUrl.trim() ? faviconUrl : null,
+        timestamp,
+      };
+    });
+
+    return await Promise.race([fetchPromise, timeoutPromise]);
   } catch (error) {
     logErrorSecurely("[Settings][getFaviconUrlWithTimestamp]", error);
     return { url: null, timestamp: null };
@@ -725,13 +740,15 @@ function normalizeMissionVision(value: any): { mission: { id: string; icon: stri
  * // Returns: { heroTitle?: string, intro?: string, stats?: Array, missions?: Array, ... }
  */
 export async function getPageContent(pageKey: PageIdentifier): Promise<PageContent> {
-  const prefix = getContentPrefix(pageKey);
-  const settings = await getSettings(prefix);
+  try {
+    const prefix = getContentPrefix(pageKey);
+    const settings = await getSettings(prefix);
 
-  // Start with default content for this page (from defaultContent.ts)
-  // Settings will override these defaults if they exist
-  const defaultContent = DEFAULT_PAGE_CONTENT[pageKey] || {};
-  const content: PageContent = { ...defaultContent };
+    // Start with default content for this page (from defaultContent.ts)
+    // Settings will override these defaults if they exist
+    // Default content already has normalized arrays (id, icon, color), so we can use it directly
+    const defaultContent = DEFAULT_PAGE_CONTENT[pageKey] || {};
+    const content: PageContent = { ...defaultContent };
 
   // Get all settings for this page prefix
   for (const key in settings) {
@@ -879,7 +896,12 @@ export async function getPageContent(pageKey: PageIdentifier): Promise<PageConte
     }
   }
 
-  return content;
+    return content;
+  } catch (error) {
+    logErrorSecurely(`[Settings][getPageContent] pageKey: ${pageKey}`, error);
+    // Return default content on error - it already has normalized arrays (id, icon, color)
+    return DEFAULT_PAGE_CONTENT[pageKey] || {};
+  }
 }
 
 /**

@@ -66,15 +66,32 @@ export async function TeamSection() {
   // Sprint 14: Etiketler için tüm üyeler (aktif + pasif) çekiliyor
   // Onursal Başkan, Kurucu Üye, Kurucu Başkan ve Önceki Başkan etiketleri pasif üyeler için de görünmeli
   // Not: Board members sadece aktif üyelerden oluşur (fetchBoardMembers içinde filtreleniyor)
-  const [allMembersRaw, boardMembers] = await Promise.all([
-    prisma.member.findMany({
-      // Sprint 14: Status filtresi kaldırıldı - etiketler için tüm üyeler gerekli
-      orderBy: {
-        membershipDate: "asc",
-      },
-    }),
-    fetchBoardMembers(),
-  ]);
+  let allMembersRaw: Awaited<ReturnType<typeof prisma.member.findMany>> = [];
+  let boardMembers: BoardMember[] = [];
+  
+  try {
+    // Add timeout to prevent waiting for full Prisma timeout (10s)
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error("TeamSection fetch timeout")), 2000);
+    });
+
+    const fetchPromise = Promise.all([
+      prisma.member.findMany({
+        // Sprint 14: Status filtresi kaldırıldı - etiketler için tüm üyeler gerekli
+        orderBy: {
+          membershipDate: "asc",
+        },
+      }),
+      fetchBoardMembers(),
+    ]);
+
+    [allMembersRaw, boardMembers] = await Promise.race([fetchPromise, timeoutPromise]);
+  } catch (error) {
+    logErrorSecurely("[TeamSection][FETCH_MEMBERS]", error);
+    // Continue with empty arrays - component will render with no members
+    allMembersRaw = [];
+    boardMembers = [];
+  }
 
   // Sprint 6: Prisma sonuçlarını TypeScript Member tipine dönüştür
   // Sprint 14: Tüm üyeler (aktif + pasif) etiketler için kullanılıyor

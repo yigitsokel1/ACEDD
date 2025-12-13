@@ -2,6 +2,7 @@ import React from "react";
 import { getPageContent } from "@/lib/settings/convenience";
 
 export async function HeroSection() {
+  // getPageContent already handles errors and returns default content
   const content = await getPageContent("contact");
   
   // All content comes from settings with defaults from defaultContent.ts

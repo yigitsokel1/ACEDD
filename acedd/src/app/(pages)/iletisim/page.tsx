@@ -17,9 +17,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ContactPage() {
-  // Fetch contact info and content from settings
-  const contactInfo = await getContactInfo();
-  const content = await getPageContent("contact");
+  // getPageContent and getContactInfo already handle errors and return defaults
+  const [contactInfo, content] = await Promise.all([
+    getContactInfo(),
+    getPageContent("contact"),
+  ]);
 
   return (
     <div className="min-h-screen">

@@ -2,14 +2,15 @@ import React from "react";
 import { getPageContent } from "@/lib/settings/convenience";
 
 // Color gradient mapping (emerald, teal, green, cyan)
-const COLOR_GRADIENTS: Record<string, { gradient: string; bg: string; border: string }> = {
-  emerald: { gradient: "from-emerald-500 to-teal-600", bg: "from-emerald-600 to-teal-600", border: "border-emerald-100" },
-  teal: { gradient: "from-teal-500 to-cyan-600", bg: "from-teal-600 to-cyan-600", border: "border-teal-100" },
-  green: { gradient: "from-green-500 to-emerald-600", bg: "from-green-600 to-emerald-600", border: "border-green-100" },
-  cyan: { gradient: "from-cyan-500 to-teal-600", bg: "from-cyan-600 to-teal-600", border: "border-cyan-100" },
+const COLOR_GRADIENTS: Record<string, { gradient: string; bg: string; border: string; accent: string }> = {
+  emerald: { gradient: "from-emerald-500 to-teal-600", bg: "from-emerald-600 to-teal-600", border: "border-emerald-100", accent: "bg-emerald-500" },
+  teal: { gradient: "from-teal-500 to-cyan-600", bg: "from-teal-600 to-cyan-600", border: "border-teal-100", accent: "bg-teal-500" },
+  green: { gradient: "from-green-500 to-emerald-600", bg: "from-green-600 to-emerald-600", border: "border-green-100", accent: "bg-green-500" },
+  cyan: { gradient: "from-cyan-500 to-teal-600", bg: "from-cyan-600 to-teal-600", border: "border-cyan-100", accent: "bg-cyan-500" },
 };
 
 export async function HistorySection() {
+  // getPageContent already handles errors and returns default content
   const content = await getPageContent("about");
   
   // All content comes from settings with defaults from defaultContent.ts
@@ -74,6 +75,7 @@ export async function HistorySection() {
         <div className="grid md:grid-cols-2 gap-8 auto-rows-fr">
           {goals.map((goal: any) => {
             const colors = COLOR_GRADIENTS[goal.color] || COLOR_GRADIENTS.emerald;
+            const iconPath = goal.icon || ""; // Fallback to empty string if icon is missing
             return (
               <div key={goal.id} className="group relative flex">
                 <div className={`absolute -inset-0.5 bg-gradient-to-r ${colors.bg} rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200`}></div>
@@ -81,14 +83,16 @@ export async function HistorySection() {
                   <div className="flex items-start space-x-5 flex-grow">
                     <div className="flex-shrink-0">
                       <div className={`w-12 h-12 bg-gradient-to-br ${colors.gradient} rounded-xl flex items-center justify-center shadow-md`}>
-                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={goal.icon} />
-                        </svg>
+                        {iconPath && (
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={iconPath} />
+                          </svg>
+                        )}
                       </div>
                     </div>
                     <div className="flex-1 flex flex-col">
                       <h3 className="text-xl font-bold text-gray-900 mb-3">{goal.title}</h3>
-                      <div className={`w-8 h-1 bg-${goal.color}-500 rounded-full mb-4`}></div>
+                      <div className={`w-8 h-1 ${colors.accent} rounded-full mb-4`}></div>
                       <p className="text-gray-700 leading-relaxed flex-grow">
                         {goal.description}
                       </p>

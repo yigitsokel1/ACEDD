@@ -2,14 +2,15 @@ import React from "react";
 import { getPageContent } from "@/lib/settings/convenience";
 
 // Color gradient mapping (indigo, purple, blue, emerald)
-const COLOR_GRADIENTS: Record<string, { gradient: string; bg: string; border: string }> = {
-  indigo: { gradient: "from-indigo-500 to-indigo-700", bg: "from-indigo-600 to-purple-600", border: "border-indigo-100" },
-  purple: { gradient: "from-purple-500 to-purple-700", bg: "from-purple-600 to-indigo-600", border: "border-purple-100" },
-  blue: { gradient: "from-blue-500 to-blue-700", bg: "from-blue-600 to-cyan-600", border: "border-blue-100" },
-  emerald: { gradient: "from-emerald-500 to-emerald-700", bg: "from-emerald-600 to-teal-600", border: "border-emerald-100" },
+const COLOR_GRADIENTS: Record<string, { gradient: string; bg: string; border: string; accent: string }> = {
+  indigo: { gradient: "from-indigo-500 to-indigo-700", bg: "from-indigo-600 to-purple-600", border: "border-indigo-100", accent: "bg-indigo-500" },
+  purple: { gradient: "from-purple-500 to-purple-700", bg: "from-purple-600 to-indigo-600", border: "border-purple-100", accent: "bg-purple-500" },
+  blue: { gradient: "from-blue-500 to-blue-700", bg: "from-blue-600 to-cyan-600", border: "border-blue-100", accent: "bg-blue-500" },
+  emerald: { gradient: "from-emerald-500 to-emerald-700", bg: "from-emerald-600 to-teal-600", border: "border-emerald-100", accent: "bg-emerald-500" },
 };
 
 export async function ValuesSection() {
+  // getPageContent already handles errors and returns default content
   const content = await getPageContent("about");
   
   // All content comes from settings with defaults from defaultContent.ts
@@ -40,6 +41,7 @@ export async function ValuesSection() {
         <div className="grid md:grid-cols-2 gap-8 auto-rows-fr">
           {values.map((value: any) => {
             const colors = COLOR_GRADIENTS[value.color] || COLOR_GRADIENTS.indigo;
+            const iconPath = value.icon || ""; // Fallback to empty string if icon is missing
             return (
               <div key={value.id} className="group relative flex">
                 <div className={`absolute -inset-0.5 bg-gradient-to-r ${colors.bg} rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200`}></div>
@@ -47,14 +49,16 @@ export async function ValuesSection() {
                   <div className="flex items-start space-x-5 flex-grow">
                     <div className="flex-shrink-0">
                       <div className={`w-12 h-12 bg-gradient-to-br ${colors.gradient} rounded-xl flex items-center justify-center shadow-md`}>
-                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={value.icon} />
-                        </svg>
+                        {iconPath && (
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={iconPath} />
+                          </svg>
+                        )}
                       </div>
                     </div>
                     <div className="flex-1 flex flex-col">
                       <h3 className="text-xl font-bold text-gray-900 mb-3">{value.title}:</h3>
-                      <div className={`w-8 h-1 bg-${value.color}-500 rounded-full mb-4`}></div>
+                      <div className={`w-8 h-1 ${colors.accent} rounded-full mb-4`}></div>
                       <p className="text-gray-700 leading-relaxed flex-grow">
                         {value.description}
                       </p>

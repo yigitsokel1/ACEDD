@@ -2,10 +2,10 @@ import React from "react";
 import { getPageContent } from "@/lib/settings/convenience";
 
 // Color gradient mapping
-const COLOR_GRADIENTS: Record<string, { gradient: string; bg: string; border: string }> = {
-  blue: { gradient: "from-blue-500 to-blue-700", bg: "from-blue-600 to-cyan-600", border: "border-blue-100" },
-  indigo: { gradient: "from-indigo-500 to-indigo-700", bg: "from-indigo-600 to-purple-600", border: "border-indigo-100" },
-  purple: { gradient: "from-purple-500 to-purple-700", bg: "from-purple-600 to-indigo-600", border: "border-purple-100" },
+const COLOR_GRADIENTS: Record<string, { gradient: string; bg: string; border: string; accent: string }> = {
+  blue: { gradient: "from-blue-500 to-blue-700", bg: "from-blue-600 to-cyan-600", border: "border-blue-100", accent: "bg-blue-500" },
+  indigo: { gradient: "from-indigo-500 to-indigo-700", bg: "from-indigo-600 to-purple-600", border: "border-indigo-100", accent: "bg-indigo-500" },
+  purple: { gradient: "from-purple-500 to-purple-700", bg: "from-purple-600 to-indigo-600", border: "border-purple-100", accent: "bg-purple-500" },
 };
 
 export async function MissionVisionSection() {
@@ -68,7 +68,7 @@ export async function MissionVisionSection() {
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold text-gray-900">{mission.title}</h3>
-                  <div className={`w-12 h-1 bg-${(mission as any)?.color || 'blue'}-500 rounded-full mt-2`}></div>
+                  <div className={`w-12 h-1 ${COLOR_GRADIENTS[(mission as any)?.color || 'blue']?.accent || COLOR_GRADIENTS.blue.accent} rounded-full mt-2`}></div>
                 </div>
               </div>
               <p className="text-gray-700 leading-relaxed text-lg">
@@ -102,7 +102,7 @@ export async function MissionVisionSection() {
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold text-gray-900">{vision.title}</h3>
-                  <div className={`w-12 h-1 bg-${(vision as any)?.color || 'indigo'}-500 rounded-full mt-2`}></div>
+                  <div className={`w-12 h-1 ${COLOR_GRADIENTS[(vision as any)?.color || 'indigo']?.accent || COLOR_GRADIENTS.indigo.accent} rounded-full mt-2`}></div>
                 </div>
               </div>
               <p className="text-gray-700 leading-relaxed text-lg">

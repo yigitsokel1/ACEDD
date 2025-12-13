@@ -27,15 +27,23 @@ export type SettingsMap = Record<string, SettingValue>;
  */
 export async function getSetting(key: string): Promise<SettingValue> {
   try {
-    const setting = await prisma.setting.findUnique({
-      where: { key },
+    // Add timeout to prevent waiting for full Prisma timeout (10s)
+    // If database is unreachable, fail fast and return null
+    const timeoutPromise = new Promise<null>((_, reject) => {
+      setTimeout(() => reject(new Error(`Setting fetch timeout for key: ${key}`)), 2000);
     });
 
-    if (!setting || setting.value === null) {
-      return null;
-    }
+    const fetchPromise = prisma.setting.findUnique({
+      where: { key },
+    }).then(setting => {
+      if (!setting || setting.value === null) {
+        return null;
+      }
+      return setting.value as SettingValue;
+    });
 
-    return setting.value as SettingValue;
+    const result = await Promise.race([fetchPromise, timeoutPromise]);
+    return result;
   } catch (error) {
     logErrorSecurely(`[Settings][GET_SETTING] key: ${key}`, error);
     return null;
@@ -57,17 +65,23 @@ export async function getSettings(prefix: string): Promise<SettingsMap> {
     // Remove wildcard if present
     const cleanPrefix = prefix.replace(/\.\*$/, "");
 
-    // Fetch settings matching the prefix
-    const settings = await prisma.setting.findMany({
+    // Add timeout to prevent waiting for full Prisma timeout (10s)
+    // If database is unreachable, fail fast and return empty object
+    const timeoutPromise = new Promise<SettingsMap>((_, reject) => {
+      setTimeout(() => reject(new Error(`Settings fetch timeout for prefix: ${prefix}`)), 2000);
+    });
+
+    const fetchPromise = prisma.setting.findMany({
       where: {
         key: {
           startsWith: `${cleanPrefix}.`,
         },
       },
       orderBy: { key: "asc" },
-    });
+    }).then(settings => settingsToMap(settings));
 
-    return settingsToMap(settings);
+    const settings = await Promise.race([fetchPromise, timeoutPromise]);
+    return settings;
   } catch (error) {
     logErrorSecurely(`[Settings][GET_SETTINGS_BY_PREFIX] prefix: ${prefix}`, error);
     // Return empty object on error to prevent breaking the app
@@ -85,11 +99,17 @@ export async function getSettings(prefix: string): Promise<SettingsMap> {
  */
 export async function getAllSettings(): Promise<SettingsMap> {
   try {
-    const allSettings = await prisma.setting.findMany({
-      orderBy: { key: "asc" },
+    // Add timeout to prevent waiting for full Prisma timeout (10s)
+    const timeoutPromise = new Promise<SettingsMap>((_, reject) => {
+      setTimeout(() => reject(new Error("Get all settings timeout")), 2000);
     });
 
-    return settingsToMap(allSettings);
+    const fetchPromise = prisma.setting.findMany({
+      orderBy: { key: "asc" },
+    }).then(settings => settingsToMap(settings));
+
+    const allSettings = await Promise.race([fetchPromise, timeoutPromise]);
+    return allSettings;
   } catch (error) {
     logErrorSecurely("[Settings][GET_ALL_SETTINGS]", error);
     return {};
