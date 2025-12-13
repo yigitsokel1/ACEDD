@@ -13,14 +13,23 @@ const inter = Inter({
 
 export async function generateMetadata(): Promise<Metadata> {
   // Fetch settings for metadata (with fallback to constants)
-  const [siteName, siteDescription, faviconData] = await Promise.all([
-    getSiteName(),
-    getSiteDescription(),
-    getFaviconUrlWithTimestamp(),
-  ]);
+  // During build-time, database may not be available, so we use try-catch with fallbacks
+  let siteName: string | null = null;
+  let siteDescription: string | null = null;
+  let faviconData: { url: string | null; timestamp: number | null } = { url: null, timestamp: null };
+  
+  try {
+    [siteName, siteDescription, faviconData] = await Promise.all([
+      getSiteName().catch(() => null),
+      getSiteDescription().catch(() => null),
+      getFaviconUrlWithTimestamp().catch(() => ({ url: null, timestamp: null })),
+    ]);
+  } catch {
+    // Build-time or database unavailable: use fallbacks
+  }
 
-  const displayName = siteName || SITE_CONFIG.name;
-  const displayDescription = siteDescription || SITE_CONFIG.description;
+  const displayName = siteName ?? SITE_CONFIG.name;
+  const displayDescription = siteDescription ?? SITE_CONFIG.description;
   const faviconUrl = faviconData.url;
 
   // Use dynamic favicon API route for data URLs, or direct URL for external URLs
