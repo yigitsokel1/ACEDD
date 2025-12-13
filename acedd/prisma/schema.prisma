@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {
@@ -81,6 +82,8 @@ model Member {
   // Sprint 15: Membership Application'dan gelen yeni alanlar
   bloodType     BloodType?     // Kan grubu
   city          String?        // İkamet edilen şehir
+  // Sprint 17: CV Upload
+  cvDatasetId   String?        // CV PDF dosyası için Dataset ID
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -237,59 +240,61 @@ model Event {
 // ============================================================================
 
 model ScholarshipApplication {
-  id                      String                      @id @default(uuid())
-  // Genel Bilgi
-  fullName                String                      // name + surname birleştirilmiş
-  email                   String                      @unique
-  phone                   String
-  alternativePhone        String?
-  birthDate               DateTime
-  birthPlace              String
-  tcNumber                String
-  idIssuePlace            String
-  idIssueDate             DateTime
-  gender                  String                      // "Erkek" | "Kadın"
-  maritalStatus           String                      // "Bekar" | "Evli" | "Boşanmış" | "Dul"
-  hometown                String
-  permanentAddress        String                      @db.Text
-  currentAccommodation    String                      @db.Text
-  // Banka Bilgileri
-  bankAccount             String
-  ibanNumber              String
-  // Üniversite Bilgileri
-  university              String
-  faculty                 String
-  department              String?
-  grade                   String                      // Sınıf bilgisi
-  turkeyRanking           Int?                        // Türkiye sıralaması
-  // Sağlık ve Engellilik
-  physicalDisability      String                      // "Hayır" | "Evet"
-  healthProblem           String                      // "Hayır" | "Evet"
-  // Aile Bilgileri
-  familyMonthlyIncome     Float
-  familyMonthlyExpenses   Float
-  scholarshipIncome       String                      // "Hayır" | "Evet"
-  // Ek Bilgiler
-  interests               String?                     @db.Text
-  selfIntroduction        String                      @db.Text
-  // İlişkili Veriler (JSON)
-  relatives               Json?                       // relatives array
-  educationHistory        Json?                       // educationHistory array
-  references              Json?                       // references array
-  documents               Json?                       // documents array (Dataset ID'leri)
-  // Durum ve İnceleme
-  status                  ScholarshipApplicationStatus @default(PENDING)
-  reviewedBy              String?                     // AdminUser ID
-  reviewedAt              DateTime?
-  reviewNotes             String?                     @db.Text
+  id                              String                      @id @default(uuid())
+  // Genel Bilgi (General Information)
+  firstName                       String
+  lastName                        String
+  phone                           String
+  alternativePhone                String?                     // Alternatif iletişim numarası
+  email                           String                      @unique
+  birthDate                       DateTime
+  gender                          String                      // "Erkek" | "Kadın"
+  birthPlace                      String
+  hometown                        String
+  nationalId                      String                      // TC Kimlik No (formerly tcNumber)
+  idIssueDate                     DateTime
+  idIssuePlace                    String
+  maritalStatus                   String                      // "Bekar" | "Evli" | "Boşanmış" | "Dul"
+  // Banka Bilgileri (Bank Information)
+  bankName                        String                      // Banka adı (formerly bankAccount)
+  iban                            String                      // IBAN NO (formerly ibanNumber)
+  // Üniversite Bilgileri (University Information)
+  university                      String
+  faculty                         String
+  department                      String
+  classYear                       String                      // Sınıf bilgisi (formerly grade)
+  turkiyeRanking                  Int?                        // Türkiye sıralaması (formerly turkeyRanking)
+  // Sağlık ve Engellilik (Health & Disability)
+  hasPhysicalDisability           String                      // "Evet" | "Hayır" (formerly physicalDisability)
+  hasHealthIssue                  String                      // "Evet" | "Hayır" (formerly healthProblem)
+  // Aile Bilgileri (Family Information)
+  familyMonthlyIncome             Float
+  familyMonthlyMandatoryExpenses  Float                       // Aylık zorunlu gider (formerly familyMonthlyExpenses)
+  hasScholarshipOrLoan            String                      // "Evet" | "Hayır" (formerly scholarshipIncome)
+  // Adres Bilgileri (Address Information)
+  permanentAddress                String                      @db.Text
+  currentAccommodation            String                      @db.Text
+  // Ek Bilgiler (Additional Information)
+  aboutYourself                   String                      @db.Text // Kendini tanıt (formerly selfIntroduction)
+  interests                       String?                     @db.Text
+  documents                       Json?                       // documents array (Dataset ID'leri) - Future use
+  // Durum ve İnceleme (Status & Review)
+  status                          ScholarshipApplicationStatus @default(PENDING)
+  reviewedBy                      String?                     // AdminUser ID
+  reviewedAt                      DateTime?
+  reviewNotes                     String?                     @db.Text
   // Metadata
-  createdAt               DateTime                    @default(now())
-  updatedAt               DateTime                    @updatedAt
+  createdAt                       DateTime                    @default(now())
+  updatedAt                       DateTime                    @updatedAt
+  // Relations
+  relatives                       Relative[]
+  educationHistory                EducationHistory[]
+  references                      Reference[]
 
   @@index([email])
   @@index([status])
   @@index([createdAt])
-  @@index([tcNumber])
+  @@index([nationalId])
 }
 
 enum ScholarshipApplicationStatus {
@@ -297,6 +302,79 @@ enum ScholarshipApplicationStatus {
   APPROVED
   REJECTED
   UNDER_REVIEW
+}
+
+// ============================================================================
+// Scholarship Application - Relatives (Akrabalar)
+// ============================================================================
+
+model Relative {
+  id                String                @id @default(uuid())
+  applicationId     String
+  application       ScholarshipApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  // Akraba Bilgileri
+  degree            String                // Akrabalık derecesi (formerly kinship): "Anne", "Baba", "Kardeş", "Eş", "Çocuk", vb.
+  firstName         String
+  lastName          String
+  birthDate         DateTime
+  educationStatus   String                // Öğrenim durumu (formerly education)
+  occupation        String                // Meslek
+  workplace         String                // İş yeri/bölüm (formerly job)
+  healthInsurance   String                // Sağlık Sigortası: "Var", "Yok", "SGK", "Özel", vb.
+  healthDisability  String                // Sağlık engeli: "Evet" | "Hayır"
+  income            Float                 // Gelir (TL)
+  phone             String
+  notes             String?               @db.Text // Eklemek istedikleriniz (formerly additionalNotes)
+  // Metadata
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@index([applicationId])
+}
+
+// ============================================================================
+// Scholarship Application - Education History (Eğitim Geçmişi)
+// ============================================================================
+
+model EducationHistory {
+  id              String                @id @default(uuid())
+  applicationId   String
+  application     ScholarshipApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  // Okul Bilgileri
+  schoolName      String                // Gittiğiniz Okul
+  startDate       DateTime              // Başlama
+  endDate         DateTime?             // Bitiş (opsiyonel)
+  isGraduated     Boolean               // Mezuniyet (formerly graduation: "Evet"/"Hayır")
+  department      String                // Bölüm
+  gradePercent    Float                 // Yüzde (0-100, formerly percentage)
+  // Metadata
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([applicationId])
+}
+
+// ============================================================================
+// Scholarship Application - References (Referanslar)
+// ============================================================================
+
+model Reference {
+  id              String                @id @default(uuid())
+  applicationId   String
+  application     ScholarshipApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  // Referans Bilgileri
+  relationship    String                // İlişki: "Hoca", "İş Arkadaşı", "Akraba", vb.
+  firstName       String                // İsim (fullName ayrıldı)
+  lastName        String                // Soyisim
+  isAceddMember   Boolean               // ACEDD üyesi mi? (formerly isAcddMember: "Evet"/"Hayır")
+  job             String                // İş/Meslek
+  address         String                @db.Text // Adres
+  phone           String                // Telefon
+  // Metadata
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([applicationId])
 }
 
 // ============================================================================

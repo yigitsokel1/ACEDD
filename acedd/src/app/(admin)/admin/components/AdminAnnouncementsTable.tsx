@@ -147,13 +147,7 @@ export function AdminAnnouncementsTable({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
-                        <Badge
-                          className={
-                            isActive
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }
-                        >
+                        <Badge variant={isActive ? "success" : "secondary"}>
                           {isActive ? "Aktif" : "Pasif"}
                         </Badge>
                         {!isActive && (

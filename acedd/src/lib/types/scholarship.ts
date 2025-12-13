@@ -16,7 +16,8 @@ export interface ScholarshipRelative {
   birthDate: string;
   education: string;
   occupation: string;
-  job: string;
+  job?: string; // İş yeri/bölüm (workplace from DB)
+  workplace?: string; // Alternative field name for job
   healthInsurance: string;
   healthDisability: string;
   income: number;
@@ -30,7 +31,7 @@ export interface ScholarshipRelative {
 export interface ScholarshipEducationHistory {
   schoolName: string;
   startDate: string;
-  endDate: string;
+  endDate?: string;
   graduation: string;
   department: string;
   percentage: number;
@@ -74,7 +75,7 @@ export interface ScholarshipApplication {
   // Üniversite Bilgileri
   university: string;
   faculty: string;
-  department?: string;
+  department: string | undefined;
   grade: string;
   turkeyRanking?: number;
   // Sağlık ve Engellilik
@@ -111,8 +112,8 @@ export interface CreateScholarshipApplicationRequest {
   name: string;
   surname: string;
   phone: string;
-  email: string;
   alternativePhone?: string;
+  email: string;
   birthDate: string;
   birthPlace: string;
   tcNumber: string;
@@ -129,7 +130,7 @@ export interface CreateScholarshipApplicationRequest {
   // Üniversite Bilgileri
   university: string;
   faculty: string;
-  department?: string;
+  department: string;
   grade: string;
   turkeyRanking: number;
   // Sağlık ve Engellilik

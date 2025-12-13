@@ -53,15 +53,16 @@ describe("GET /api/scholarship-applications/[id]", () => {
   });
 
   it("should return application by id", async () => {
+    // Sprint 16 - Block F: Mock data must have firstName/lastName (not fullName) and include relational data
     const mockApplication = {
       id: "app-1",
-      fullName: "Ahmet Yılmaz",
+      firstName: "Ahmet",
+      lastName: "Yılmaz",
       email: "ahmet@example.com",
       phone: "5551234567",
-      alternativePhone: null,
       birthDate: new Date("2000-01-01T00:00:00Z"),
       birthPlace: "Istanbul",
-      tcNumber: "12345678901",
+      nationalId: "12345678901",
       idIssuePlace: "Istanbul",
       idIssueDate: new Date("2018-01-01T00:00:00Z"),
       gender: "Erkek",
@@ -69,23 +70,20 @@ describe("GET /api/scholarship-applications/[id]", () => {
       hometown: "Istanbul",
       permanentAddress: "Istanbul, Kadıköy",
       currentAccommodation: "Yurt",
-      bankAccount: "Ziraat Bankası",
-      ibanNumber: "TR330006100519786457841326",
+      bankName: "Ziraat Bankası",
+      iban: "TR330006100519786457841326",
       university: "İstanbul Üniversitesi",
       faculty: "Mühendislik Fakültesi",
       department: "Bilgisayar Mühendisliği",
-      grade: "3",
-      turkeyRanking: 1500,
-      physicalDisability: "Hayır",
-      healthProblem: "Hayır",
+      classYear: "3",
+      turkiyeRanking: 1500,
+      hasPhysicalDisability: "Hayır",
+      hasHealthIssue: "Hayır",
       familyMonthlyIncome: 5000,
-      familyMonthlyExpenses: 4000,
-      scholarshipIncome: "Hayır",
+      familyMonthlyMandatoryExpenses: 4000,
+      hasScholarshipOrLoan: "Hayır",
       interests: null,
-      selfIntroduction: "Merhaba, ben Ahmet...",
-      relatives: JSON.stringify([{ kinship: "Baba", name: "Mehmet", surname: "Yılmaz", birthDate: "1970-01-01", education: "Lisans", occupation: "Mühendis", job: "Yazılım", healthInsurance: "Var", healthDisability: "Yok", income: 8000, phone: "5551111111" }]),
-      educationHistory: JSON.stringify([{ schoolName: "Anadolu Lisesi", startDate: "2014-09-01", endDate: "2018-06-01", graduation: "Mezun", department: "Fen", percentage: 85 }]),
-      references: JSON.stringify([{ relationship: "Hoca", fullName: "Ali Veli", isAcddMember: "Evet", job: "Öğretmen", address: "Istanbul", phone: "5552222222" }]),
+      aboutYourself: "Merhaba, ben Ahmet...",
       documents: null,
       status: "PENDING" as const,
       reviewedBy: null,
@@ -93,7 +91,10 @@ describe("GET /api/scholarship-applications/[id]", () => {
       reviewNotes: null,
       createdAt: new Date("2024-01-01T00:00:00Z"),
       updatedAt: new Date("2024-01-01T00:00:00Z"),
-    } as any; // Sprint 7: Mock data için type assertion
+      relatives: [],
+      educationHistory: [],
+      references: [],
+    } as any;
 
     vi.mocked(prisma.scholarshipApplication.findUnique).mockResolvedValue(mockApplication);
 
@@ -109,8 +110,51 @@ describe("GET /api/scholarship-applications/[id]", () => {
       email: "ahmet@example.com",
       status: "PENDING",
     });
+    // Sprint 16 - Block F: findUnique now includes relational data with select
     expect(prisma.scholarshipApplication.findUnique).toHaveBeenCalledWith({
       where: { id: "app-1" },
+      include: {
+        relatives: {
+          select: {
+            id: true,
+            degree: true,
+            firstName: true,
+            lastName: true,
+            birthDate: true,
+            educationStatus: true,
+            occupation: true,
+            workplace: true,
+            healthInsurance: true,
+            healthDisability: true,
+            income: true,
+            phone: true,
+            notes: true,
+          },
+        },
+        educationHistory: {
+          select: {
+            id: true,
+            schoolName: true,
+            startDate: true,
+            endDate: true,
+            isGraduated: true,
+            department: true,
+            gradePercent: true,
+          },
+        },
+        references: {
+          select: {
+            id: true,
+            relationship: true,
+            firstName: true,
+            lastName: true,
+            isAceddMember: true,
+            job: true,
+            address: true,
+            phone: true,
+          },
+        },
+      },
     });
   });
 
@@ -156,15 +200,16 @@ describe("PUT /api/scholarship-applications/[id] - Status Update", () => {
   });
 
   it("should update application status to APPROVED", async () => {
+    // Sprint 16 - Block F: Mock data must use new Prisma field names
     const mockApplication = {
       id: "app-1",
-      fullName: "Ahmet Yılmaz",
+      firstName: "Ahmet",
+      lastName: "Yılmaz",
       email: "ahmet@example.com",
       phone: "5551234567",
-      alternativePhone: null,
       birthDate: new Date("2000-01-01T00:00:00Z"),
       birthPlace: "Istanbul",
-      tcNumber: "12345678901",
+      nationalId: "12345678901",
       idIssuePlace: "Istanbul",
       idIssueDate: new Date("2018-01-01T00:00:00Z"),
       gender: "Erkek",
@@ -172,23 +217,20 @@ describe("PUT /api/scholarship-applications/[id] - Status Update", () => {
       hometown: "Istanbul",
       permanentAddress: "Istanbul, Kadıköy",
       currentAccommodation: "Yurt",
-      bankAccount: "Ziraat Bankası",
-      ibanNumber: "TR330006100519786457841326",
+      bankName: "Ziraat Bankası",
+      iban: "TR330006100519786457841326",
       university: "İstanbul Üniversitesi",
       faculty: "Mühendislik Fakültesi",
       department: "Bilgisayar Mühendisliği",
-      grade: "3",
-      turkeyRanking: 1500,
-      physicalDisability: "Hayır",
-      healthProblem: "Hayır",
+      classYear: "3",
+      turkiyeRanking: 1500,
+      hasPhysicalDisability: "Hayır",
+      hasHealthIssue: "Hayır",
       familyMonthlyIncome: 5000,
-      familyMonthlyExpenses: 4000,
-      scholarshipIncome: "Hayır",
+      familyMonthlyMandatoryExpenses: 4000,
+      hasScholarshipOrLoan: "Hayır",
       interests: null,
-      selfIntroduction: "Merhaba, ben Ahmet...",
-      relatives: null,
-      educationHistory: null,
-      references: null,
+      aboutYourself: "Merhaba, ben Ahmet...",
       documents: null,
       status: "APPROVED" as const,
       reviewedBy: "admin-1",
@@ -196,7 +238,10 @@ describe("PUT /api/scholarship-applications/[id] - Status Update", () => {
       reviewNotes: "Approved by admin",
       createdAt: new Date("2024-01-01T00:00:00Z"),
       updatedAt: new Date("2024-01-02T00:00:00Z"),
-    } as any; // Sprint 7: Mock data için type assertion
+      relatives: [],
+      educationHistory: [],
+      references: [],
+    } as any;
 
     vi.mocked(prisma.scholarshipApplication.update).mockResolvedValue(mockApplication);
 
@@ -223,27 +268,73 @@ describe("PUT /api/scholarship-applications/[id] - Status Update", () => {
       status: "APPROVED",
       reviewNotes: "Approved by admin",
     });
-    expect(prisma.scholarshipApplication.update).toHaveBeenCalledWith({
-      where: { id: "app-1" },
-      data: {
-        status: "APPROVED",
-        reviewedAt: expect.any(Date),
-        reviewedBy: "admin-1",
-        reviewNotes: "Approved by admin",
-      },
-    });
+    // Sprint 16 - Block F: update now includes relational data with select for performance
+    expect(prisma.scholarshipApplication.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "app-1" },
+        data: {
+          status: "APPROVED",
+          reviewedAt: expect.any(Date),
+          reviewedBy: "admin-1",
+          reviewNotes: "Approved by admin",
+        },
+        include: {
+          relatives: {
+            select: {
+              id: true,
+              degree: true,
+              firstName: true,
+              lastName: true,
+              birthDate: true,
+              educationStatus: true,
+              occupation: true,
+              workplace: true,
+              healthInsurance: true,
+              healthDisability: true,
+              income: true,
+              phone: true,
+              notes: true,
+            },
+          },
+          educationHistory: {
+            select: {
+              id: true,
+              schoolName: true,
+              startDate: true,
+              endDate: true,
+              isGraduated: true,
+              department: true,
+              gradePercent: true,
+            },
+          },
+          references: {
+            select: {
+              id: true,
+              relationship: true,
+              firstName: true,
+              lastName: true,
+              isAceddMember: true,
+              job: true,
+              address: true,
+              phone: true,
+            },
+          },
+        },
+      })
+    );
   });
 
   it("should update application status to REJECTED", async () => {
+    // Sprint 16 - Block F: Mock data must use new Prisma field names
     const mockApplication = {
       id: "app-2",
-      fullName: "Fatma Demir",
+      firstName: "Fatma",
+      lastName: "Demir",
       email: "fatma@example.com",
       phone: "5559876543",
-      alternativePhone: null,
       birthDate: new Date("2001-05-15T00:00:00Z"),
       birthPlace: "Ankara",
-      tcNumber: "98765432109",
+      nationalId: "98765432109",
       idIssuePlace: "Ankara",
       idIssueDate: new Date("2019-01-01T00:00:00Z"),
       gender: "Kadın",
@@ -251,23 +342,20 @@ describe("PUT /api/scholarship-applications/[id] - Status Update", () => {
       hometown: "Ankara",
       permanentAddress: "Ankara, Çankaya",
       currentAccommodation: "Ev",
-      bankAccount: "Garanti Bankası",
-      ibanNumber: "TR330006100519786457841327",
+      bankName: "Garanti Bankası",
+      iban: "TR330006100519786457841327",
       university: "Ankara Üniversitesi",
       faculty: "Eğitim Fakültesi",
       department: "Matematik Öğretmenliği",
-      grade: "2",
-      turkeyRanking: 2000,
-      physicalDisability: "Hayır",
-      healthProblem: "Hayır",
+      classYear: "2",
+      turkiyeRanking: 2000,
+      hasPhysicalDisability: "Hayır",
+      hasHealthIssue: "Hayır",
       familyMonthlyIncome: 6000,
-      familyMonthlyExpenses: 5000,
-      scholarshipIncome: "Hayır",
+      familyMonthlyMandatoryExpenses: 5000,
+      hasScholarshipOrLoan: "Hayır",
       interests: null,
-      selfIntroduction: "Merhaba, ben Fatma...",
-      relatives: null,
-      educationHistory: null,
-      references: null,
+      aboutYourself: "Merhaba, ben Fatma...",
       documents: null,
       status: "REJECTED" as const,
       reviewedBy: "admin-1",
@@ -275,7 +363,10 @@ describe("PUT /api/scholarship-applications/[id] - Status Update", () => {
       reviewNotes: "Incomplete documentation",
       createdAt: new Date("2024-01-01T00:00:00Z"),
       updatedAt: new Date("2024-01-02T00:00:00Z"),
-    } as any; // Sprint 7: Mock data için type assertion
+      relatives: [],
+      educationHistory: [],
+      references: [],
+    } as any;
 
     vi.mocked(prisma.scholarshipApplication.update).mockResolvedValue(mockApplication);
 
@@ -305,15 +396,16 @@ describe("PUT /api/scholarship-applications/[id] - Status Update", () => {
   });
 
   it("should update application status to UNDER_REVIEW", async () => {
+    // Sprint 16 - Block F: Mock data must use new Prisma field names
     const mockApplication = {
       id: "app-3",
-      fullName: "Mehmet Kaya",
+      firstName: "Mehmet",
+      lastName: "Kaya",
       email: "mehmet@example.com",
       phone: "5551111111",
-      alternativePhone: null,
       birthDate: new Date("1999-03-20T00:00:00Z"),
       birthPlace: "Izmir",
-      tcNumber: "11111111111",
+      nationalId: "11111111111",
       idIssuePlace: "Izmir",
       idIssueDate: new Date("2017-01-01T00:00:00Z"),
       gender: "Erkek",
@@ -321,23 +413,20 @@ describe("PUT /api/scholarship-applications/[id] - Status Update", () => {
       hometown: "Izmir",
       permanentAddress: "Izmir, Bornova",
       currentAccommodation: "Yurt",
-      bankAccount: "İş Bankası",
-      ibanNumber: "TR330006100519786457841328",
+      bankName: "İş Bankası",
+      iban: "TR330006100519786457841328",
       university: "Ege Üniversitesi",
       faculty: "Fen Fakültesi",
       department: "Fizik",
-      grade: "4",
-      turkeyRanking: 1000,
-      physicalDisability: "Hayır",
-      healthProblem: "Hayır",
+      classYear: "4",
+      turkiyeRanking: 1000,
+      hasPhysicalDisability: "Hayır",
+      hasHealthIssue: "Hayır",
       familyMonthlyIncome: 4000,
-      familyMonthlyExpenses: 3500,
-      scholarshipIncome: "Hayır",
+      familyMonthlyMandatoryExpenses: 3500,
+      hasScholarshipOrLoan: "Hayır",
       interests: null,
-      selfIntroduction: "Merhaba, ben Mehmet...",
-      relatives: null,
-      educationHistory: null,
-      references: null,
+      aboutYourself: "Merhaba, ben Mehmet...",
       documents: null,
       status: "UNDER_REVIEW" as const,
       reviewedBy: "admin-1",
@@ -345,7 +434,10 @@ describe("PUT /api/scholarship-applications/[id] - Status Update", () => {
       reviewNotes: "Under review",
       createdAt: new Date("2024-01-01T00:00:00Z"),
       updatedAt: new Date("2024-01-02T00:00:00Z"),
-    } as any; // Sprint 7: Mock data için type assertion
+      relatives: [],
+      educationHistory: [],
+      references: [],
+    } as any;
 
     vi.mocked(prisma.scholarshipApplication.update).mockResolvedValue(mockApplication);
 
@@ -408,13 +500,14 @@ describe("PUT /api/scholarship-applications/[id] - Status Update", () => {
 
     const mockApplication = {
       id: "app-1",
-      fullName: "Ahmet Yılmaz",
+      firstName: "Ahmet",
+      lastName: "Yılmaz",
       email: "ahmet@example.com",
       phone: "5551234567",
       alternativePhone: null,
       birthDate: new Date("2000-01-01T00:00:00Z"),
       birthPlace: "Istanbul",
-      tcNumber: "12345678901",
+      nationalId: "12345678901",
       idIssuePlace: "Istanbul",
       idIssueDate: new Date("2018-01-01T00:00:00Z"),
       gender: "Erkek",
@@ -422,23 +515,23 @@ describe("PUT /api/scholarship-applications/[id] - Status Update", () => {
       hometown: "Istanbul",
       permanentAddress: "Istanbul, Kadıköy",
       currentAccommodation: "Yurt",
-      bankAccount: "Ziraat Bankası",
-      ibanNumber: "TR330006100519786457841326",
+      bankName: "Ziraat Bankası",
+      iban: "TR330006100519786457841326",
       university: "İstanbul Üniversitesi",
       faculty: "Mühendislik Fakültesi",
       department: "Bilgisayar Mühendisliği",
-      grade: "3",
-      turkeyRanking: 1500,
-      physicalDisability: "Hayır",
-      healthProblem: "Hayır",
+      classYear: "3",
+      turkiyeRanking: 1500,
+      hasPhysicalDisability: "Hayır",
+      hasHealthIssue: "Hayır",
       familyMonthlyIncome: 5000,
-      familyMonthlyExpenses: 4000,
-      scholarshipIncome: "Hayır",
+      familyMonthlyMandatoryExpenses: 4000,
+      hasScholarshipOrLoan: "Hayır",
       interests: null,
-      selfIntroduction: "Merhaba, ben Ahmet...",
-      relatives: null,
-      educationHistory: null,
-      references: null,
+      aboutYourself: "Merhaba, ben Ahmet...",
+      relatives: [],
+      educationHistory: [],
+      references: [],
       documents: null,
       status: "APPROVED" as const,
       reviewedBy: "admin-2",

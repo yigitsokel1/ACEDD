@@ -7,11 +7,11 @@ import TrustIndicator from "./TrustIndicator";
 export async function CTASection() {
   const content = await getPageContent("home");
   
-  // Get CTA data from settings with minimal fallbacks
-  const ctaTitle = content.ctaTitle || "Hayırseverlerin ve Eğitim Gönüllülerinin Desteğiyle";
-  const ctaDescription = content.ctaDescription || "Acıpayam ve çevresindeki gençlerin daha iyi bir eğitim almalarına ve geleceğe umutla bakmalarına yardımcı olmayı hedefliyoruz. Siz de bu hayırlı işe katkıda bulunun.";
-  const ctaPrimaryButtonText = content.ctaPrimaryButtonText || "Burs Başvurusu Yap";
-  const ctaSecondaryButtonText = content.ctaSecondaryButtonText || "Destek Ol";
+  // All content comes from settings with defaults from defaultContent.ts
+  const ctaTitle = content.ctaTitle;
+  const ctaDescription = content.ctaDescription;
+  const ctaPrimaryButtonText = content.ctaPrimaryButtonText;
+  const ctaSecondaryButtonText = content.ctaSecondaryButtonText;
   const trustIndicators = content.trustIndicators || [];
 
   return (

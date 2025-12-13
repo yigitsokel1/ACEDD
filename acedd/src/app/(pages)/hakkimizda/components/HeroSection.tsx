@@ -5,9 +5,9 @@ import { SITE_CONFIG } from "@/lib/constants";
 export async function HeroSection() {
   const content = await getPageContent("about");
   
-  // Fallback: Use SITE_CONFIG.description if intro is empty or undefined
-  const heroTitle = content.heroTitle || "Hakkımızda";
-  const intro = content.intro || SITE_CONFIG.description || "";
+  // All content comes from settings with defaults from defaultContent.ts
+  const heroTitle = content.heroTitle;
+  const intro = content.intro;
 
   return (
     <section className="bg-gradient-to-br from-blue-50 to-indigo-100 py-20 pt-36">

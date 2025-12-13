@@ -1,5 +1,4 @@
-import { Users, Users2, HandHeart, Shield, Crown, UserCheck, History, User } from "lucide-react";
-import { ORGANIZATION_STRUCTURE, ORGANIZATION_MEMBERS } from "../constants";
+import { Users, Users2, HandHeart, Shield, Crown, UserCheck, History, User, FileText } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { getPageContent } from "@/lib/settings/convenience";
 import {
@@ -43,6 +42,7 @@ async function fetchBoardMembers(): Promise<BoardMember[]> {
         email: bm.member.email,
         phone: bm.member.phone || undefined,
         tags: parseTags(bm.member.tags),
+        cvDatasetId: (bm.member as any).cvDatasetId || undefined, // Sprint 17: CV Dataset ID
         // Diğer Member alanları gerekirse buraya eklenebilir
       } as any,
       role: bm.role as any,
@@ -95,6 +95,7 @@ export async function TeamSection() {
     membershipDate: m.membershipDate.toISOString(),
     membershipKind: m.membershipKind as any,
     tags: parseTags(m.tags),
+    cvDatasetId: (m as any).cvDatasetId || undefined, // Sprint 17: CV Dataset ID
     createdAt: m.createdAt.toISOString(),
     updatedAt: m.updatedAt.toISOString(),
   })) as Member[];
@@ -110,17 +111,33 @@ export async function TeamSection() {
   // Sprint 6: Board members'ı helper fonksiyonla sırala
   const sortedBoardMembers = sortBoardMembersByRole(boardMembers);
   
-  // Color palette for job description cards (rotating colors)
-  const getCardColor = (index: number) => {
-    const colors = [
-      { gradient: "from-purple-500 to-purple-600", bg: "from-purple-50 to-purple-100", border: "border-purple-200" },
-      { gradient: "from-blue-500 to-blue-600", bg: "from-blue-50 to-blue-100", border: "border-blue-200" },
-      { gradient: "from-green-500 to-green-600", bg: "from-green-50 to-green-100", border: "border-green-200" },
-      { gradient: "from-orange-500 to-orange-600", bg: "from-orange-50 to-orange-100", border: "border-orange-200" },
-      { gradient: "from-indigo-500 to-indigo-600", bg: "from-indigo-50 to-indigo-100", border: "border-indigo-200" },
-      { gradient: "from-pink-500 to-pink-600", bg: "from-pink-50 to-pink-100", border: "border-pink-200" },
-    ];
-    return colors[index % colors.length];
+  // Get hierarchical level based on job title (matching HTML structure)
+  const getJobLevel = (title: string): number => {
+    const lowerTitle = title.toLowerCase();
+    
+    if (lowerTitle.includes('genel kurul')) return 1;
+    if (lowerTitle.includes('yönetim kurulu') || lowerTitle.includes('denetim kurulu')) return 2;
+    if (lowerTitle.includes('başkan') && !lowerTitle.includes('yardımcı')) return 3;
+    if (lowerTitle.includes('sekreter') || lowerTitle.includes('sayman') || 
+        lowerTitle.includes('komisyon') || lowerTitle.includes('koordinatör')) return 4;
+    if (lowerTitle.includes('üye') || lowerTitle.includes('eğitim') || 
+        lowerTitle.includes('takip') || lowerTitle.includes('bursiyer')) return 5;
+    if (lowerTitle.includes('gönüllü') || lowerTitle.includes('eğitmen')) return 6;
+    
+    return 0; // Default
+  };
+
+  // Color palette for job description cards (based on color field from settings)
+  const getCardColor = (color: string) => {
+    const colorMap: Record<string, { gradient: string; bg: string; border: string }> = {
+      purple: { gradient: "from-purple-500 to-purple-600", bg: "from-purple-50 to-purple-100", border: "border-purple-200" },
+      blue: { gradient: "from-blue-500 to-blue-600", bg: "from-blue-50 to-blue-100", border: "border-blue-200" },
+      green: { gradient: "from-green-500 to-green-600", bg: "from-green-50 to-green-100", border: "border-green-200" },
+      orange: { gradient: "from-orange-500 to-orange-600", bg: "from-orange-50 to-orange-100", border: "border-orange-200" },
+      indigo: { gradient: "from-indigo-500 to-indigo-600", bg: "from-indigo-50 to-indigo-100", border: "border-indigo-200" },
+      pink: { gradient: "from-pink-500 to-pink-600", bg: "from-pink-50 to-pink-100", border: "border-pink-200" },
+    };
+    return colorMap[color] || colorMap.blue;
   };
 
   return (
@@ -129,25 +146,37 @@ export async function TeamSection() {
         {/* Görev Tanımları Kartları */}
         <div className="mt-16">
           <h3 className="text-3xl font-bold text-gray-900 mb-12 text-center">
-            {content.jobDescriptionsTitle || "Görev Tanımları"}
+            {content.jobDescriptionsTitle}
           </h3>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {(content.jobDescriptions && Array.isArray(content.jobDescriptions) && content.jobDescriptions.length > 0 
               ? content.jobDescriptions 
               : [] // No fallback - content must be set via Admin UI
             ).map((job: any, index: number) => {
-              // Get icon from ORGANIZATION_STRUCTURE by matching title
-              const orgUnit = ORGANIZATION_STRUCTURE.find(unit => unit.title === job.title) || ORGANIZATION_STRUCTURE[index] || ORGANIZATION_STRUCTURE[0];
-              const IconComponent = orgUnit?.icon || Users;
-              const cardColor = getCardColor(index);
+              const cardColor = getCardColor(job.color || 'blue');
               
               return (
-                <div key={index} className={`group relative bg-gradient-to-br ${cardColor.bg} p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border ${cardColor.border} overflow-hidden`}>
+                <div key={job.id || index} className={`group relative bg-gradient-to-br ${cardColor.bg} p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border ${cardColor.border} overflow-hidden`}>
                   <div className="absolute top-0 right-0 w-16 h-16 bg-opacity-20 rounded-full -translate-y-8 translate-x-8"></div>
                   <div className="relative z-10">
                     <div className="flex items-center space-x-4 mb-4">
                       <div className={`w-12 h-12 bg-gradient-to-br ${cardColor.gradient} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-md`}>
-                        <IconComponent className="w-6 h-6 text-white" />
+                        {job.icon && (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="w-6 h-6 text-white"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d={job.icon}
+                            />
+                          </svg>
+                        )}
                       </div>
                       <div>
                         <h4 className="text-lg font-bold text-gray-900">{job.title}</h4>
@@ -179,8 +208,20 @@ export async function TeamSection() {
                 </div>
                 <div className="space-y-2">
                   {honoraryPresidents.map((member) => (
-                    <div key={member.id} className="text-gray-700 font-medium">
-                      {member.firstName} {member.lastName}
+                    <div key={member.id} className="flex items-center justify-between text-gray-700 font-medium">
+                      <span>{member.firstName} {member.lastName}</span>
+                      {member.cvDatasetId && (
+                        <a
+                          href={`/api/download/cv/${member.cvDatasetId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm"
+                          title="CV İndir"
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span>CV</span>
+                        </a>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -198,8 +239,20 @@ export async function TeamSection() {
                 </div>
                 <div className="space-y-2">
                   {foundingPresidents.map((member) => (
-                    <div key={member.id} className="text-gray-700 font-medium">
-                      {member.firstName} {member.lastName}
+                    <div key={member.id} className="flex items-center justify-between text-gray-700 font-medium">
+                      <span>{member.firstName} {member.lastName}</span>
+                      {member.cvDatasetId && (
+                        <a
+                          href={`/api/download/cv/${member.cvDatasetId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm"
+                          title="CV İndir"
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span>CV</span>
+                        </a>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -215,10 +268,22 @@ export async function TeamSection() {
                   </div>
                   <h4 className="text-lg font-bold text-gray-900">KURUCU ÜYELERİMİZ</h4>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
                   {foundingMembers.map((member) => (
-                    <div key={member.id} className="text-gray-700 font-medium text-sm">
-                      {member.firstName} {member.lastName}
+                    <div key={member.id} className="flex items-center justify-between text-gray-700 font-medium">
+                      <span>{member.firstName} {member.lastName}</span>
+                      {member.cvDatasetId && (
+                        <a
+                          href={`/api/download/cv/${member.cvDatasetId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm"
+                          title="CV İndir"
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span>CV</span>
+                        </a>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -236,8 +301,20 @@ export async function TeamSection() {
                 </div>
                 <div className="space-y-2">
                   {formerPresidents.map((member) => (
-                    <div key={member.id} className="text-gray-700 font-medium">
-                      {member.firstName} {member.lastName}
+                    <div key={member.id} className="flex items-center justify-between text-gray-700 font-medium">
+                      <span>{member.firstName} {member.lastName}</span>
+                      {member.cvDatasetId && (
+                        <a
+                          href={`/api/download/cv/${member.cvDatasetId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm"
+                          title="CV İndir"
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span>CV</span>
+                        </a>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -266,7 +343,7 @@ export async function TeamSection() {
                 <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl flex items-center justify-center">
                   <Shield className="w-6 h-6 text-white" />
                 </div>
-                <h4 className="text-2xl font-bold text-gray-900">{ORGANIZATION_MEMBERS.boardOfDirectors.title}</h4>
+                <h4 className="text-2xl font-bold text-gray-900">Yönetim Kurulu</h4>
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {sortedBoardMembers.length > 0 ? (
@@ -277,14 +354,28 @@ export async function TeamSection() {
                     
                     return (
                       <div key={boardMember.id} className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-300">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg flex items-center justify-center">
-                            <User className="w-5 h-5 text-white" />
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg flex items-center justify-center">
+                              <User className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                              <div className="font-semibold text-gray-900">{fullName}</div>
+                              <div className="text-sm text-gray-600">{roleLabel}</div>
+                            </div>
                           </div>
-                          <div>
-                            <div className="font-semibold text-gray-900">{fullName}</div>
-                            <div className="text-sm text-gray-600">{roleLabel}</div>
-                          </div>
+                          {boardMember.member.cvDatasetId && (
+                            <a
+                              href={`/api/download/cv/${boardMember.member.cvDatasetId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ml-2 text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm"
+                              title="CV İndir"
+                            >
+                              <FileText className="w-4 h-4" />
+                              <span className="hidden sm:inline">CV</span>
+                            </a>
+                          )}
                         </div>
                       </div>
                     );
@@ -307,10 +398,10 @@ export async function TeamSection() {
         <div className="mt-16 text-center">
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-8 rounded-2xl border border-blue-200 shadow-lg">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">
-              {content.organizationStructureTitle || "Organizasyon Yapımız"}
+              {content.organizationStructureTitle}
             </h3>
             <p className="text-lg text-gray-600 max-w-4xl mx-auto leading-relaxed">
-              {content.organizationStructureDescription || "Derneğimiz, hiyerarşik bir yapıda organize edilmiş olup, her birim kendi sorumluluk alanında etkin bir şekilde çalışmaktadır. Bu yapı sayesinde eğitim destek faaliyetlerimizi daha verimli ve koordineli bir şekilde yürütmekteyiz."}
+              {content.organizationStructureDescription}
             </p>
           </div>
         </div>

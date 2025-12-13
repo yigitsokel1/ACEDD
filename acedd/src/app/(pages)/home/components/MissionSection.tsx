@@ -5,10 +5,10 @@ import MissionCard from "./MissionCard";
 export async function MissionSection() {
   const content = await getPageContent("home");
   
-  // Get mission data from settings with minimal fallbacks
-  const missionTitle = content.missionTitle || "AMACIMIZ";
-  const missionDescription = content.missionDescription || "Acıpayam ve çevresindeki öğrencilere eğitim desteği sağlayarak onların gelişimine katkıda bulunmak ve eğitimde fırsat eşitliği konusunda toplumsal farkındalık oluşturmak.";
-  const missionFooter = content.missionFooter || "Dernek, hayırseverlerin ve eğitim gönüllülerinin destekleriyle bu faaliyetlerini sürdürerek Acıpayam ve çevresindeki gençlerin daha iyi bir eğitim almalarına ve geleceğe umutla bakmalarına yardımcı olmayı hedeflemektedir.";
+  // All content comes from settings with defaults from defaultContent.ts
+  const missionTitle = content.missionTitle;
+  const missionDescription = content.missionDescription;
+  const missionFooter = content.missionFooter;
   const missions = content.missions || [];
 
   return (

@@ -26,6 +26,7 @@ import { prisma } from "@/lib/db";
 import type { Setting, UpsertSettingRequest } from "@/lib/types/setting";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
 import { Prisma } from "@prisma/client";
+import { replaceFaviconOrLogo } from "@/modules/files/fileService";
 
 /**
  * GET /api/settings
@@ -128,6 +129,19 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Sprint 17: Favicon/Logo değişiminde eski dosya temizleme
+    let oldValue: string | null = null;
+    if (key === "site.faviconUrl" || key === "site.logoUrl") {
+      // Eski setting value'yu al
+      const oldSetting = await prisma.setting.findUnique({
+        where: { key },
+        select: { value: true },
+      });
+      oldValue = oldSetting?.value && typeof oldSetting.value === "string" 
+        ? oldSetting.value 
+        : null;
+    }
+
     // Convert value to Prisma JsonValue
     // Prisma accepts: string, number, boolean, null, object, array
     const jsonValue: Prisma.InputJsonValue = body.value === null ? Prisma.JsonNull : body.value;
@@ -147,6 +161,25 @@ export async function PUT(request: NextRequest) {
         updatedBy: session.adminUserId,
       },
     });
+
+    // Sprint 17: Favicon/Logo değişiminde eski dosya temizleme
+    if ((key === "site.faviconUrl" || key === "site.logoUrl") && oldValue) {
+      // Check if new value is a string (Prisma.JsonNull is treated as null)
+      const newValue = jsonValue !== null && jsonValue !== (Prisma.JsonNull as any) && typeof jsonValue === "string" ? jsonValue : null;
+      // Eğer yeni value farklı bir data URL ise (yeni dosya yüklendi)
+      if (newValue && newValue !== oldValue && newValue.startsWith("data:")) {
+        try {
+          await replaceFaviconOrLogo(
+            key as "site.faviconUrl" | "site.logoUrl",
+            oldValue,
+            newValue
+          );
+        } catch (cleanupError) {
+          // Non-critical error
+          console.error("[API][SETTINGS][PUT] Error cleaning up old favicon/logo:", cleanupError);
+        }
+      }
+    }
 
     // Convert Prisma DateTime to ISO string
     const formattedSetting: Setting = {

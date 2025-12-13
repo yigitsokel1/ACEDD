@@ -17,20 +17,25 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import type { ScholarshipApplication, ScholarshipRelative, ScholarshipEducationHistory, ScholarshipReference } from "@/lib/types/scholarship";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
-import { validateTCNumber, validatePhoneNumber, validateEmail } from "@/lib/utils/validationHelpers";
+import { ScholarshipApplicationSchema, ScholarshipApplicationInput } from "@/modules/scholarship/schemas";
+import { verifyRecaptchaToken } from "@/lib/utils/recaptcha";
+import { logErrorSecurely, sanitizeObjectForLogging } from "@/lib/utils/secureLogging";
+import { z } from "zod";
 
 /**
  * Helper function to format Prisma ScholarshipApplication to frontend ScholarshipApplication
+ * Sprint 16 - Block A: Updated to handle new Prisma model (firstName/lastName instead of fullName)
  */
 function formatApplication(prismaApplication: {
   id: string;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   alternativePhone: string | null;
   birthDate: Date;
   birthPlace: string;
-  tcNumber: string;
+  nationalId: string;
   idIssuePlace: string;
   idIssueDate: Date;
   gender: string;
@@ -38,23 +43,20 @@ function formatApplication(prismaApplication: {
   hometown: string;
   permanentAddress: string;
   currentAccommodation: string;
-  bankAccount: string;
-  ibanNumber: string;
+  bankName: string;
+  iban: string;
   university: string;
   faculty: string;
   department: string | null;
-  grade: string;
-  turkeyRanking: number | null;
-  physicalDisability: string;
-  healthProblem: string;
+  classYear: string;
+  turkiyeRanking: number | null;
+  hasPhysicalDisability: string;
+  hasHealthIssue: string;
   familyMonthlyIncome: number;
-  familyMonthlyExpenses: number;
-  scholarshipIncome: string;
+  familyMonthlyMandatoryExpenses: number;
+  hasScholarshipOrLoan: string;
   interests: string | null;
-  selfIntroduction: string;
-  relatives: any; // Json
-  educationHistory: any; // Json
-  references: any; // Json
+  aboutYourself: string;
   documents: any; // Json
   status: string;
   reviewedBy: string | null;
@@ -62,43 +64,76 @@ function formatApplication(prismaApplication: {
   reviewNotes: string | null;
   createdAt: Date;
   updatedAt: Date;
+  relatives?: Array<{
+    id: string;
+    degree: string;
+    firstName: string;
+    lastName: string;
+    birthDate: Date;
+    educationStatus: string;
+    occupation: string;
+    workplace: string;
+    healthInsurance: string;
+    healthDisability: string;
+    income: number;
+    phone: string;
+    notes: string | null;
+  }>;
+  educationHistory?: Array<{
+    id: string;
+    schoolName: string;
+    startDate: Date;
+    endDate: Date;
+    isGraduated: boolean;
+    department: string;
+    gradePercent: number;
+  }>;
+  references?: Array<{
+    id: string;
+    relationship: string;
+    firstName: string;
+    lastName: string;
+    isAceddMember: boolean;
+    job: string;
+    address: string;
+    phone: string;
+  }>;
 }): ScholarshipApplication {
-  // Parse JSON fields
-  let relatives: ScholarshipRelative[] | undefined;
-  let educationHistory: ScholarshipEducationHistory[] | undefined;
-  let references: ScholarshipReference[] | undefined;
+  // Transform relational data to frontend format
+  const relatives: ScholarshipRelative[] | undefined = prismaApplication.relatives?.map((rel) => ({
+    kinship: rel.degree,
+    name: rel.firstName,
+    surname: rel.lastName,
+    birthDate: rel.birthDate.toISOString().split("T")[0],
+    education: rel.educationStatus,
+    occupation: rel.occupation || rel.workplace || "", // occupation now contains both occupation and job
+    healthInsurance: rel.healthInsurance,
+    healthDisability: rel.healthDisability,
+    income: rel.income,
+    phone: rel.phone,
+    additionalNotes: rel.notes || "",
+  }));
+
+  const educationHistory: ScholarshipEducationHistory[] | undefined = prismaApplication.educationHistory?.map((edu) => ({
+    schoolName: edu.schoolName,
+    startDate: edu.startDate.toISOString().split("T")[0],
+    endDate: edu.endDate ? edu.endDate.toISOString().split("T")[0] : undefined,
+    graduation: edu.isGraduated ? "Evet" : "Hayır",
+    department: edu.department,
+    percentage: edu.gradePercent,
+  }));
+
+  const references: ScholarshipReference[] | undefined = prismaApplication.references?.map((ref) => ({
+    relationship: ref.relationship,
+    fullName: `${ref.firstName} ${ref.lastName}`,
+    isAcddMember: ref.isAceddMember ? "Evet" : "Hayır",
+    job: ref.job,
+    address: ref.address,
+    phone: ref.phone,
+  }));
+
+  // Parse documents (if JSON)
   let documents: string[] | undefined;
-
-  try {
-    if (prismaApplication.relatives) {
-      relatives = typeof prismaApplication.relatives === "string" 
-        ? JSON.parse(prismaApplication.relatives) 
-        : prismaApplication.relatives;
-    }
-  } catch {
-    relatives = undefined;
-  }
-
-  try {
-    if (prismaApplication.educationHistory) {
-      educationHistory = typeof prismaApplication.educationHistory === "string"
-        ? JSON.parse(prismaApplication.educationHistory)
-        : prismaApplication.educationHistory;
-    }
-  } catch {
-    educationHistory = undefined;
-  }
-
-  try {
-    if (prismaApplication.references) {
-      references = typeof prismaApplication.references === "string"
-        ? JSON.parse(prismaApplication.references)
-        : prismaApplication.references;
-    }
-  } catch {
-    references = undefined;
-  }
-
   try {
     if (prismaApplication.documents) {
       documents = typeof prismaApplication.documents === "string"
@@ -119,13 +154,13 @@ function formatApplication(prismaApplication: {
 
   return {
     id: prismaApplication.id,
-    fullName: prismaApplication.fullName,
+    fullName: `${prismaApplication.firstName} ${prismaApplication.lastName}`,
     email: prismaApplication.email,
     phone: prismaApplication.phone,
     alternativePhone: prismaApplication.alternativePhone || undefined,
     birthDate: prismaApplication.birthDate.toISOString(),
     birthPlace: prismaApplication.birthPlace,
-    tcNumber: prismaApplication.tcNumber,
+    tcNumber: prismaApplication.nationalId,
     idIssuePlace: prismaApplication.idIssuePlace,
     idIssueDate: prismaApplication.idIssueDate.toISOString(),
     gender: prismaApplication.gender,
@@ -133,20 +168,20 @@ function formatApplication(prismaApplication: {
     hometown: prismaApplication.hometown,
     permanentAddress: prismaApplication.permanentAddress,
     currentAccommodation: prismaApplication.currentAccommodation,
-    bankAccount: prismaApplication.bankAccount,
-    ibanNumber: prismaApplication.ibanNumber,
+    bankAccount: prismaApplication.bankName,
+    ibanNumber: prismaApplication.iban,
     university: prismaApplication.university,
     faculty: prismaApplication.faculty,
     department: prismaApplication.department || undefined,
-    grade: prismaApplication.grade,
-    turkeyRanking: prismaApplication.turkeyRanking || undefined,
-    physicalDisability: prismaApplication.physicalDisability,
-    healthProblem: prismaApplication.healthProblem,
+    grade: prismaApplication.classYear,
+    turkeyRanking: prismaApplication.turkiyeRanking || undefined,
+    physicalDisability: prismaApplication.hasPhysicalDisability,
+    healthProblem: prismaApplication.hasHealthIssue,
     familyMonthlyIncome: prismaApplication.familyMonthlyIncome,
-    familyMonthlyExpenses: prismaApplication.familyMonthlyExpenses,
-    scholarshipIncome: prismaApplication.scholarshipIncome,
+    familyMonthlyExpenses: prismaApplication.familyMonthlyMandatoryExpenses,
+    scholarshipIncome: prismaApplication.hasScholarshipOrLoan,
     interests: prismaApplication.interests || undefined,
-    selfIntroduction: prismaApplication.selfIntroduction,
+    selfIntroduction: prismaApplication.aboutYourself,
     relatives,
     educationHistory,
     references,
@@ -216,8 +251,7 @@ export async function GET(request: NextRequest) {
     }
 
     const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][SCHOLARSHIP][GET]", error);
-    console.error("[ERROR][API][SCHOLARSHIP][GET] Details:", errorDetails);
+    logErrorSecurely("[API][SCHOLARSHIP][GET]", error, { errorDetails });
 
     return NextResponse.json(
       {
@@ -230,188 +264,267 @@ export async function GET(request: NextRequest) {
 }
 
 // POST - Yeni başvuru oluştur (Public, no auth required)
+// Sprint 16 - Block E: API & Backend (Create Scholarship Application)
 export async function POST(request: NextRequest) {
+  // Extract IP address for logging (metadata only)
+  const ipAddress = request.headers.get("x-forwarded-for") || 
+                   request.headers.get("x-real-ip") || 
+                   undefined;
+
   try {
-    const body = await request.json();
-
-    // Validation - Required fields
-    if (!body.name || typeof body.name !== "string" || body.name.trim().length === 0) {
+    // Parse request body
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch (parseError) {
       return NextResponse.json(
-        { error: "Ad alanı zorunludur" },
+        { error: "Geçersiz JSON formatı" },
         { status: 400 }
       );
     }
 
-    if (!body.surname || typeof body.surname !== "string" || body.surname.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Soyad alanı zorunludur" },
-        { status: 400 }
-      );
-    }
+    // Extract reCAPTCHA token (if present)
+    const recaptchaToken = typeof body === "object" && body !== null && "recaptchaToken" in body
+      ? (body as { recaptchaToken?: string }).recaptchaToken
+      : undefined;
 
-    if (!body.email || typeof body.email !== "string" || body.email.trim().length === 0) {
-      return NextResponse.json(
-        { error: "E-posta adresi zorunludur" },
-        { status: 400 }
-      );
-    }
-
-    // Validate email format
-    if (!validateEmail(body.email.trim())) {
-      return NextResponse.json(
-        { error: "Geçerli bir e-posta adresi giriniz" },
-        { status: 400 }
-      );
-    }
-
-    if (!body.phone || typeof body.phone !== "string" || body.phone.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Telefon numarası zorunludur" },
-        { status: 400 }
-      );
-    }
-
-    // Validate phone number format
-    if (!validatePhoneNumber(body.phone.trim())) {
-      return NextResponse.json(
-        { error: "Geçerli bir telefon numarası giriniz (örn: 05551234567)" },
-        { status: 400 }
-      );
-    }
-
-    if (!body.university || typeof body.university !== "string" || body.university.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Üniversite bilgisi zorunludur" },
-        { status: 400 }
-      );
-    }
-
-    if (!body.faculty || typeof body.faculty !== "string" || body.faculty.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Fakülte bilgisi zorunludur" },
-        { status: 400 }
-      );
-    }
-
-    if (!body.permanentAddress || typeof body.permanentAddress !== "string" || body.permanentAddress.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Adres bilgisi zorunludur" },
-        { status: 400 }
-      );
-    }
-
-    if (!body.birthDate) {
-      return NextResponse.json(
-        { error: "Doğum tarihi zorunludur" },
-        { status: 400 }
-      );
-    }
-
-    if (!body.idIssueDate) {
-      return NextResponse.json(
-        { error: "Kimlik düzenleme tarihi zorunludur" },
-        { status: 400 }
-      );
-    }
-
-    // Validate TC Number if provided
-    if (body.tcNumber && typeof body.tcNumber === "string" && body.tcNumber.trim().length > 0) {
-      if (!validateTCNumber(body.tcNumber.trim())) {
+    // Verify reCAPTCHA (if secret key is configured)
+    const recaptchaSecretKey = process.env.RECAPTCHA_SECRET_KEY;
+    if (recaptchaSecretKey) {
+      const isRecaptchaValid = await verifyRecaptchaToken(recaptchaToken, recaptchaSecretKey);
+      if (!isRecaptchaValid) {
         return NextResponse.json(
-          { error: "Geçerli bir TC Kimlik No giriniz (11 haneli)" },
-          { status: 400 }
+          { error: "reCAPTCHA doğrulaması başarısız oldu. Lütfen tekrar deneyin." },
+          { status: 403 }
         );
       }
     }
 
-    // Parse dates
-    const birthDate = new Date(body.birthDate);
-    if (isNaN(birthDate.getTime())) {
+    // Validate with Zod schema (Block B)
+    let validatedData: ScholarshipApplicationInput;
+    try {
+      validatedData = ScholarshipApplicationSchema.parse(body);
+    } catch (zodError) {
+      if (zodError instanceof z.ZodError) {
+        // Format Zod errors for client
+        const errors = zodError.errors.map((err) => ({
+          path: err.path.join("."),
+          message: err.message,
+        }));
+
+        // Log validation errors (without sensitive data)
+        logErrorSecurely(
+          "[API][SCHOLARSHIP][CREATE][VALIDATION]",
+          zodError,
+          { ipAddress, errorCount: errors.length }
+        );
+
+        return NextResponse.json(
+          {
+            error: "Form validasyonu başarısız oldu",
+            message: "Lütfen tüm alanları kontrol edin",
+            errors,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Unknown validation error
+      logErrorSecurely(
+        "[API][SCHOLARSHIP][CREATE][VALIDATION]",
+        zodError,
+        { ipAddress }
+      );
+
       return NextResponse.json(
-        { error: "Geçerli bir doğum tarihi giriniz" },
+        { error: "Form validasyonu başarısız oldu" },
         { status: 400 }
       );
     }
 
-    const idIssueDate = new Date(body.idIssueDate);
-    if (isNaN(idIssueDate.getTime())) {
-      return NextResponse.json(
-        { error: "Geçerli bir kimlik düzenleme tarihi giriniz" },
-        { status: 400 }
-      );
-    }
-
-    // Validate arrays
-    if (!Array.isArray(body.relatives) || body.relatives.length === 0) {
-      return NextResponse.json(
-        { error: "Aile üyeleri bilgisi zorunludur" },
-        { status: 400 }
-      );
-    }
-
-    if (!Array.isArray(body.educationHistory) || body.educationHistory.length === 0) {
-      return NextResponse.json(
-        { error: "Eğitim geçmişi bilgisi zorunludur" },
-        { status: 400 }
-      );
-    }
-
-    if (!Array.isArray(body.references) || body.references.length === 0) {
-      return NextResponse.json(
-        { error: "Referans bilgisi zorunludur" },
-        { status: 400 }
-      );
-    }
-
-    // Combine name and surname
-    const fullName = `${body.name.trim()} ${body.surname.trim()}`;
-
-    // Create application
-    const application = await prisma.scholarshipApplication.create({
-      data: {
-        fullName,
-        email: body.email.trim().toLowerCase(),
-        phone: body.phone.trim(),
-        alternativePhone: body.alternativePhone?.trim() || null,
-        birthDate,
-        birthPlace: body.birthPlace?.trim() || "",
-        tcNumber: body.tcNumber?.trim() || "",
-        idIssuePlace: body.idIssuePlace?.trim() || "",
-        idIssueDate,
-        gender: body.gender?.trim() || "",
-        maritalStatus: body.maritalStatus?.trim() || "",
-        hometown: body.hometown?.trim() || "",
-        permanentAddress: body.permanentAddress.trim(),
-        currentAccommodation: body.currentAccommodation?.trim() || "",
-        bankAccount: body.bankAccount?.trim() || "",
-        ibanNumber: body.ibanNumber?.trim() || "",
-        university: body.university.trim(),
-        faculty: body.faculty.trim(),
-        department: body.department?.trim() || null,
-        grade: body.grade?.trim() || "",
-        turkeyRanking: body.turkeyRanking ? Number(body.turkeyRanking) : null,
-        physicalDisability: body.physicalDisability?.trim() || "",
-        healthProblem: body.healthProblem?.trim() || "",
-        familyMonthlyIncome: body.familyMonthlyIncome ? Number(body.familyMonthlyIncome) : 0,
-        familyMonthlyExpenses: body.familyMonthlyExpenses ? Number(body.familyMonthlyExpenses) : 0,
-        scholarshipIncome: body.scholarshipIncome?.trim() || "",
-        interests: body.interests?.trim() || null,
-        selfIntroduction: body.selfIntroduction?.trim() || "",
-        relatives: body.relatives ? (body.relatives as Prisma.InputJsonValue) : Prisma.JsonNull,
-        educationHistory: body.educationHistory ? (body.educationHistory as Prisma.InputJsonValue) : Prisma.JsonNull,
-        references: body.references ? (body.references as Prisma.InputJsonValue) : Prisma.JsonNull,
-        documents: body.documents ? (body.documents as Prisma.InputJsonValue) : Prisma.JsonNull,
-        status: "PENDING", // Always start as pending
-      },
+    // Log successful validation (metadata only, no sensitive data)
+    console.log("[API][SCHOLARSHIP][CREATE] Validation successful", {
+      ipAddress,
+      emailDomain: validatedData.email.split("@")[1], // Only domain, not full email
+      relativesCount: validatedData.relatives.length,
+      educationHistoryCount: validatedData.educationHistory.length,
+      referencesCount: validatedData.references.length,
     });
 
-    const formattedApplication = formatApplication(application);
+    // Transform form data to Prisma format
+    // Map form field names to Prisma field names
+    const applicationData = {
+      firstName: validatedData.name.trim(),
+      lastName: validatedData.surname.trim(),
+      phone: validatedData.phone.trim(),
+      alternativePhone: validatedData.alternativePhone?.trim() || null,
+      email: validatedData.email.trim().toLowerCase(),
+      birthDate: validatedData.birthDate instanceof Date 
+        ? validatedData.birthDate 
+        : new Date(validatedData.birthDate),
+      gender: validatedData.gender,
+      birthPlace: validatedData.birthPlace.trim(),
+      hometown: validatedData.hometown.trim(),
+      nationalId: validatedData.tcNumber.trim(),
+      idIssueDate: validatedData.idIssueDate instanceof Date
+        ? validatedData.idIssueDate
+        : new Date(validatedData.idIssueDate),
+      idIssuePlace: validatedData.idIssuePlace.trim(),
+      maritalStatus: validatedData.maritalStatus,
+      bankName: validatedData.bankAccount.trim(),
+      iban: validatedData.ibanNumber.trim(),
+      university: validatedData.university.trim(),
+      faculty: validatedData.faculty.trim(),
+      department: validatedData.department.trim(),
+      classYear: validatedData.grade.trim(),
+      turkiyeRanking: validatedData.turkeyRanking || null,
+      hasPhysicalDisability: validatedData.physicalDisability,
+      hasHealthIssue: validatedData.healthProblem,
+      familyMonthlyIncome: validatedData.familyMonthlyIncome,
+      familyMonthlyMandatoryExpenses: validatedData.familyMonthlyExpenses,
+      hasScholarshipOrLoan: validatedData.scholarshipIncome,
+      permanentAddress: validatedData.permanentAddress.trim(),
+      currentAccommodation: validatedData.currentAccommodation.trim(),
+      aboutYourself: validatedData.selfIntroduction.trim(),
+      interests: validatedData.interests?.trim() || null,
+      status: "PENDING" as const,
+    };
 
-    return NextResponse.json(formattedApplication, { status: 201 });
+    // Transform relatives data
+    const relativesData = validatedData.relatives.map((rel) => ({
+      degree: rel.kinship.trim(),
+      firstName: rel.name.trim(),
+      lastName: rel.surname.trim(),
+      birthDate: rel.birthDate instanceof Date 
+        ? rel.birthDate 
+        : new Date(rel.birthDate),
+      educationStatus: rel.education.trim(),
+      occupation: rel.occupation.trim(),
+      workplace: rel.occupation.trim(), // occupation now contains both occupation and job info
+      healthInsurance: rel.healthInsurance.trim(),
+      healthDisability: rel.healthDisability,
+      income: rel.income,
+      phone: rel.phone.trim(),
+      notes: rel.additionalNotes?.trim() || null,
+    }));
+
+    // Transform education history data
+    const educationHistoryData = validatedData.educationHistory.map((edu) => ({
+      schoolName: edu.schoolName.trim(),
+      startDate: edu.startDate instanceof Date
+        ? edu.startDate
+        : new Date(edu.startDate),
+      endDate: edu.endDate
+        ? (edu.endDate instanceof Date ? edu.endDate : new Date(edu.endDate))
+        : null,
+      isGraduated: edu.graduation === "Evet",
+      department: edu.department.trim(),
+      gradePercent: edu.percentage,
+    }));
+
+    // Transform references data
+    const referencesData = validatedData.references.map((ref) => {
+      // Split fullName into firstName and lastName
+      const nameParts = ref.fullName.trim().split(/\s+/);
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+
+      return {
+        relationship: ref.relationship.trim(),
+        firstName,
+        lastName,
+        isAceddMember: ref.isAcddMember === "Evet",
+        job: ref.job.trim(),
+        address: ref.address.trim(),
+        phone: ref.phone.trim(),
+      };
+    });
+
+    // Create application with related records in a transaction
+    // Set timeout to 10 seconds to handle multiple related record creations
+    const result = await prisma.$transaction(
+      async (tx) => {
+      // 1. Create main application
+      const application = await tx.scholarshipApplication.create({
+        data: applicationData,
+      });
+
+      // 2. Create relatives
+      if (relativesData.length > 0) {
+        await tx.relative.createMany({
+          data: relativesData.map((rel) => ({
+            ...rel,
+            applicationId: application.id,
+          })),
+        });
+      }
+
+      // 3. Create education history
+      if (educationHistoryData.length > 0) {
+        await tx.educationHistory.createMany({
+          data: educationHistoryData.map((edu) => ({
+            ...edu,
+            applicationId: application.id,
+          })),
+        });
+      }
+
+      // 4. Create references
+      if (referencesData.length > 0) {
+        await tx.reference.createMany({
+          data: referencesData.map((ref) => ({
+            ...ref,
+            applicationId: application.id,
+          })),
+        });
+      }
+
+      // Return application with relations
+      return await tx.scholarshipApplication.findUnique({
+        where: { id: application.id },
+        include: {
+          relatives: true,
+          educationHistory: true,
+          references: true,
+        },
+      });
+      },
+      {
+        maxWait: 10000, // Maximum time to wait for a transaction slot (10 seconds)
+        timeout: 10000, // Maximum time the transaction can run (10 seconds)
+      }
+    );
+
+    if (!result) {
+      throw new Error("Transaction completed but application not found");
+    }
+
+    // Log successful creation (metadata only)
+    console.log("[API][SCHOLARSHIP][CREATE] Application created successfully", {
+      applicationId: result.id,
+      ipAddress,
+      createdAt: result.createdAt.toISOString(),
+      relativesCount: result.relatives.length,
+      educationHistoryCount: result.educationHistory.length,
+      referencesCount: result.references.length,
+    });
+
+    // Return success response (minimal data)
+    return NextResponse.json(
+      {
+        success: true,
+        id: result.id,
+        message: "Başvurunuz başarıyla kaydedildi",
+      },
+      { status: 201 }
+    );
   } catch (error) {
-    const errorDetails = error instanceof Error ? error.stack : String(error);
-    console.error("[ERROR][API][SCHOLARSHIP][CREATE]", error);
-    console.error("[ERROR][API][SCHOLARSHIP][CREATE] Details:", errorDetails);
+    // Secure error logging (no sensitive data)
+    logErrorSecurely(
+      "[API][SCHOLARSHIP][CREATE]",
+      error,
+      { ipAddress }
+    );
 
     // Prisma unique constraint error (duplicate email)
     if (error && typeof error === "object" && "code" in error && error.code === "P2002") {
@@ -421,6 +534,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Generic error response (don't expose internal details)
     return NextResponse.json(
       {
         error: "Başvuru kaydedilirken bir hata oluştu",

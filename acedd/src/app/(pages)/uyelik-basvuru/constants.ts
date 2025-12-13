@@ -32,21 +32,3 @@ export const MEMBERSHIP_FORM_FIELDS = {
     required: true,
   },
 } as const;
-
-/**
- * Form data interface
- * Sprint 15.1: Yeni form şeması
- */
-export interface MembershipFormData {
-  fullName: string;
-  identityNumber: string;
-  gender: "" | "erkek" | "kadın";
-  bloodType: "" | "A_POSITIVE" | "A_NEGATIVE" | "B_POSITIVE" | "B_NEGATIVE" | "AB_POSITIVE" | "AB_NEGATIVE" | "O_POSITIVE" | "O_NEGATIVE";
-  birthPlace: string;
-  birthDate: string;
-  city: string;
-  phone: string;
-  email: string;
-  address: string;
-  conditionsAccepted: boolean;
-}

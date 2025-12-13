@@ -1,5 +1,5 @@
 ---
-description: ACEDD NGO website & admin panel – Next.js 15 / React 19 / TypeScript 5 / Tailwind 4 / Prisma + MariaDB
+description: ACEDD NGO website & admin panel – Next.js 15 / React 19 / TypeScript 5 / Tailwind / Prisma + MariaDB
 alwaysApply: true
 globs:
   - "src/**/*.{ts,tsx}"
@@ -13,553 +13,485 @@ Your goals:
 
 1. **Preserve** the existing architecture, routes, and domain language (Turkish field names, statuses, etc.).
 2. **Extend** the admin panel and public site in a consistent, maintainable way.
-3. **Use Prisma + MariaDB** as the single source of truth for all data operations (Sprint 6: MongoDB migration completed).
+3. Use **Prisma + MariaDB** as the single source of truth for all persistent data.
+4. Keep the project **production-grade**: type-safe, testable, secure, and easy to maintain.
+
+When in doubt, **prefer clarity over cleverness** and **small, focused changes** over large rewrites.
 
 ---
 
-## 1. Project scope & architecture
+## 1. Tech Stack & Global Constraints
 
-- Framework: **Next.js 15 App Router** (`src/app`).
-- Language: **TypeScript** with `strict` mode.
-- UI: **React 19** function components + hooks.
-- Styling: **Tailwind CSS v4** – prefer class utilities over inline styles.
-- Database:
-  - **Prisma + MariaDB** (`prisma/schema.prisma`, `src/lib/db.ts`) – **Single source of truth**
-  - MongoDB migration tamamlandı (Sprint 6: `src/lib/mongodb.ts` artık yok)
-- App segments:
-  - Public site: `src/app/(pages)/**`
-  - Admin panel: `src/app/(admin)/admin/**`
-  - API routes: `src/app/api/**`
-  - Shared logic: `src/contexts/**`, `src/lib/**`, `src/components/**`
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript (strict mode)
+- **UI**:
+  - React 19 function components
+  - Tailwind CSS (no ad-hoc inline CSS unless absolutely required)
+  - shadcn/ui for base components
+- **Backend**:
+  - Next.js route handlers (`app/api/**/route.ts`)
+  - `src/server` helpers and services
+  - Prisma ORM with MariaDB
+- **Validation**: Zod schemas as the **single source of truth** for request validation and form types.
+- **Testing**:
+  - Vitest / Testing Library
+  - Target: **≥80% coverage** overall, **≥90%** on critical business logic (`src/server/**`, validation helpers).
 
-Always keep a **clear separation** between:
+General principles:
 
-- UI components
-- Data-fetching / API layer
-- Database access (Prisma + MariaDB)
-
----
-
-## 2. Folder structure conventions
-
-Follow and extend the existing structure:
-
-- **Public pages** (`src/app/(pages)`):
-  - Route folders:  
-    - `/` (home), `/etkinlikler`, `/hakkimizda`, `/burs-basvuru`, `/uyelik-basvuru`, `/bagis-yap`, `/iletisim`, etc.
-  - Inside each route:
-    - `page.tsx` – main page component.
-    - `constants.ts` – domain types and static content.
-    - `components/` – page-specific UI pieces.
-
-- **Admin panel** (`src/app/(admin)/admin`):
-  - `layout.tsx` – admin layout wrapper.
-  - `components/AdminLayout.tsx` – sidebar, header, main content.
-  - Feature folders:
-    - `admin/page.tsx` – Dashboard
-    - `admin/burs-basvurulari/page.tsx`
-    - `admin/uyeler/page.tsx`
-    - `admin/etkinlikler/page.tsx`
-    - `admin/duyurular/page.tsx`
-    - `admin/ayarlar/page.tsx`
-  - Reusable admin UI belongs in `admin/components/`.
-
-- **API routes** (`src/app/api`):
-  - `members`, `membership-applications`, `board-members`, `events`, `datasets`, `upload`, `scholarship-applications`, etc.
-  - A debug route for Prisma: `api/debug/prisma-test/route.ts`.
-
-- **Shared modules**:
-  - `src/contexts/*` – React Contexts (Members, Events, future Announcements).
-  - `src/lib/types/*` – domain types (Member, MembershipApplication, BoardMember, Event, Announcement, ScholarshipApplication, etc.).
-  - `src/lib/constants/*` – global constants and configuration.
-  - `src/lib/hooks/*` – shared hooks.
-  - `src/lib/utils/*` – helpers (e.g. `cn`, `memberHelpers`, validation helpers).
-  - `src/lib/db.ts` – Prisma client (MariaDB) – **Single source of truth for database access**
-  - `src/lib/auth/*` – Admin authentication & authorization helpers (HMAC session, role-based access)
-
-- **Component organization** – **CRITICAL: Follow this structure strictly**
-
-  **1. Shared/Reusable Components** (`src/components/`):
-  
-  - `src/components/ui/` – **UI primitives** (generic, reusable building blocks)
-    - Examples: `Button`, `Input`, `Card`, `Select`, `Textarea`, `Badge`, `FileUpload`
-    - These have NO domain logic, NO business rules
-    - Can be used anywhere in the app (public pages, admin panel, etc.)
-  
-  - `src/components/layout/` – **Layout components** (site-wide structure)
-    - Examples: `Header`, `Footer`, `ConditionalLayout`
-    - These define the overall page structure
-    - Used across multiple routes/pages
-
-  **2. Page-Specific Components** (`src/app/(pages)/<route>/components/`):
-  
-  - **Public page components** – Components used ONLY in a specific public page
-    - Examples:
-      - `src/app/(pages)/home/components/HeroSection.tsx` (only on homepage)
-      - `src/app/(pages)/home/components/AnnouncementStrip.tsx` (only on homepage)
-      - `src/app/(pages)/home/components/AnnouncementStripSection.tsx` (only on homepage)
-      - `src/app/(pages)/etkinlikler/components/EventsGrid.tsx` (only on events page)
-    - **Rule:** Even if a component is domain-specific (e.g., announcement-related), if it's ONLY used in one page, it belongs in that page's `components/` folder
-  
-  - Each route folder structure:
-    ```
-    src/app/(pages)/<route>/
-      ├── page.tsx
-      ├── constants.ts
-      ├── components/
-      │   ├── ComponentName.tsx
-      │   └── index.ts
-      └── hooks/ (optional)
-    ```
-
-  **3. Admin-Specific Components** (`src/app/(admin)/admin/components/`):
-  
-  - **Admin panel components** – Components used ONLY in admin panel
-    - Examples:
-      - `AdminLayout.tsx` (admin layout wrapper)
-      - `AdminAnnouncementsTable.tsx` (admin announcements management)
-      - `AnnouncementFormDialog.tsx` (admin announcement form)
-      - `AnnouncementsSummaryWidget.tsx` (admin dashboard widget)
-    - **Rule:** All admin-specific components stay in `admin/components/`, even if they're domain-specific
-
-**Component placement decision tree:**
-
-1. **Is it a generic UI primitive?** (button, input, card, select, etc.)
-   → `src/components/ui/`
-   - ✅ No domain logic
-   - ✅ Reusable across entire app
-
-2. **Is it a layout component?** (header, footer, sidebar, conditional layout)
-   → `src/components/layout/`
-   - ✅ Site-wide structure
-   - ✅ Used across multiple routes
-
-3. **Is it admin-specific?** (only used in admin panel)
-   → `src/app/(admin)/admin/components/`
-   - ✅ Admin dashboard widgets
-   - ✅ Admin management tables/forms
-   - ✅ Admin-specific layouts
-
-4. **Is it page-specific?** (used in only ONE public page/route)
-   → `src/app/(pages)/<route>/components/`
-   - ✅ Home page components → `home/components/`
-   - ✅ Events page components → `etkinlikler/components/`
-   - ✅ Contact page components → `iletisim/components/`
-   - **Important:** Even domain-specific components (announcements, events, etc.) go here if they're only used in one page
-
-5. **Is it shared across MULTIPLE pages?** (used in 2+ different routes)
-   → `src/components/<domain>/`
-   - ⚠️ **Rare case** – Only use this if a component is truly shared across multiple pages
-   - Example: Future `EventCard` used in both events list page AND homepage
-   - **Default:** Prefer page-specific placement unless truly needed in multiple places
-
-**Examples:**
-
-- ✅ `src/components/ui/Button.tsx` – Generic UI primitive
-- ✅ `src/components/layout/Header.tsx` – Site-wide layout
-- ✅ `src/app/(pages)/home/components/AnnouncementStrip.tsx` – Home page only
-- ✅ `src/app/(pages)/home/components/AnnouncementStripSection.tsx` – Home page only
-- ✅ `src/app/(admin)/admin/components/AnnouncementFormDialog.tsx` – Admin only
-- ❌ `src/components/announcements/` – Don't create unless truly shared across multiple pages
-
-When you add new functionality:
-
-- **Domain types** → `src/lib/types/<domain>.ts`
-- **API endpoints** → `src/app/api/<domain>/**`
-- **Admin pages** → `src/app/(admin)/admin/<domain>/page.tsx`
-- **Public UI components** → Follow the decision tree above
+- All new code must be:
+  - **Typed** (no `any` unless well-justified and commented)
+  - **Linted & formatted** (ESLint + Prettier)
+  - **Covered by tests** where it contains logic.
+- Prefer **composition over inheritance**.
+- Prefer **pure functions** and deterministic utilities in `src/lib/**`.
 
 ---
 
-## 3. Coding standards & quality gates
+## 2. High-Level Architecture
 
-### 3.1. TypeScript & style
+### 2.1 App Router Structure
 
-- `strict` mode must remain enabled.
-- Avoid `any`. If truly necessary:
-  - Limit scope,
-  - Add a comment explaining why.
-- Prefer `type`/`interface` for domain models over ad-hoc inline types.
-- Use **ESLint + Prettier** conventions (no custom style unless required by the repo).
+- Public pages live in `src/app/(public)/**`.
+- Admin pages live in `src/app/(admin)/admin/**`.
+- Shared layouts/components are in `src/components/**` or `src/app/(shared)/**` depending on usage.
 
-### 3.2. Commits & PRs (mental model for changes)
+Rules:
 
-Assume the following workflow and keep diffs compatible with it:
+- **Do not** define business logic in React components.
+- **Do** call service / use-case functions from inside components or route handlers:
+  - `src/server/services/**`
+  - `src/server/useCases/**` (if present)
+- For each non-trivial feature:
+  - Prefer putting backend logic in `src/server/**` and reusing from API routes.
 
-- **Trunk-based development**, feature branches are short-lived.
-- Commit messages follow **Conventional Commits**:
-  - `feat:`, `fix:`, `refactor:`, `test:`, `chore:`, etc.
-- Each PR should be:
-  - **< 300 LOC** of meaningful change when possible.
-  - Focused on a single feature or refactor.
-- Include tests and docs updates in the same PR when you change behavior.
+### 2.2 Domain Modules
 
-### 3.3. Testing expectations
+Use **domain-oriented structure** where possible:
 
-- New non-trivial business logic (validation, status transitions, filtering, etc.) should live in small pure functions under `src/lib/**` and be unit-testable.
-- Aim for:
-  - ≥ 80% coverage overall,
-  - ≥ 90% on critical modules (auth, payments/donations, admin actions).
-- **⚠️ CRITICAL: API Domain Testing Requirement (Sprint 6)**
-  - **Her yeni API domain'i için en az 1–2 Vitest testi zorunludur**
-  - **Her mutating endpoint için role testleri zorunludur** (Sprint 6)
-  - Test coverage:
-    - Happy path (successful operations)
-    - Validation errors (400)
-    - Authentication errors (401 - UNAUTHORIZED)
-    - Authorization errors (403 - FORBIDDEN)
-    - Database errors (500)
-    - Not found errors (404)
-  - Test dosyası: `src/app/api/<domain>/__tests__/route.test.ts` veya `src/app/api/<domain>/[id]/__tests__/route.test.ts`
-  - **Role Test Pattern:**
-    - ADMIN role ile erişim denemesi → 403 FORBIDDEN (SUPER_ADMIN gereken yerler için)
-    - UNAUTHORIZED (session yok) → 401
-    - SUPER_ADMIN role ile erişim → 200/201 başarılı
-  - **Do not:**
-    - ❌ Testsiz büyük API değişiklikleri yapma
-    - ❌ Yeni domain eklerken test yazmayı atlama
-    - ❌ Role testlerini atlama (Sprint 6)
-- When you add new APIs:
-  - Cover success, validation error, authentication/authorization errors, and generic failure paths.
+- `src/modules/membership/**` – Üyelik başvurusu, üyelik yönetimi
+- `src/modules/scholarship/**` – Burs başvurusu (burs formu V2, dinamik alanlar)
+- `src/modules/board/**` – Yönetim kurulu, CV alanları
+- `src/modules/donations/**` – Bağış hesapları, constants
+- `src/modules/files/**` – Dosya upload, storage, dataset cleanup
 
-### 3.4. CI/CD expectations
+When adding new functionality, ask:
 
-Design code changes as if CI runs the following pipelines:
+> “Does this belong to an existing module, or do I need a new module under `src/modules`?”
 
-1. Install & build
-2. TypeScript check
-3. ESLint
-4. Tests + coverage threshold enforcement
-5. Prisma migrations (if schema changed)
-6. Dependency audit (no high-severity vulns)
-
-Code you write should be ready to pass all of the above.
-
-### 3.5. Security & secrets
-
-- Never hardcode secrets, tokens, or connection strings.
-- Use environment variables (e.g. `DATABASE_URL`) loaded outside the repo.
-- When logging errors:
-  - Log enough to debug,
-  - Do **not** log sensitive data (passwords, personal details, etc.).
-- For admin features:
-  - Assume they must be protected by authentication (even if not fully implemented yet).
-  - Do not rely on “hidden URLs” as security.
+Avoid scattering related code across multiple unrelated folders.
 
 ---
 
-### 3.6. Authentication & Authorization (Admin)
+## 3. Components & UI Structure
 
-**⚠️ CRITICAL: Admin Erişim Kuralları**
+### 3.1 Shared UI Components
 
-- **Admin authentication:** `AdminUser` modeli ve `AdminRole` enum'u kullanılır
-- **Admin roles:** `SUPER_ADMIN` ve `ADMIN` rolleri mevcuttur
-  - `SUPER_ADMIN`: Tüm modüllere tam erişim
-  - `ADMIN`: Modül bazlı erişim (rol bazlı izinler)
-- **Admin route protection:** Tüm `/admin/*` rotaları **her zaman** bir auth/role kontrolünden geçmeli
-  - API route'ları: Middleware veya route handler içinde auth kontrolü
-  - Page route'ları: Server Component veya middleware ile auth kontrolü
+Location: `src/components/ui/**`, `src/components/common/**`
 
-**⚠️ CRITICAL: Session Security (Sprint 6)**
+- Examples:
+  - `Button`, `Input`, `Card`, `Select`, `Textarea`, `Badge`, `FileUpload`, `CollapsibleSection`
+- These components must **not** contain domain-specific logic.
+- They are reused across public and admin UIs.
 
-- **Session Management:** HMAC-SHA256 signed cookies kullanılır
-  - Cookie format: `base64(payload).hex(hmac)`
-  - Signature verification: Timing-safe comparison ile doğrulanır
-  - Session secret: `SESSION_SECRET` environment variable'dan alınır
-  - **ASLA** Base64-only encoding kullanma (güvenlik riski)
-  - **ASLA** session secret'i hardcode etme
-- **Session Helpers:**
-  - `src/lib/auth/adminSession.ts` – Session encryption/decryption (HMAC-SHA256)
-  - `src/lib/auth/adminAuth.ts` – `requireRole()`, `requireAuth()`, `getAdminFromRequest()`
-  - `src/middleware.ts` – Edge Runtime uyumlu session validation (Web Crypto API)
-- **Security Features:**
-  - HttpOnly cookies (JavaScript erişimi yok)
-  - Secure flag (production'da HTTPS zorunlu)
-  - SameSite=Lax (CSRF koruması)
-  - Timing-safe signature comparison (timing attack koruması)
+### 3.2 Layout Components
 
-**⚠️ CRITICAL: Role-Based Access Control (Sprint 6)**
+Location: `src/components/layout/**`
 
-- **API Level Protection:**
-  - Tüm mutating API endpoint'leri (`POST`, `PUT`, `DELETE`) **MUTLAKA** `requireRole()` kullanmalı
-  - Role matrisi:
-    - **Members** (POST/PUT/DELETE): `SUPER_ADMIN` only
-    - **Membership Applications** (PUT/DELETE): `SUPER_ADMIN` only
-    - **Board Members** (POST/PUT/DELETE): `SUPER_ADMIN` only
-    - **Datasets** (POST/PUT/DELETE): `ADMIN` + `SUPER_ADMIN`
-    - **Announcements** (POST/PUT/DELETE): `ADMIN` + `SUPER_ADMIN`
-    - **Events** (POST/PUT/DELETE): `ADMIN` + `SUPER_ADMIN`
-    - **Scholarship Applications** (GET/PUT/DELETE): `ADMIN` + `SUPER_ADMIN` (POST is public for form submission)
-    - **Contact Messages** (GET/PUT): `ADMIN` + `SUPER_ADMIN`, DELETE: `SUPER_ADMIN` only (POST is public for form submission)
-  - GET endpoint'leri genellikle public (admin paneli için middleware korumalı)
-- **UI Level Protection:**
-  - Admin menü öğeleri role bazlı filtreleme (`hasRole()` helper)
-  - Admin panel sayfaları middleware ile korumalı
-- **Do not:**
-  - ❌ Admin sayfalarını auth kontrolü olmadan bırakma
-  - ❌ "Hidden URL" güvenliği kullanma
-  - ❌ Role kontrolü olmadan admin işlemleri yapma
-  - ❌ API endpoint'lerini role kontrolü olmadan bırakma
+- Examples:
+  - `Header`, `Footer`, `AdminSidebar`, `PublicLayout`
+- They define page structure and navigation.
+- No business rules; only composition and layout.
+
+### 3.3 Page-Specific Components
+
+Location (examples):
+
+- `src/app/(public)/burs-basvurusu/components/**`
+- `src/app/(public)/uyelik-basvurusu/components/**`
+- `src/app/(admin)/admin/burs-basvurulari/[id]/components/**`
+
+Rules:
+
+- Page-specific components are **only used in one route tree**.
+- If a component is reused in multiple routes, move it into:
+  - `src/components/**` or
+  - `src/modules/<domain>/components/**` (if domain-specific).
 
 ---
 
-## 4. Data layer rules (Prisma + MariaDB)
+## 4. Forms & Validation (Zod + React Hook Form)
 
-**Sprint 6: MongoDB migration tamamlandı** – Artık tüm veri işlemleri Prisma + MariaDB kullanıyor.
+Forms are critical in this project (membership application, scholarship application, etc.). You **must** follow these rules:
 
-### 4.1. Prisma + MariaDB (Single Source of Truth)
+### 4.1 Single Source of Truth
 
-- `prisma/schema.prisma` defines models such as:
-  - `AdminUser` + `AdminRole` enum
-  - `Announcement`
-  - `Member`
-  - `MembershipApplication`
-  - `BoardMember`
-  - `Event`
-  - `ScholarshipApplication` (Sprint 7)
-  - and potential CMS models (`Page`, `ContentBlock`, etc.).
-- `src/lib/db.ts` must be the **only place** where `PrismaClient` is instantiated.
-  - Use the MariaDB adapter.
-  - Use the global singleton pattern for dev.
+- Each major form must have a dedicated Zod schema:
 
-**Rules for new features:**
+  - `src/modules/membership/schemas.ts`
+  - `src/modules/scholarship/schemas.ts`
 
-1. **All new persistent data must use Prisma.**
-2. Frontend types for domain entities should mirror Prisma models:
-   - Use explicit DTOs if you don’t want to expose all fields.
-3. UI components must not import `prisma` directly.
-   - Use API routes (`src/app/api/**`) or server actions instead.
+- The schema is used for:
+  - Frontend form types (`z.infer<typeof schema>`)
+  - Backend request validation in route handlers
+  - Optional: Prisma input mapping (DTOs)
 
-**⚠️ Critical: Schema Change Workflow (Sprint 6 - Production Öncesi)**
+**Never** duplicate field definitions manually between frontend and backend; derive types from Zod.
 
-When adding new models or fields, **always follow this order:**
+### 4.2 Handling Dates
 
-1. **First:** Update `prisma/schema.prisma` with your changes
-   - Add/modify models, fields, indexes, enums, etc.
-   - `schema.prisma` is the **single source of truth**
+- Use **normalized date handling**:
 
-2. **Second:** Generate Prisma Client:
-   ```bash
-   npx prisma generate
-   ```
-   This regenerates the Prisma Client with new schema types.
+  - UI: Date picker gives string or `Date`.
+  - Zod: `z.coerce.date()` or `z.string().transform(...)` to `Date`.
+  - DB: Prisma `DateTime` in UTC.
 
-3. **Third:** Apply schema to database (Production Öncesi):
-   ```bash
-   npx prisma db push
-   ```
-   - ✅ Applies schema directly to database (no migration files)
-   - ✅ No shadow database required
-   - ❌ Migration files are NOT created (acceptable for pre-production)
+- All date fields in forms (e.g. birth dates, education dates) must be normalized through a shared helper:
 
-4. **Fourth:** Update TypeScript types and API handlers
-   - Prisma Client is already regenerated
-   - Update `src/lib/types/*` if needed
-   - Update API routes to use new schema
+  - `src/lib/dateHelpers.ts` (e.g. `normalizeDateInput`, `toStartOfDayUTC`)
 
-**⚠️ CRITICAL: Production Öncesi Strateji (Sprint 6)**
-- **SADECE** `prisma db push` kullan (migration dosyası üretilmez)
-- **ASLA** `prisma migrate dev` kullanma (shadow DB gerektirir, şu an kullanılmıyor)
-- **ASLA** `prisma migrate deploy` kullanma (migration dosyası yok)
+Avoid ad-hoc parsing inside components.
 
-**Never:**
-- ❌ Modify database directly without updating `schema.prisma` first
-- ❌ Use `prisma migrate dev` in pre-production (shadow DB not available)
-- ❌ Use `prisma migrate deploy` in pre-production (no migration files)
+### 4.3 Numeric Fields
 
-**Note:** İlk prod release sonrası `prisma migrate dev` ve `prisma migrate deploy` kullanılacak, ancak şu an için sadece `prisma db push` kullan.
+- Numeric form inputs (e.g. income, number of siblings, salary):
 
-### 4.2.1. Prisma Migration Strategy
+  - Use `inputMode="numeric"` and `pattern="[0-9]*"` where relevant.
+  - In Zod: use `z.coerce.number()` with min/max constraints where business rules exist.
+  - For currency/amounts, keep DB type numeric/decimal, not string.
 
-**⚠️ CRITICAL: Production Öncesi DB Stratejisi (Sprint 6)**
+Validation must fail gracefully and show user-friendly messages in Turkish.
 
-**Şu Anki Durum (Production Öncesi):**
-- Tek DB kullanılıyor (geliştirme ve ilk yayın için)
-- **SADECE** `npx prisma db push` kullanılır (migration dosyası üretilmez, shadow DB gerekmez)
-- Schema değişiklikleri direkt DB'ye uygulanır
-- Test için: `npx prisma studio` ile tabloları kontrol edebilirsiniz
+---
 
-**ASLA kullanma (Production Öncesi):**
-- ❌ `prisma migrate dev` (shadow DB gerektirir, şu an kullanılmıyor)
-- ❌ `prisma migrate deploy` (migration dosyası yok, şu an kullanılmıyor)
+## 5. Dynamic Repeatable Fields (Scholarship Form V2)
 
-**Workflow özeti (Production Öncesi):**
-1. Schema değişikliği: `prisma/schema.prisma` güncelle
-2. Prisma Client'ı güncelle: `npx prisma generate`
-3. DB'ye uygula: `npx prisma db push` (migration dosyası üretilmez, shadow DB gerekmez)
-4. Test: `prisma studio` veya test route
+The scholarship application (burs başvurusu) includes **dynamic lists**:
 
-**İlk Prod Release Sonrası:**
-- Şu anki DB prod sayılacak
-- Ayrı dev DB açılacak
-- Dev DB'de `prisma migrate dev`, prod DB'de `prisma migrate deploy` kullanılacak
+- Relatives (Akrabalar)
+- Schools (Okullar)
+- References (Referanslar)
 
-**Critical rules for database migrations (İlk Prod Release Sonrası):**
+We treat these as **first-class domain entities**.
 
-#### 🔹 Kural 1 – Production (Plesk) üzerinde asla `prisma migrate dev` çalıştırma
+### 5.1 Prisma Modelling
 
-**⚠️ CRITICAL: Production'da ASLA `prisma migrate dev` kullanma!**
+For each dynamic list, use dedicated Prisma models:
 
-- **Production/Plesk'te sadece:**
-  ```bash
-  npx prisma migrate deploy
+- `Relative` (Akraba)
+  - Relation: `ScholarshipApplication` 1 → N `Relative`
+  - Fields (example): `degree`, `fullName`, `birthDate`, `education`, `job`, `insuranceStatus`, `healthDisability`, `income`, `phone`, `notes`
+
+- `EducationHistory` (Okul)
+  - Relation: `ScholarshipApplication` 1 → N `EducationHistory`
+  - Fields (example): `schoolName`, `startDate`, `endDate`, `department`, `ranking`
+
+- `Reference`
+  - Relation: `ScholarshipApplication` 1 → N `Reference`
+  - Fields (example): `relationship`, `fullName`, `isAceddMember`, `job`, `address`, `phone`
+
+Rules:
+
+- Use `ON DELETE CASCADE`-like semantics via Prisma relations:
+  - When a `ScholarshipApplication` is deleted, its relatives/schools/references are also deleted.
+
+### 5.2 Zod Schemas for Dynamic Lists
+
+- Use nested Zod schemas:
+
+  ```ts
+  const RelativeSchema = z.object({
+    degree: z.string().min(1),
+    fullName: z.string().min(1),
+    birthDate: z.coerce.date(),
+    education: z.string().optional(),
+    job: z.string().optional(),
+    insuranceStatus: z.string().optional(),
+    healthDisability: z.string().optional(),
+    income: z.coerce.number().nonnegative(),
+    phone: z.string().optional(),
+    notes: z.string().optional(),
+  });
+
+  const ScholarshipApplicationSchema = z.object({
+    // static fields...
+    relatives: z.array(RelativeSchema).max(50),
+    schools: z.array(SchoolSchema).max(50),
+    references: z.array(ReferenceSchema).max(20),
+  });
   ```
-- Migration dosyaları zaten lokalinde üretilmiş ve test edilmiş olacak.
-- `prisma migrate dev` shadow database gerektirir ve production DB kullanıcısının yeni DB oluşturma yetkisi olmayabilir.
-- `prisma migrate dev` yeni migration dosyası oluşturur (production'da istenmez).
-- Production'da sadece mevcut migration dosyalarını uygulamak için `prisma migrate deploy` kullan.
 
-**Production migration checklist:**
-- [ ] Migration dosyaları local'de oluşturuldu ve test edildi
-- [ ] Migration dosyaları commit edildi
-- [ ] Kod Plesk'e deploy edildi
-- [ ] Plesk'te `npx prisma migrate deploy` çalıştırıldı (ASLA `migrate dev` değil!)
+  These schemas should live in `src/modules/scholarship/schemas.ts`.
 
-#### 🔹 Kural 2 – Shadow DB (Otomatik)
+### 5.3 Reusable Dynamic Field Array Component
 
-**Şu Anki Strateji (Sprint 0 - Prod Release Öncesi):**
-- Tek DB kullanılıyor (geliştirme ve ilk yayın için)
-- Schema değişiklikleri için `prisma db push` kullanılır
-  - ✅ Tablo/kolonlar direkt DB'de güncellenir
-  - ✅ Shadow DB'ye ihtiyaç duymaz
-  - ❌ Migration dosyası üretilmez (şimdilik sorun değil)
-- Test için: `npx prisma studio` ile tabloları kontrol edebilirsiniz
+Implement a single reusable component for dynamic lists:
 
-**İlk Prod Release Sonrası:**
-- Şu anki DB prod sayılacak
-- Ayrı dev DB açılacak
-- Dev DB'de `prisma migrate dev`, prod DB'de `prisma migrate deploy` kullanılacak
+**Location:** `src/components/forms/FieldArray/**`
 
-#### 🔹 Kural 3 – `prisma db push` (Şu Anki Strateji - Prod Release Öncesi)
+**Usage:**
 
-**⚠️ CRITICAL: Production Öncesi DB Stratejisi**
+Built on top of React Hook Form's `useFieldArray`.
 
-**Şu Anki Durum (Production Öncesi):**
-- **SADECE** `npx prisma db push` kullanılır (migration dosyası üretilmez)
-- Shadow DB'ye ihtiyaç duymaz
-- Schema değişiklikleri direkt DB'ye uygulanır
-- Test için: `npx prisma studio` ile tabloları kontrol edebilirsiniz
+Provides Add, Edit, Delete operations for each item.
 
-**ASLA kullanma:**
-- ❌ `prisma migrate dev` (shadow DB gerektirir, şu an kullanılmıyor)
-- ❌ `prisma migrate deploy` (migration dosyası yok, şu an kullanılmıyor)
+Accepts:
 
-**Prod Release Sonrası:**
-- `prisma db push` artık kullanılmayacak
-- Dev DB'de `prisma migrate dev` + migration dosyaları kullanılacak
-- Prod DB'de `prisma migrate deploy` kullanılacak
-- `db push` migration geçmişi oluşturmaz, prod release sonrası kabul edilemez
+- `name` (field path)
+- `schema` or field config
+- `renderItem` callback
+- Button labels / section titles (in Turkish)
 
-**Workflow özeti (Şu An - Production Öncesi):**
-1. Schema değişikliği: `prisma/schema.prisma` güncelle
-2. DB'ye uygula: `npx prisma db push` (migration dosyası üretilmez, shadow DB gerekmez)
-3. Test: `prisma studio` veya test route
+Admin and public forms should reuse the same field-array component; only the layout may differ.
 
-**⚠️ CRITICAL: Production Öncesi Strateji**
-- **ASLA** `prisma migrate dev` kullanma (shadow DB gerektirir, şu an kullanılmıyor)
-- **ASLA** `prisma migrate deploy` kullanma (migration dosyası yok)
-- **SADECE** `prisma db push` kullan (production öncesi için yeterli)
+---
 
-**Workflow özeti (Prod Release Sonrası):**
-1. Dev DB'de: `prisma migrate dev` (shadow DB ile)
-2. Migration dosyalarını commit et
-3. Production deploy: `prisma migrate deploy` (shadow DB gerekmez)
+## 6. Admin Panel Rules
 
-### 4.3. Scholarship Applications (Burs Başvuruları) - Sprint 7
+Admin panel is critical for reviewing and managing applications.
 
-**Yeni Modül: ScholarshipApplication (Sprint 7)**
+### 6.1 Structure
 
-- **API İsimlendirmesi:** `/api/scholarship-applications`
-- **Prisma Model:** `ScholarshipApplication` (kapsamlı alanlar: genel bilgi, banka, üniversite, sağlık, aile, JSON fields)
-- **TypeScript Types:** `src/lib/types/scholarship.ts`
-  - `ScholarshipApplicationStatus`: `"PENDING" | "APPROVED" | "REJECTED" | "UNDER_REVIEW"`
-  - `ScholarshipApplication` interface
-  - `CreateScholarshipApplicationRequest` interface
-  - `UpdateScholarshipApplicationStatusRequest` interface
-  - Nested types: `ScholarshipRelative`, `ScholarshipEducationHistory`, `ScholarshipReference`
-- **API Endpoints:**
-  - POST `/api/scholarship-applications` (Public - form submission)
-  - GET `/api/scholarship-applications` (Admin - list with filters)
-  - GET `/api/scholarship-applications/[id]` (Admin - detail)
-  - PUT `/api/scholarship-applications/[id]` (Admin - status update)
-  - DELETE `/api/scholarship-applications/[id]` (Admin - deletion)
-- **Admin Panel:** `src/app/(admin)/admin/burs-basvurulari/page.tsx`
-- **Public Form:** `src/app/(pages)/burs-basvuru/components/ScholarshipForm.tsx`
-- **RBAC:** GET/PUT/DELETE için `requireRole(["SUPER_ADMIN", "ADMIN"])`, POST public
-- **Test Pattern:** `src/app/api/scholarship-applications/__tests__/route.test.ts` ve `[id]/__tests__/route.test.ts`
+Admin routes live under:
+- `src/app/(admin)/admin/**`
 
-### 4.3.1. Contact Messages (İletişim Mesajları) - Sprint 8
+Keep each major section in its own directory:
 
-**Yeni Modül: ContactMessage (Sprint 8)**
+- `admin/burs-basvurulari/**`
+- `admin/uyelik-basvurulari/**`
+- `admin/yonetim-kurulu/**`
+- `admin/ayarlar/**`
 
-- **API İsimlendirmesi:** `/api/contact-messages`
-- **Prisma Model:** `ContactMessage` (basit alanlar: fullName, email, phone?, subject, message, metadata: ipAddress, userAgent, status management)
-- **TypeScript Types:** `src/lib/types/contact.ts`
-  - `ContactMessageStatus`: `"NEW" | "READ" | "ARCHIVED"`
-  - `ContactMessage` interface
-  - `CreateContactMessageRequest` interface (form'da `name` → backend'de `fullName`)
-  - `UpdateContactMessageStatusRequest` interface
-- **API Endpoints:**
-  - POST `/api/contact-messages` (Public - form submission, metadata extraction: ipAddress, userAgent)
-  - GET `/api/contact-messages` (Admin - list with filters: status, search)
-  - GET `/api/contact-messages/[id]` (Admin - detail)
-  - PUT `/api/contact-messages/[id]` (Admin - status update: READ/ARCHIVED, auto-set readAt/archivedAt)
-  - DELETE `/api/contact-messages/[id]` (SUPER_ADMIN only - deletion)
-- **Admin Panel:** `src/app/(admin)/admin/iletisim-mesajlari/page.tsx`
-- **Public Form:** `src/app/(pages)/iletisim/components/ContactForm.tsx`
-- **RBAC:** GET/PUT için `requireRole(["SUPER_ADMIN", "ADMIN"])`, DELETE için `requireRole(["SUPER_ADMIN"])`, POST public
-- **Test Pattern:** `src/app/api/contact-messages/__tests__/route.test.ts` ve `[id]/__tests__/route.test.ts`
+### 6.2 Detail Views (V2 Design)
 
-**Yeni Domain Ekleme Pattern'i (Sprint 7):**
+For large entities like scholarship applications:
 
-Yeni bir domain eklerken şu pattern'i takip et:
+Use collapsible sections for logical groups:
 
-1. **Prisma Model:** `prisma/schema.prisma` içinde model tanımla
-2. **TypeScript Types:** `src/lib/types/<domain>.ts` oluştur
-3. **API Routes:** `src/app/api/<domain>/route.ts` ve `[id]/route.ts` oluştur
-4. **Admin Panel:** `src/app/(admin)/admin/<domain>/page.tsx` oluştur
-5. **Tests:** `src/app/api/<domain>/__tests__/route.test.ts` ve `[id]/__tests__/route.test.ts` oluştur
-6. **RBAC:** Mutating endpoint'ler için `requireRole()` kullan
-7. **Error Handling:** 400, 401, 403, 404, 500 status codes için proper error handling
+- Applicant basic info
+- Family & relatives
+- Education history
+- References
+- Financial details
 
-**Referans Örnekler:**
-- **Scholarship Applications (Sprint 7):** Kapsamlı form, JSON fields, nested arrays
-- **Contact Messages (Sprint 8):** Basit form, metadata extraction (ipAddress, userAgent), status management (NEW → READ → ARCHIVED)
+Implement a shared `CollapsibleSection` component in `src/components/admin/CollapsibleSection.tsx` and reuse it.
 
-### 4.4. Announcements (Duyurular) as the first fully Prisma feature
+### 6.3 Admin Tables
 
-**Prisma model (already exists conceptually):**
+List pages should:
 
-- `Announcement`:
-  - `id` (uuid),
-  - `title`, `summary`, `content`,
-  - `category` (string; may later become enum),
-  - `startsAt`, `endsAt`,
-  - `isPinned` (boolean),
-  - `createdAt`, `updatedAt`,
-  - indexes on `category`, `isPinned`, `startsAt`.
+- Show only key columns for scanning.
+- Keep extra data for detail view only.
+- Include filters and search where it helps (e.g. status, year).
 
-**TypeScript type:**
+**Rule of thumb:** if a field does not help with scanning or filtering, show it only in the detail page, not as a table column.
 
-Create `src/lib/types/announcement.ts`:
+---
 
-```ts
-export type AnnouncementCategory =
-  | "general"
-  | "scholarship"
-  | "event"
-  | "system"
-  | string; // allow future/custom categories
+## 7. File Uploads & Dataset Cleanup
 
-export interface Announcement {
-  id: string;
-  title: string;
-  summary?: string;
-  content: string;
-  category: AnnouncementCategory;
-  startsAt?: string; // ISO 8601
-  endsAt?: string;   // ISO 8601
-  isPinned: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+The project includes uploaded files (images, icons, board member CVs, etc.). We must avoid orphaned files.
+
+### 7.1 File Storage Abstraction
+
+Implement file operations through a small service (e.g. `src/modules/files/fileService.ts`) instead of direct usage in components.
+
+### 7.2 Cleanup Rules
+
+When an event is deleted, its associated images/files must be deleted from storage.
+
+When the favicon/icon is updated, old favicon/icon files must be removed or marked as unused.
+
+For board member CVs:
+
+- Deleting a board member or removing their `cvUrl` should trigger deletion of the old file.
+
+Prefer implementing this via:
+
+- Transactional logic in service functions (e.g. delete DB row + storage file).
+- Or background jobs if necessary (but keep the abstraction inside `modules/files`).
+
+---
+
+## 8. Board Members – CV Upload
+
+For Yönetim Kurulu (board members):
+
+Extend the board member model with `cvUrl` (or equivalent).
+
+**Admin panel:**
+
+- On the member edit/create screen, provide a CV upload field using the shared file upload component.
+
+**Public site:**
+
+- In the "Hakkımızda → Yönetim Kurulu" section, render a download link if `cvUrl` is present.
+
+**Rules:**
+
+- Only PDF (or specific whitelisted types) should be accepted.
+- Validate file size and type on both frontend and backend.
+- `cvUrl` should be a stable reference (e.g. `/uploads/board/cv/<id>.pdf`).
+
+---
+
+## 9. Security, Privacy & Logging
+
+This project handles sensitive personal data (identity, health, income, etc.). Be strict.
+
+### 9.1 Sensitive Fields
+
+Examples (non-exhaustive):
+
+- Identity-related (TC kimlik, full legal name, birthdate)
+- Contact info (phone, email, address)
+- Health info (disabilities, chronic illness)
+- Financial info (income, expenses, assets)
+
+**Rules:**
+
+- Do not log raw sensitive data.
+- Use a `secureLogging` helper that:
+  - Strips or masks sensitive fields.
+  - Logs only high-level metadata (e.g. `applicationId`, `status`, timestamps).
+
+### 9.2 Request Validation & Sanitization
+
+Every API route handling input must:
+
+- Validate with Zod.
+- Reject malformed data with a safe error message.
+- Never trust client-side data; always re-validate on the server.
+
+### 9.3 reCAPTCHA
+
+Forms exposed to the public (membership, scholarship, contact) must:
+
+- Include a reCAPTCHA token.
+- Verify it server-side before processing or persisting the form.
+- Handle reCAPTCHA failures gracefully and do not expose internal details.
+
+---
+
+## 10. Testing & QA Expectations
+
+### 10.1 Unit Tests
+
+Focus on:
+
+- `src/lib/**` helpers (e.g. date, validation, secure logging, rate limiting).
+- `src/server/**` services/use-cases.
+
+**Aim for:**
+
+- ≥80% project coverage, ≥90% in critical modules (membership, scholarship, file lifecycle, security helpers).
+
+### 10.2 Integration Tests
+
+For key flows:
+
+- Membership application submit
+- Scholarship application submit (with dynamic lists)
+- Admin review & status change
+
+**Validate:**
+
+- DB state (Prisma)
+- File storage behaviour (for uploads)
+- Security constraints (no unauthenticated access to admin routes).
+
+---
+
+## 11. Git, Branching & Commits
+
+Use trunk-based development:
+
+- Small, frequent merges into main branch.
+- Keep PRs < 300 LOC where possible.
+
+Use Conventional Commits:
+
+- `feat: add scholarship relatives field array`
+- `fix: correct date normalization in membership form`
+- `chore: update eslint config`
+- `test: add coverage for secureLogging`
+
+Each PR must include:
+
+- Passing tests
+- Lint/format clean
+- Updated types & schemas where needed
+
+---
+
+## 12. Cursor-Specific Rules
+
+These rules are for Cursor AI behaviour.
+
+### 12.1 How to Work with This Project
+
+When the user asks you to:
+
+**Add or change a form:**
+
+- Locate the relevant module's schema (`src/modules/**/schemas.ts`) first.
+- Update Zod schema before touching UI.
+- Ensure server-side validation and Prisma mapping are aligned.
+
+**Implement dynamic list logic:**
+
+- Reuse the shared dynamic field array component.
+- Use nested Zod array schemas.
+- Make sure Prisma models exist and relations are consistent.
+
+**Modify admin pages:**
+
+- Use the existing layout and patterns in `src/app/(admin)/admin/**`.
+- Use `CollapsibleSection` or similar abstraction instead of custom ad-hoc styling.
+
+**Handle file uploads or cleanup:**
+
+- Go through the file service layer in `src/modules/files/**`.
+- Ensure dataset cleanup rules are followed (no orphaned files).
+
+### 12.2 General Cursor Behaviours
+
+When generating or editing code:
+
+**Prefer minimal, focused changes:**
+
+- Keep diffs small and localized.
+- Avoid refactoring unrelated files unless explicitly asked.
+
+**Respect existing naming conventions:**
+
+- Turkish field labels and domain terms should remain consistent.
+
+**Preserve types:**
+
+- Do not remove types or weaken them with `any`.
+
+**Update tests and docs whenever you change behaviour:**
+
+- Add/adjust tests in `src/__tests__` or respective module test directory.
+- If the behaviour of a public or admin flow changes, update:
+  - README sections
+  - Runbook / admin usage notes, if present.
+
+---
+
+## 13. Documentation Expectations
+
+Whenever you add a non-trivial feature or change behaviour:
+
+**Update or add:**
+
+- A short note in the main `README.md` or relevant module README.
+- If it's an architectural decision, capture it in an ADR-style document (e.g. `docs/adr/xxx-burs-form-v2.md`).
+
+**Ensure that:**
+
+- Onboarding a new developer into the project is possible using:
+  - README
+  - This `nextjs-rules.mdc`
+  - Module-level documentation.

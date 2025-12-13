@@ -16,6 +16,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import type { Event } from "@/app/(pages)/etkinlikler/constants";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
+import { deleteEventFiles } from "@/modules/files/fileService";
 
 /**
  * Helper function to parse JSON string to array
@@ -327,6 +328,17 @@ export async function DELETE(
         { error: "Etkinlik bulunamadı" },
         { status: 404 }
       );
+    }
+
+    // Sprint 17: Event silinmeden önce ilgili görselleri temizle
+    try {
+      const deletedCount = await deleteEventFiles(id);
+      if (deletedCount > 0) {
+        console.log(`[API][EVENTS][DELETE] Cleaned up ${deletedCount} files for event ${id}`);
+      }
+    } catch (cleanupError) {
+      // File cleanup hatası kritik değil, log'la ama devam et
+      console.error("[API][EVENTS][DELETE] Error cleaning up event files:", cleanupError);
     }
 
     // Delete event

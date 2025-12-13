@@ -30,6 +30,8 @@ export function validateTCNumber(tcNumber: string): boolean {
   const digits = cleaned.split("").map(Number);
 
   // 10th digit check: (sum of odd positions * 7 - sum of even positions) mod 10 should equal 10th digit
+  // Web kaynaklarına göre: 1., 3., 5., 7., 9. hanelerin toplamının 7 katından, 2., 4., 6., 8. hanelerin toplamı çıkarılır
+  // Elde edilen sonucun 10'a bölümünden kalan, 10. haneyi verir
   // Odd positions (1st, 3rd, 5th, 7th, 9th): indices 0, 2, 4, 6, 8
   // Even positions (2nd, 4th, 6th, 8th): indices 1, 3, 5, 7
   let sumOdd = 0;
@@ -41,9 +43,15 @@ export function validateTCNumber(tcNumber: string): boolean {
       sumEven += digits[i];
     }
   }
-  const checkDigit10 = (sumOdd * 7 - sumEven) % 10;
-  const finalCheck10 = checkDigit10 < 0 ? checkDigit10 + 10 : checkDigit10;
-  if (finalCheck10 !== digits[9]) {
+  // Calculate 10th digit: (sumOdd * 7 - sumEven) mod 10
+  // JavaScript'te negatif mod sonuçlarını doğru handle etmek için
+  const calculation = sumOdd * 7 - sumEven;
+  let checkDigit10 = calculation % 10;
+  // Mod 10 işlemi negatif sonuç verebilir, bu durumda 10 ekleyerek düzeltiyoruz
+  if (checkDigit10 < 0) {
+    checkDigit10 += 10;
+  }
+  if (checkDigit10 !== digits[9]) {
     return false;
   }
 

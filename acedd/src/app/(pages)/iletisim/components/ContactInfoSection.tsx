@@ -2,7 +2,6 @@
 
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Phone, Mail, MapPin } from "lucide-react";
 
 interface ContactInfoSectionProps {
   contactInfo?: {
@@ -13,40 +12,49 @@ interface ContactInfoSectionProps {
   content?: {
     infoSectionTitle?: string;
     infoSectionDescription?: string;
+    contactInfoItems?: Array<{
+      id: string;
+      icon: string;
+      color: string;
+      title: string;
+      description: string;
+    }>;
   };
 }
 
+// Color mapping for icons
+const COLOR_MAP: Record<string, string> = {
+  blue: "text-blue-600 bg-blue-50",
+  green: "text-green-600 bg-green-50",
+  purple: "text-purple-600 bg-purple-50",
+  indigo: "text-indigo-600 bg-indigo-50",
+};
+
 export function ContactInfoSection({ contactInfo, content }: ContactInfoSectionProps) {
   // Sprint 14.3: Clickable linkler kaldırıldı - sadece text gösteriliyor
-  // Use settings only (no constants fallback - getContactInfo() already has fallback)
   const displayAddress = contactInfo?.address || "";
   const displayPhone = contactInfo?.phone || "";
   const displayEmail = contactInfo?.email || "";
   
-  // Get section title and description from settings
-  const sectionTitle = content?.infoSectionTitle || "İletişim Bilgileri";
-  const sectionDescription = content?.infoSectionDescription || "Size en uygun yöntemle bizimle iletişime geçebilirsiniz";
-
-  const contactInfoArray = [
-    {
-      title: "Adres",
-      value: displayAddress,
-      icon: MapPin,
-      description: "Dernek merkezimiz Acıpayam'da bulunmaktadır",
-    },
-    {
-      title: "Telefon",
-      value: displayPhone,
-      icon: Phone,
-      description: "Bizimle iletişime geçin",
-    },
-    {
-      title: "E-posta",
-      value: displayEmail,
-      icon: Mail,
-      description: "E-posta ile iletişime geçin",
-    },
-  ];
+  // All content comes from settings with defaults from defaultContent.ts
+  const sectionTitle = content?.infoSectionTitle;
+  const sectionDescription = content?.infoSectionDescription;
+  
+  // Get contact info items from settings (includes icon, color, description)
+  const contactInfoItems = content?.contactInfoItems || [];
+  
+  // Map items with actual contact values
+  const contactInfoArray = contactInfoItems.map((item) => {
+    let value = "";
+    if (item.title.toLowerCase().includes("adres")) value = displayAddress;
+    else if (item.title.toLowerCase().includes("telefon")) value = displayPhone;
+    else if (item.title.toLowerCase().includes("posta") || item.title.toLowerCase().includes("mail")) value = displayEmail;
+    
+    return {
+      ...item,
+      value,
+    };
+  });
 
   return (
     <section className="py-20 bg-white">
@@ -62,39 +70,46 @@ export function ContactInfoSection({ contactInfo, content }: ContactInfoSectionP
           )}
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {contactInfoArray.map((info, index) => (
-            <Card 
-              key={index} 
-              className="text-center hover:shadow-lg transition-all duration-300"
-            >
-              <CardHeader>
-                <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 mx-auto ${
-                  info.title === "Telefon" 
-                    ? "bg-green-100" 
-                    : info.title === "E-posta"
-                    ? "bg-blue-100"
-                    : "bg-gray-100"
-                }`}>
-                  <info.icon className={`h-8 w-8 ${
-                    info.title === "Telefon" 
-                      ? "text-green-600" 
-                      : info.title === "E-posta"
-                      ? "text-blue-600"
-                      : "text-gray-600"
-                  }`} />
-                </div>
-                <CardTitle className="text-lg">{info.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="font-medium mb-2 text-gray-900">
-                  {info.value}
-                </p>
-                <CardDescription className="text-sm">
-                  {info.description}
-                </CardDescription>
-              </CardContent>
-            </Card>
-          ))}
+          {contactInfoArray.map((info) => {
+            const colorClass = COLOR_MAP[info.color] || COLOR_MAP.blue;
+            
+            return (
+              <Card 
+                key={info.id} 
+                className="text-center hover:shadow-lg transition-all duration-300"
+              >
+                <CardHeader>
+                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-4 mx-auto ${colorClass}`}>
+                    {info.icon && (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-8 w-8"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d={info.icon}
+                        />
+                      </svg>
+                    )}
+                  </div>
+                  <CardTitle className="text-lg">{info.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="font-medium mb-2 text-gray-900">
+                    {info.value}
+                  </p>
+                  <CardDescription className="text-sm">
+                    {info.description}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </div>
     </section>

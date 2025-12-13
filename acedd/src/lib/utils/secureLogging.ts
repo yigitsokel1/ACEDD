@@ -34,7 +34,14 @@ export function maskSensitiveValue(value: string | null | undefined, visibleChar
  */
 export function sanitizeObjectForLogging<T extends Record<string, any>>(
   obj: T,
-  sensitiveFields: string[] = ["identityNumber", "tcId", "tcNumber", "phone", "email", "address", "fullName", "firstName", "lastName"]
+  sensitiveFields: string[] = [
+    "identityNumber", "tcId", "tcNumber", "nationalId",
+    "phone", "email", "address", "fullName", "firstName", "lastName",
+    "familyMonthlyIncome", "familyMonthlyExpenses", "income",
+    "iban", "ibanNumber", "bankName", "bankAccount",
+    "birthDate", "birthPlace", "hometown",
+    "permanentAddress", "currentAccommodation",
+  ]
 ): Partial<T> {
   const sanitized: Partial<T> = {};
 

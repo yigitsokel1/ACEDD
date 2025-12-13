@@ -37,6 +37,8 @@ export interface Member {
   // Sprint 15: Membership Application'dan gelen yeni alanlar
   bloodType?: BloodType | null;
   city?: string | null;
+  // Sprint 17: CV Upload
+  cvDatasetId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -61,6 +63,8 @@ export interface CreateMemberFormData {
   // Sprint 15: Membership Application'dan gelen yeni alanlar
   bloodType?: BloodType | null;
   city?: string | null;
+  // Sprint 17: CV Upload
+  cvDatasetId?: string | null;
 }
 
 // Sprint 15.1: Kan Grubu Type

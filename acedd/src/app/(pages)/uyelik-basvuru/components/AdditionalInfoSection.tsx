@@ -14,10 +14,10 @@ export async function AdditionalInfoSection() {
             <CardContent className="p-6">
               <div className="text-center">
                 <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                  {content.additionalInfoTitle || "Başvuru Hakkında"}
+                  {content.additionalInfoTitle}
                 </h3>
                 <p className="text-gray-600">
-                  {content.additionalInfoDescription || "Üyelik başvurunuz değerlendirildikten sonra size e-posta veya telefon ile geri dönüş yapılacaktır. Sorularınız için bizimle iletişime geçebilirsiniz."}{" "}
+                  {content.additionalInfoDescription}{" "}
                   {/* Sprint 14.3: Clickable link kaldırıldı - sadece text gösteriliyor */}
                   {contactInfo.email && (
                     <span className="text-blue-600 font-medium">

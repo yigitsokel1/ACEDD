@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Button } from './Button';
-import { Image as ImageIcon, Plus, X, UploadCloud, Loader2 } from 'lucide-react';
+import { Image as ImageIcon, Plus, X, UploadCloud, Loader2, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FileUploadProps {
@@ -14,6 +14,7 @@ interface FileUploadProps {
   maxFiles?: number;
   className?: string;
   previewMode?: boolean; // true ise sadece preview, database'e kaydetme
+  accept?: string; // Sprint 17: File accept attribute (e.g., "application/pdf", "image/*")
 }
 
 export function FileUpload({ 
@@ -25,16 +26,18 @@ export function FileUpload({
   maxFiles = 1, 
   className,
   previewMode = false, // Preview mode: sadece önizle, database'e kaydetme
+  accept = "image/*", // Sprint 17: Default image/*, PDF için "application/pdf"
 }: FileUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [imageUrls, setImageUrls] = useState<{[key: string]: string | null}>({});
+  const [fileNames, setFileNames] = useState<{[key: string]: string | null}>({}); // Sprint 17: PDF dosya adları için
   const [previewFiles, setPreviewFiles] = useState<{[key: string]: { preview: string; file: File }}>({}); // Yeni seçilmiş görseller için preview (Base64 data URL + File objesi)
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Veri setinden görsel URL'ini çek
+  // Veri setinden görsel URL'ini ve dosya bilgilerini çek
   const fetchImageUrl = async (datasetId: string) => {
-    if (imageUrls[datasetId]) return imageUrls[datasetId];
+    if (imageUrls[datasetId] && fileNames[datasetId]) return imageUrls[datasetId];
     
     try {
       const response = await fetch(`/api/datasets/image/${datasetId}`);
@@ -44,6 +47,7 @@ export function FileUpload({
         if (!contentType || !contentType.includes('application/json')) {
           console.error('Invalid response type from image API:', contentType);
           setImageUrls(prev => ({ ...prev, [datasetId]: null }));
+          setFileNames(prev => ({ ...prev, [datasetId]: null }));
           return null;
         }
         
@@ -51,27 +55,38 @@ export function FileUpload({
         if (data.fileUrl) {
           // Validate Base64 data URL format
           const fileUrl = data.fileUrl;
-          if (fileUrl.startsWith('data:image/') || fileUrl.startsWith('data:')) {
+          const isImage = fileUrl.startsWith('data:image/');
+          const isPdf = fileUrl.startsWith('data:application/pdf');
+          
+          if (isImage || isPdf || fileUrl.startsWith('data:')) {
             console.log(`[FileUpload] Valid Base64 URL for ${datasetId}:`, fileUrl.substring(0, 50) + '...');
             setImageUrls(prev => ({ ...prev, [datasetId]: fileUrl }));
+            // Sprint 17: PDF için dosya adını da kaydet
+            if (data.fileName) {
+              setFileNames(prev => ({ ...prev, [datasetId]: data.fileName }));
+            }
             return fileUrl;
           } else {
             console.error('Invalid fileUrl format (not a data URL):', fileUrl.substring(0, 100));
             setImageUrls(prev => ({ ...prev, [datasetId]: null }));
+            setFileNames(prev => ({ ...prev, [datasetId]: null }));
           }
         } else {
           console.error('Invalid response format from image API:', data);
           setImageUrls(prev => ({ ...prev, [datasetId]: null }));
+          setFileNames(prev => ({ ...prev, [datasetId]: null }));
         }
       } else {
         console.error('Failed to fetch image:', response.status, response.statusText);
         // Hata durumunda placeholder göster
         setImageUrls(prev => ({ ...prev, [datasetId]: null }));
+        setFileNames(prev => ({ ...prev, [datasetId]: null }));
       }
     } catch (error) {
       console.error('Error fetching image:', error);
       // Hata durumunda placeholder göster
       setImageUrls(prev => ({ ...prev, [datasetId]: null }));
+      setFileNames(prev => ({ ...prev, [datasetId]: null }));
     }
     return null;
   };
@@ -204,11 +219,16 @@ export function FileUpload({
 
   const handleRemoveImage = (datasetIdToRemove: string) => {
     onChange(value.filter(id => id !== datasetIdToRemove));
-    // Image URL cache'den de kaldır
+    // Image URL ve dosya adı cache'den de kaldır
     setImageUrls(prev => {
       const newUrls = { ...prev };
       delete newUrls[datasetIdToRemove];
       return newUrls;
+    });
+    setFileNames(prev => {
+      const newNames = { ...prev };
+      delete newNames[datasetIdToRemove];
+      return newNames;
     });
   };
 
@@ -216,11 +236,40 @@ export function FileUpload({
     <div className={cn("space-y-4", className)}>
       <label className="block text-sm font-medium text-gray-700">{label}</label>
       
-      {/* Mevcut Görseller (Database'den) */}
+      {/* Mevcut Dosyalar (Database'den) */}
       {value.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <div className={accept === "application/pdf" ? "space-y-2" : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"}>
           {value.map((datasetId, index) => {
             const imageUrl = imageUrls[datasetId];
+            const fileName = fileNames[datasetId];
+            const isPdf = accept === "application/pdf" || (imageUrl && imageUrl.startsWith('data:application/pdf'));
+            
+            // Sprint 17: PDF için dosya adı göster, görsel için preview göster
+            if (isPdf) {
+              return (
+                <div key={datasetId} className="relative flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg group">
+                  <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {fileName || `CV ${index + 1}`}
+                    </p>
+                    <p className="text-xs text-gray-500">PDF dosyası</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveImage(datasetId)}
+                    className="flex-shrink-0 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Dosyayı kaldır"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              );
+            }
+            
+            // Görsel dosyalar için mevcut preview
             return (
               <div key={datasetId} className="relative w-full h-32 rounded-lg overflow-hidden group">
                 {imageUrl ? (
@@ -309,13 +358,13 @@ export function FileUpload({
             ref={fileInputRef}
             onChange={handleFileChange}
             multiple={multiple}
-            accept="image/*"
+            accept={accept}
             className="hidden"
             disabled={isUploading}
           />
           <UploadCloud className="w-10 h-10 mb-3 text-gray-400" />
           <p className="text-sm font-medium mb-2">
-            {multiple ? "Görselleri buraya sürükleyin veya seçin" : "Görseli buraya sürükleyin veya seçin"}
+            {multiple ? "Dosyaları buraya sürükleyin veya seçin" : accept === "application/pdf" ? "PDF dosyasını buraya sürükleyin veya seçin" : "Görseli buraya sürükleyin veya seçin"}
           </p>
           <Button
             type="button"

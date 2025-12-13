@@ -17,6 +17,7 @@ import { prisma } from "@/lib/db";
 import type { Member } from "@/lib/types/member";
 import { requireRole, createAuthErrorResponse, getAdminFromRequest } from "@/lib/auth/adminAuth";
 import { validateMemberTags } from "@/lib/utils/memberHelpers";
+import { replaceMemberCV } from "@/modules/files/fileService";
 
 /**
  * Helper function to parse JSON string to array
@@ -57,6 +58,7 @@ function formatMember(prismaMember: {
   occupation: string | null;
   bloodType: string | null;
   city: string | null;
+  cvDatasetId: string | null; // Sprint 17: CV Dataset ID
   createdAt: Date;
   updatedAt: Date;
 }) {
@@ -81,6 +83,7 @@ function formatMember(prismaMember: {
     tags: tags as Member["tags"],
     bloodType: prismaMember.bloodType as Member["bloodType"] || undefined,
     city: prismaMember.city || undefined,
+    cvDatasetId: prismaMember.cvDatasetId || undefined, // Sprint 17: CV Dataset ID
     createdAt: prismaMember.createdAt.toISOString(),
     updatedAt: prismaMember.updatedAt.toISOString(),
   };
@@ -248,6 +251,36 @@ export async function PUT(
     // Sprint 15: bloodType and city
     if (body.bloodType !== undefined) updateData.bloodType = body.bloodType || null;
     if (body.city !== undefined) updateData.city = body.city || null;
+    // Sprint 17: CV Upload - Eski CV'yi temizle (merkezi servis ile)
+    if (body.cvDatasetId !== undefined) {
+      // Mevcut member'ı getir ve eski CV dataset ID'sini kontrol et
+      const currentMember = await prisma.member.findUnique({
+        where: { id },
+        select: { cvDatasetId: true },
+      });
+      
+      const oldDatasetId = currentMember?.cvDatasetId ?? null;
+      const newDatasetId = body.cvDatasetId ?? null; // Use ?? instead of || to handle null explicitly
+      
+      // Eğer eski CV varsa ve yeni CV farklıysa, merkezi servis ile temizle
+      if (oldDatasetId && oldDatasetId !== newDatasetId) {
+        try {
+          await replaceMemberCV(id, oldDatasetId, newDatasetId);
+        } catch (cleanupError) {
+          // Dataset silme hatası log'lanır ama işlemi durdurmaz (non-critical)
+          console.error("[WARNING][API][MEMBERS][UPDATE][CV_CLEANUP] Failed to cleanup old CV:", cleanupError);
+        }
+      } else if (newDatasetId) {
+        // Sadece yeni CV varsa, bağla
+        try {
+          await replaceMemberCV(id, null, newDatasetId);
+        } catch (linkError) {
+          console.error("[WARNING][API][MEMBERS][UPDATE][CV_LINK] Failed to link new CV:", linkError);
+        }
+      }
+      
+      updateData.cvDatasetId = newDatasetId;
+    }
 
     const updatedMember = await prisma.member.update({
       where: { id },
@@ -309,6 +342,22 @@ export async function DELETE(
     requireRole(request, ["SUPER_ADMIN"]);
     
     const { id } = await params;
+
+    // Sprint 18 - B1: Üye silmeden önce CV dataset'i temizle
+    const member = await prisma.member.findUnique({
+      where: { id },
+      select: { cvDatasetId: true },
+    });
+
+    if (member?.cvDatasetId) {
+      try {
+        await replaceMemberCV(id, member.cvDatasetId, null);
+        console.log(`[API][MEMBERS][DELETE] Cleaned up CV dataset ${member.cvDatasetId} for member ${id}`);
+      } catch (cleanupError) {
+        // Dataset silme hatası kritik değil, log'la ama devam et
+        console.error("[API][MEMBERS][DELETE] Error cleaning up CV dataset:", cleanupError);
+      }
+    }
 
     await prisma.member.delete({
       where: { id },

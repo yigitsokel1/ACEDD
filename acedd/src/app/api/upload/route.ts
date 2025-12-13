@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
+import { FILE_SOURCE } from "@/modules/files/constants";
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,14 +26,19 @@ export async function POST(request: NextRequest) {
     const uploadedDatasetIds: string[] = [];
 
     for (const file of files) {
-      // Dosya türünü kontrol et
-      if (!file.type.startsWith('image/')) {
-        return NextResponse.json({ error: 'Only image files are allowed' }, { status: 400 });
+      // Sprint 17: PDF ve image dosyalarını destekle
+      const isImage = file.type.startsWith('image/');
+      const isPdf = file.type === 'application/pdf';
+      
+      if (!isImage && !isPdf) {
+        return NextResponse.json({ error: 'Sadece görsel (image) veya PDF dosyaları yüklenebilir' }, { status: 400 });
       }
 
-      // Dosya boyutunu kontrol et (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        return NextResponse.json({ error: 'File size must be less than 5MB' }, { status: 400 });
+      // Dosya boyutunu kontrol et (PDF için 10MB, image için 5MB limit)
+      const maxSize = isPdf ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
+      const maxSizeMB = isPdf ? 10 : 5;
+      if (file.size > maxSize) {
+        return NextResponse.json({ error: `Dosya boyutu ${maxSizeMB}MB'dan küçük olmalıdır` }, { status: 400 });
       }
 
       const bytes = await file.arrayBuffer();
@@ -42,13 +48,22 @@ export async function POST(request: NextRequest) {
       const base64String = buffer.toString('base64');
       const dataUrl = `data:${file.type};base64,${base64String}`;
 
-      // Dosya türüne göre kategori belirle
-      let category = 'Etkinlik';
-      let tags = ['etkinlik', 'görsel', 'eğitim'];
+      // Dosya türüne göre kategori ve metadata belirle
+      let category = 'Diğer';
+      let tags: string[] = [];
+      let source = 'upload';
+      let name = file.name.split('.')[0];
       
-      if (file.type.includes('image/')) {
+      if (isImage) {
         category = 'Görsel';
         tags = ['görsel', 'etkinlik', 'eğitim', 'fotoğraf'];
+        source = FILE_SOURCE.EVENT_UPLOAD;
+        name = `Etkinlik Görseli - ${name}`;
+      } else if (isPdf) {
+        category = 'Belge';
+        tags = ['pdf', 'belge', 'cv', 'döküman'];
+        source = FILE_SOURCE.MEMBER_CV;
+        name = `CV - ${name}`;
       }
 
       // Prisma ile dataset oluştur
@@ -56,8 +71,8 @@ export async function POST(request: NextRequest) {
         // Type assertion to bypass TypeScript error until TS server cache is cleared
         const dataset = await (prisma as any).dataset.create({
           data: {
-            name: `Etkinlik Görseli - ${file.name.split('.')[0]}`,
-            description: `Etkinlik için yüklenen görsel dosyası: ${file.name}. Dosya boyutu: ${(file.size / 1024 / 1024).toFixed(2)} MB`,
+            name: name,
+            description: `${category} için yüklenen dosya: ${file.name}. Dosya boyutu: ${(file.size / 1024 / 1024).toFixed(2)} MB`,
             category: category,
             fileUrl: dataUrl, // Base64 data URL
             fileName: file.name,
@@ -67,8 +82,8 @@ export async function POST(request: NextRequest) {
             isPublic: true,
             downloadCount: 0,
             uploadedBy: 'Admin',
-            source: 'event-upload',
-            eventId: null, // Etkinlik ID'si daha sonra güncellenebilir
+            source: source,
+            eventId: null, // İlişkili ID'ler daha sonra güncellenebilir
           },
         });
 

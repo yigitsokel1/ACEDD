@@ -3,120 +3,20 @@
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Button } from "@/components/ui";
 import { Input } from "@/components/ui";
 import { Textarea } from "@/components/ui";
 import { Select } from "@/components/ui";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { FileText, CheckCircle, X, FileCheck } from "lucide-react";
-import { MEMBERSHIP_FORM_FIELDS, type MembershipFormData } from "../constants";
-import { validateTCNumber, validatePhoneNumber, validateEmail } from "@/lib/utils/validationHelpers";
+import { MEMBERSHIP_FORM_FIELDS } from "../constants";
+import { Recaptcha } from "@/components/forms/Recaptcha";
+import {
+  MembershipApplicationSchema,
+  type MembershipApplicationInput,
+} from "@/modules/membership/schemas";
 
-// Sprint 15.1: Zod validation schema (Türkçe hata mesajları)
-const membershipFormSchema = z.object({
-  firstName: z
-    .string({
-      required_error: "Ad zorunludur",
-      invalid_type_error: "Ad geçerli bir metin olmalıdır",
-    })
-    .min(2, "Ad en az 2 karakter olmalıdır"),
-  lastName: z
-    .string({
-      required_error: "Soyad zorunludur",
-      invalid_type_error: "Soyad geçerli bir metin olmalıdır",
-    })
-    .min(2, "Soyad en az 2 karakter olmalıdır"),
-  identityNumber: z
-    .string({
-      required_error: "TC Kimlik No zorunludur",
-      invalid_type_error: "TC Kimlik No geçerli bir metin olmalıdır",
-    })
-    .min(1, "TC Kimlik No zorunludur")
-    .refine((val) => validateTCNumber(val), {
-      message: "Geçerli bir TC Kimlik No giriniz (11 haneli)",
-    }),
-  gender: z
-    .string({
-      required_error: "Cinsiyet seçimi zorunludur",
-      invalid_type_error: "Cinsiyet seçimi zorunludur",
-    })
-    .refine((val) => val === "erkek" || val === "kadın", {
-      message: "Cinsiyet seçimi zorunludur",
-    }),
-  bloodType: z
-    .string({
-      required_error: "Kan grubu seçimi zorunludur",
-      invalid_type_error: "Kan grubu seçimi zorunludur",
-    })
-    .refine(
-      (val) =>
-        val === "A_POSITIVE" ||
-        val === "A_NEGATIVE" ||
-        val === "B_POSITIVE" ||
-        val === "B_NEGATIVE" ||
-        val === "AB_POSITIVE" ||
-        val === "AB_NEGATIVE" ||
-        val === "O_POSITIVE" ||
-        val === "O_NEGATIVE",
-      {
-        message: "Kan grubu seçimi zorunludur",
-      }
-    ),
-  birthPlace: z
-    .string({
-      required_error: "Doğum yeri zorunludur",
-      invalid_type_error: "Doğum yeri geçerli bir metin olmalıdır",
-    })
-    .min(2, "Doğum yeri en az 2 karakter olmalıdır"),
-  birthDate: z
-    .string({
-      required_error: "Doğum tarihi zorunludur",
-      invalid_type_error: "Doğum tarihi geçerli bir tarih olmalıdır",
-    })
-    .min(1, "Doğum tarihi zorunludur"),
-  city: z
-    .string({
-      required_error: "Şehir zorunludur",
-      invalid_type_error: "Şehir geçerli bir metin olmalıdır",
-    })
-    .min(2, "Şehir en az 2 karakter olmalıdır"),
-  phone: z
-    .string({
-      required_error: "Telefon numarası zorunludur",
-      invalid_type_error: "Telefon numarası geçerli bir metin olmalıdır",
-    })
-    .min(1, "Telefon numarası zorunludur")
-    .refine((val) => validatePhoneNumber(val), {
-      message: "Geçerli bir telefon numarası giriniz (örn: 05551234567)",
-    }),
-  email: z
-    .string({
-      required_error: "E-posta adresi zorunludur",
-      invalid_type_error: "E-posta adresi geçerli bir metin olmalıdır",
-    })
-    .min(1, "E-posta adresi zorunludur")
-    .email("Geçerli bir e-posta adresi giriniz")
-    .refine((val) => validateEmail(val), {
-      message: "Geçerli bir e-posta adresi giriniz",
-    }),
-  address: z
-    .string({
-      required_error: "Adres zorunludur",
-      invalid_type_error: "Adres geçerli bir metin olmalıdır",
-    })
-    .min(10, "Adres en az 10 karakter olmalıdır"),
-  conditionsAccepted: z
-    .boolean({
-      required_error: "Şartları kabul etmeniz gerekmektedir",
-      invalid_type_error: "Şartları kabul etmeniz gerekmektedir",
-    })
-    .refine((val) => val === true, {
-      message: "Şartları kabul etmeniz gerekmektedir",
-    }),
-});
-
-type MembershipFormSchema = z.infer<typeof membershipFormSchema>;
+type MembershipFormSchema = MembershipApplicationInput;
 
 interface MembershipFormProps {
   formTitle?: string;
@@ -134,6 +34,8 @@ export function MembershipForm({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showConditionsModal, setShowConditionsModal] = useState(false);
   const [hasReadConditions, setHasReadConditions] = useState(false);
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "";
 
   const {
     register,
@@ -143,7 +45,7 @@ export function MembershipForm({
     setValue,
     watch,
   } = useForm<MembershipFormSchema>({
-    resolver: zodResolver(membershipFormSchema),
+    resolver: zodResolver(MembershipApplicationSchema),
     mode: "onBlur", // Validate on blur for better UX
     defaultValues: {
       firstName: "",
@@ -152,7 +54,7 @@ export function MembershipForm({
       gender: undefined as any,
       bloodType: undefined as any,
       birthPlace: "",
-      birthDate: "",
+      birthDate: undefined as any, // Date input expects Date | undefined
       city: "",
       phone: "",
       email: "",
@@ -186,29 +88,43 @@ export function MembershipForm({
     // Prevent default form submission (page reload)
     e?.preventDefault();
     
+    // Check reCAPTCHA (if enabled)
+    if (recaptchaSiteKey && !recaptchaToken) {
+      setSubmitError("Lütfen reCAPTCHA doğrulamasını tamamlayın.");
+      return;
+    }
+    
     setIsSubmitting(true);
     setSubmitSuccess(false);
+    setSubmitError(null);
 
     try {
+      // Prepare form data for API
+      // birthDate is already a Date object from z.coerce.date()
+      const formData = {
+        firstName: data.firstName.trim(),
+        lastName: data.lastName.trim(),
+        identityNumber: data.identityNumber.trim(),
+        gender: data.gender,
+        bloodType: data.bloodType,
+        birthPlace: data.birthPlace.trim(),
+        birthDate: data.birthDate instanceof Date
+          ? data.birthDate.toISOString().split("T")[0] // Convert to YYYY-MM-DD for API
+          : data.birthDate,
+        city: data.city.trim(),
+        phone: data.phone.trim(),
+        email: data.email.trim().toLowerCase(),
+        address: data.address.trim(),
+        conditionsAccepted: data.conditionsAccepted,
+        recaptchaToken: recaptchaToken || undefined,
+      };
+
       const response = await fetch("/api/membership-applications", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          firstName: data.firstName.trim(),
-          lastName: data.lastName.trim(),
-          identityNumber: data.identityNumber.trim(),
-          gender: data.gender,
-          bloodType: data.bloodType,
-          birthPlace: data.birthPlace.trim(),
-          birthDate: data.birthDate,
-          city: data.city.trim(),
-          phone: data.phone.trim(),
-          email: data.email.trim().toLowerCase(),
-          address: data.address.trim(),
-          conditionsAccepted: data.conditionsAccepted,
-        }),
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
@@ -230,6 +146,7 @@ export function MembershipForm({
       setSubmitSuccess(true);
       setSubmitError(null); // Clear any previous errors
       reset();
+      setRecaptchaToken(null); // Reset reCAPTCHA
 
       // Scroll to success message after a brief delay
       setTimeout(() => {
@@ -469,7 +386,7 @@ export function MembershipForm({
                   <label className="flex items-start space-x-3 cursor-pointer">
                     <input
                       type="checkbox"
-                      {...register("conditionsAccepted")}
+                      {...register("conditionsAccepted", { value: true })}
                       className="mt-1 w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
                     <span className="text-sm text-gray-700">
@@ -499,11 +416,26 @@ export function MembershipForm({
                   </div>
                 </div>
 
+                {/* reCAPTCHA */}
+                {recaptchaSiteKey && (
+                  <div className="pt-4">
+                    <Recaptcha
+                      siteKey={recaptchaSiteKey}
+                      onVerify={setRecaptchaToken}
+                      onExpire={() => setRecaptchaToken(null)}
+                      onError={() => setRecaptchaToken(null)}
+                    />
+                  </div>
+                )}
+
                 {/* Action Buttons */}
                 <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
                   <Button
                     type="button"
-                    onClick={() => reset()}
+                    onClick={() => {
+                      reset();
+                      setRecaptchaToken(null);
+                    }}
                     variant="outline"
                     disabled={isSubmitting}
                     className="px-8 py-3 text-gray-700 border-gray-300 hover:bg-gray-50"
@@ -512,7 +444,7 @@ export function MembershipForm({
                   </Button>
                   <Button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || (recaptchaSiteKey ? !recaptchaToken : false)}
                     className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? "Gönderiliyor..." : "Başvuruyu Gönder"}

@@ -147,7 +147,8 @@ describe("GET /api/dashboard", () => {
     vi.mocked(prisma.scholarshipApplication.findMany).mockResolvedValue([
       {
         id: "sch-1",
-        fullName: "Mehmet Kaya",
+        firstName: "Mehmet",
+        lastName: "Kaya",
         university: "ODTÜ",
         createdAt: new Date("2024-01-14T10:00:00Z"),
       },
@@ -354,12 +355,14 @@ describe("GET /api/dashboard", () => {
     expect(prisma.scholarshipApplication.count).toHaveBeenCalledWith({
       where: { status: "PENDING" },
     });
+    // Sprint 16 - Block F: Updated to use firstName/lastName instead of fullName
     expect(prisma.scholarshipApplication.findMany).toHaveBeenCalledWith({
       take: 5,
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
-        fullName: true,
+        firstName: true,
+        lastName: true,
         university: true,
         createdAt: true,
       },

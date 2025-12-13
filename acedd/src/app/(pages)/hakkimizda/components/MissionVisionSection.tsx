@@ -1,23 +1,27 @@
 import React from "react";
 import { getPageContent } from "@/lib/settings/convenience";
-import { MISSION_VISION_ICONS } from "../constants";
-import { Target, Award } from "lucide-react";
+
+// Color gradient mapping
+const COLOR_GRADIENTS: Record<string, { gradient: string; bg: string; border: string }> = {
+  blue: { gradient: "from-blue-500 to-blue-700", bg: "from-blue-600 to-cyan-600", border: "border-blue-100" },
+  indigo: { gradient: "from-indigo-500 to-indigo-700", bg: "from-indigo-600 to-purple-600", border: "border-indigo-100" },
+  purple: { gradient: "from-purple-500 to-purple-700", bg: "from-purple-600 to-indigo-600", border: "border-purple-100" },
+};
 
 export async function MissionVisionSection() {
   const content = await getPageContent("about");
   
-  // Get content from settings with minimal fallbacks
-  const missionVisionTitle = content.missionVisionTitle || "Misyonumuz & Vizyonumuz";
-  const missionVisionSubtitle = content.missionVisionSubtitle || "Derneğimizin temel ilkeleri ve hedefleri doğrultusunda hareket ediyoruz";
+  // All content comes from settings with defaults from defaultContent.ts
+  const missionVisionTitle = content.missionVisionTitle;
+  const missionVisionSubtitle = content.missionVisionSubtitle;
   
-  // Get mission/vision from settings (fallback to empty structure)
-  const missionVision = content.missionVision || { mission: { title: "", description: "" }, vision: { title: "", description: "" } };
-  const mission = missionVision.mission || { title: "", description: "" };
-  const vision = missionVision.vision || { title: "", description: "" };
-  
-  // Use icon from constants (icons are React components, can't be stored in settings)
-  const MissionIcon = MISSION_VISION_ICONS.mission || Target;
-  const VisionIcon = MISSION_VISION_ICONS.vision || Award;
+  // Get mission/vision from settings (includes icon, color, id)
+  const missionVision = content.missionVision || { 
+    mission: { id: "mission-1", icon: "", color: "blue", title: "", description: "" }, 
+    vision: { id: "vision-1", icon: "", color: "indigo", title: "", description: "" } 
+  };
+  const mission = missionVision.mission;
+  const vision = missionVision.vision;
 
   return (
     <section className="py-20 bg-gradient-to-br from-slate-50 to-blue-50">
@@ -39,16 +43,32 @@ export async function MissionVisionSection() {
         </div>
         
         <div className="grid lg:grid-cols-2 gap-12">
+          {/* Mission */}
           <div className="group relative">
-            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+            <div className={`absolute -inset-1 bg-gradient-to-r ${COLOR_GRADIENTS[(mission as any)?.color || 'blue']?.gradient || COLOR_GRADIENTS.blue.gradient} rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200`}></div>
             <div className="relative bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
               <div className="flex items-center space-x-4 mb-6">
-                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center shadow-lg">
-                  <MissionIcon className="h-7 w-7 text-white" />
+                <div className={`w-14 h-14 bg-gradient-to-br ${COLOR_GRADIENTS[(mission as any)?.color || 'blue']?.gradient || COLOR_GRADIENTS.blue.gradient} rounded-2xl flex items-center justify-center shadow-lg`}>
+                  {(mission as any)?.icon && (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-7 w-7 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d={(mission as any).icon}
+                      />
+                    </svg>
+                  )}
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold text-gray-900">{mission.title}</h3>
-                  <div className="w-12 h-1 bg-blue-500 rounded-full mt-2"></div>
+                  <div className={`w-12 h-1 bg-${(mission as any)?.color || 'blue'}-500 rounded-full mt-2`}></div>
                 </div>
               </div>
               <p className="text-gray-700 leading-relaxed text-lg">
@@ -57,16 +77,32 @@ export async function MissionVisionSection() {
             </div>
           </div>
 
+          {/* Vision */}
           <div className="group relative">
-            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-600 to-emerald-800 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+            <div className={`absolute -inset-1 bg-gradient-to-r ${COLOR_GRADIENTS[(vision as any)?.color || 'indigo']?.gradient || COLOR_GRADIENTS.indigo.gradient} rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200`}></div>
             <div className="relative bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
               <div className="flex items-center space-x-4 mb-6">
-                <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-2xl flex items-center justify-center shadow-lg">
-                  <VisionIcon className="h-7 w-7 text-white" />
+                <div className={`w-14 h-14 bg-gradient-to-br ${COLOR_GRADIENTS[(vision as any)?.color || 'indigo']?.gradient || COLOR_GRADIENTS.indigo.gradient} rounded-2xl flex items-center justify-center shadow-lg`}>
+                  {(vision as any)?.icon && (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-7 w-7 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d={(vision as any).icon}
+                      />
+                    </svg>
+                  )}
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold text-gray-900">{vision.title}</h3>
-                  <div className="w-12 h-1 bg-emerald-500 rounded-full mt-2"></div>
+                  <div className={`w-12 h-1 bg-${(vision as any)?.color || 'indigo'}-500 rounded-full mt-2`}></div>
                 </div>
               </div>
               <p className="text-gray-700 leading-relaxed text-lg">

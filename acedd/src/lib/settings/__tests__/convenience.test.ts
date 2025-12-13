@@ -29,6 +29,15 @@ vi.mock("@/lib/constants", () => ({
   },
 }));
 
+// Mock defaultContent to return empty objects (no fallback in tests)
+vi.mock("@/lib/constants/defaultContent", () => ({
+  DEFAULT_PAGE_CONTENT: {},
+  DEFAULT_SITE_INFO: {},
+  DEFAULT_CONTACT_INFO: {},
+  DEFAULT_SOCIAL_MEDIA: {},
+  DEFAULT_SEO: {},
+}));
+
 // Mock getSetting module - use factory function to avoid hoisting issues
 vi.mock("../getSetting", async () => {
   const actual = await vi.importActual<typeof import("../getSetting")>("../getSetting");
@@ -139,12 +148,19 @@ describe("getPageContent", () => {
 
     const result = await getPageContent("about");
 
-    expect(result).toEqual({
-      missionVision: {
-        mission: { title: "Misyon", description: "Misyon açıklaması" },
-        vision: { title: "Vizyon", description: "Vizyon açıklaması" },
-      },
-    });
+    // Check only user-facing fields, ignore technical fields (id, icon, color)
+    expect(result.missionVision?.mission).toEqual(
+      expect.objectContaining({
+        title: "Misyon",
+        description: "Misyon açıklaması",
+      })
+    );
+    expect(result.missionVision?.vision).toEqual(
+      expect.objectContaining({
+        title: "Vizyon",
+        description: "Vizyon açıklaması",
+      })
+    );
   });
 
   it("should convert object-like arrays to proper arrays (jobDescriptions)", async () => {
@@ -159,10 +175,14 @@ describe("getPageContent", () => {
 
     const result = await getPageContent("about");
 
-    expect(result.jobDescriptions).toEqual([
-      { title: "Genel Kurul", description: "Açıklama 1" },
-      { title: "Yönetim Kurulu", description: "Açıklama 2" },
-    ]);
+    // Check array items contain expected fields, ignore technical fields (id, icon, color)
+    expect(result.jobDescriptions).toHaveLength(2);
+    expect(result.jobDescriptions?.[0]).toEqual(
+      expect.objectContaining({ title: "Genel Kurul", description: "Açıklama 1" })
+    );
+    expect(result.jobDescriptions?.[1]).toEqual(
+      expect.objectContaining({ title: "Yönetim Kurulu", description: "Açıklama 2" })
+    );
   });
 
   it("should convert object-like arrays to proper arrays (requirements)", async () => {
@@ -304,11 +324,14 @@ describe("getPageContent", () => {
 
       const result = await getPageContent("scholarship");
 
-      expect(result.applicationSteps).toEqual([
-        { step: 1, title: "Step 1", description: "Desc 1" },
-        { step: 3, title: "Step 3", description: "Desc 3" },
-      ]);
+      // Check only user-facing fields, ignore technical fields (id, icon, color)
       expect(result.applicationSteps).toHaveLength(2);
+      expect(result.applicationSteps?.[0]).toEqual(
+        expect.objectContaining({ step: 1, title: "Step 1", description: "Desc 1" })
+      );
+      expect(result.applicationSteps?.[1]).toEqual(
+        expect.objectContaining({ step: 3, title: "Step 3", description: "Desc 3" })
+      );
     });
 
     it("should filter out applicationSteps with missing title field", async () => {
@@ -324,10 +347,14 @@ describe("getPageContent", () => {
 
       const result = await getPageContent("scholarship");
 
-      expect(result.applicationSteps).toEqual([
-        { step: 1, title: "Step 1", description: "Desc 1" },
-        { step: 3, title: "Step 3", description: "Desc 3" },
-      ]);
+      // Check only user-facing fields, ignore technical fields (id, icon, color)
+      expect(result.applicationSteps).toHaveLength(2);
+      expect(result.applicationSteps?.[0]).toEqual(
+        expect.objectContaining({ step: 1, title: "Step 1", description: "Desc 1" })
+      );
+      expect(result.applicationSteps?.[1]).toEqual(
+        expect.objectContaining({ step: 3, title: "Step 3", description: "Desc 3" })
+      );
     });
 
     it("should filter out applicationSteps with missing description field", async () => {
@@ -343,10 +370,14 @@ describe("getPageContent", () => {
 
       const result = await getPageContent("scholarship");
 
-      expect(result.applicationSteps).toEqual([
-        { step: 1, title: "Step 1", description: "Desc 1" },
-        { step: 3, title: "Step 3", description: "Desc 3" },
-      ]);
+      // Check only user-facing fields, ignore technical fields (id, icon, color)
+      expect(result.applicationSteps).toHaveLength(2);
+      expect(result.applicationSteps?.[0]).toEqual(
+        expect.objectContaining({ step: 1, title: "Step 1", description: "Desc 1" })
+      );
+      expect(result.applicationSteps?.[1]).toEqual(
+        expect.objectContaining({ step: 3, title: "Step 3", description: "Desc 3" })
+      );
     });
 
     it("should filter out stats with missing value field", async () => {
@@ -497,10 +528,14 @@ describe("getPageContent", () => {
 
       const result = await getPageContent("scholarship");
 
-      expect(result.applicationSteps).toEqual([
-        { step: 1, title: "Step 1", description: "Desc 1" },
-        { step: 4, title: "Step 4", description: "Desc 4" },
-      ]);
+      // Check only user-facing fields, ignore technical fields (id, icon, color)
+      expect(result.applicationSteps).toHaveLength(2);
+      expect(result.applicationSteps?.[0]).toEqual(
+        expect.objectContaining({ step: 1, title: "Step 1", description: "Desc 1" })
+      );
+      expect(result.applicationSteps?.[1]).toEqual(
+        expect.objectContaining({ step: 4, title: "Step 4", description: "Desc 4" })
+      );
     });
 
     it("should filter out applicationSteps with empty description", async () => {
@@ -517,10 +552,14 @@ describe("getPageContent", () => {
 
       const result = await getPageContent("scholarship");
 
-      expect(result.applicationSteps).toEqual([
-        { step: 1, title: "Step 1", description: "Desc 1" },
-        { step: 4, title: "Step 4", description: "Desc 4" },
-      ]);
+      // Check only user-facing fields, ignore technical fields (id, icon, color)
+      expect(result.applicationSteps).toHaveLength(2);
+      expect(result.applicationSteps?.[0]).toEqual(
+        expect.objectContaining({ step: 1, title: "Step 1", description: "Desc 1" })
+      );
+      expect(result.applicationSteps?.[1]).toEqual(
+        expect.objectContaining({ step: 4, title: "Step 4", description: "Desc 4" })
+      );
     });
 
     it("should filter out missions with empty title", async () => {

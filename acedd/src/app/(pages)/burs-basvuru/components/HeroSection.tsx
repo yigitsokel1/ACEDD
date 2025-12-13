@@ -4,9 +4,9 @@ import { getPageContent } from "@/lib/settings/convenience";
 export async function HeroSection() {
   const content = await getPageContent("scholarship");
   
-  // Fallbacks
-  const heroTitle = content.heroTitle || "Burs Başvurusu";
-  const intro = content.intro || "Eğitim hayatınızı desteklemek için burs başvurusu yapabilirsiniz. Başvurunuzu eksiksiz doldurarak değerlendirme sürecine katılın.";
+  // All content comes from settings with defaults from defaultContent.ts
+  const heroTitle = content.heroTitle;
+  const intro = content.intro;
 
   return (
     <section className="bg-gradient-to-br from-blue-50 to-indigo-100 py-20 pt-36">

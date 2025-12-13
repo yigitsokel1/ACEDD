@@ -171,10 +171,10 @@ export interface PageContent {
   ctaDescription?: string;
   ctaPrimaryButtonText?: string;
   ctaSecondaryButtonText?: string;
-  stats?: Array<{ id: string; icon: string; value: string; label: string; color: string }>;
-  missions?: Array<{ id: string; icon: string; title: string; description: string; color: string }>;
-  activities?: Array<{ id: string; icon: string; title: string; description: string; color: string }>;
-  trustIndicators?: Array<{ id: string; icon: string; label: string }>;
+  stats?: Array<{ value: string; label: string } | { id: string; icon: string; value: string; label: string; color: string }>;
+  missions?: Array<{ title: string; description: string } | { id: string; icon: string; title: string; description: string; color: string }>;
+  activities?: Array<{ title: string; description: string } | { id: string; icon: string; title: string; description: string; color: string }>;
+  trustIndicators?: Array<{ label: string } | { id: string; icon: string; label: string }>;
   
   // About page specific
   missionVisionTitle?: string;
@@ -190,12 +190,12 @@ export interface PageContent {
   goalsActivitiesSubtitle?: string;
   goalsFooter?: string;
   jobDescriptionsTitle?: string;
-  jobDescriptions?: Array<{ title: string; description: string }>;
+  jobDescriptions?: Array<{ title: string; description: string } | { id: string; icon: string; title: string; description: string; color: string }>;
   organizationStructureTitle?: string;
   organizationStructureDescription?: string;
-  values?: Array<{ title: string; description: string }>;
-  goals?: Array<{ title: string; description: string }>;
-  missionVision?: { mission: { title: string; description: string }; vision: { title: string; description: string } };
+  values?: Array<{ title: string; description: string } | { id: string; icon: string; title: string; description: string; color: string }>;
+  goals?: Array<{ title: string; description: string } | { id: string; icon: string; title: string; description: string; color: string }>;
+  missionVision?: { mission: { title: string; description: string } | { id: string; icon: string; color: string; title: string; description: string }; vision: { title: string; description: string } | { id: string; icon: string; color: string; title: string; description: string } };
   
   // Membership page specific
   formTitle?: string;
@@ -206,14 +206,14 @@ export interface PageContent {
   
   // Scholarship page specific
   requirements?: string[];
-  applicationSteps?: Array<{ step: number; title: string; description: string }>;
+  applicationSteps?: Array<{ step: number; title: string; description: string } | { id: string; icon: string; color: string; step: number; title: string; description: string }>;
   
   // Donation page specific
   introduction?: string;
   thankYouTitle?: string;
   thankYouDescription?: string;
   contactMessage?: string;
-  bankAccounts?: Array<{ currency: string; bank: string; accountName: string; iban: string }>;
+  bankAccounts?: Array<{ currency: string; bank: string; accountName: string; iban: string } | { id: string; icon: string; color: string; currency: string; bank: string; accountName: string; iban: string }>;
   
   // Events page specific
   ctaSubtitle?: string;

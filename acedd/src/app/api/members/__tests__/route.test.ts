@@ -681,6 +681,127 @@ describe("POST /api/members", () => {
     expect(data).toHaveProperty("error");
   });
 
+  // Sprint 17: CV Dataset ID support
+  it("should create member with cvDatasetId", async () => {
+    const mockMember = {
+      id: "member-new",
+      firstName: "Test",
+      lastName: "User",
+      gender: "erkek" as const,
+      email: "test@example.com",
+      phone: null,
+      birthDate: new Date("1990-01-01T00:00:00Z"),
+      placeOfBirth: "Istanbul",
+      currentAddress: "Istanbul",
+      bloodType: null,
+      city: null,
+      tcId: null,
+      lastValidDate: null,
+      titles: JSON.stringify([]),
+      status: "ACTIVE" as const,
+      membershipDate: new Date("2024-01-01T00:00:00Z"),
+      membershipKind: "MEMBER" as const,
+      tags: null,
+      department: null,
+      graduationYear: null,
+      occupation: null,
+      cvDatasetId: "cv-dataset-1", // Sprint 17: CV Dataset ID
+      createdAt: new Date("2024-01-01T00:00:00Z"),
+      updatedAt: new Date("2024-01-01T00:00:00Z"),
+    } as any;
+
+    vi.mocked(prisma.member.create).mockResolvedValue(mockMember);
+
+    const requestBody = {
+      firstName: "Test",
+      lastName: "User",
+      email: "test@example.com",
+      birthDate: "1990-01-01T00:00:00Z",
+      membershipDate: "2024-01-01T00:00:00Z",
+      membershipKind: "MEMBER",
+      cvDatasetId: "cv-dataset-1", // Sprint 17: CV Dataset ID
+    };
+
+    const request = new NextRequest("http://localhost:3000/api/members", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(data.cvDatasetId).toBe("cv-dataset-1");
+    expect(prisma.member.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        cvDatasetId: "cv-dataset-1",
+      }),
+    });
+  });
+
+  it("should create member without cvDatasetId (null)", async () => {
+    const mockMember = {
+      id: "member-new",
+      firstName: "Test",
+      lastName: "User",
+      gender: "erkek" as const,
+      email: "test2@example.com",
+      phone: null,
+      birthDate: new Date("1990-01-01T00:00:00Z"),
+      placeOfBirth: "Istanbul",
+      currentAddress: "Istanbul",
+      bloodType: null,
+      city: null,
+      tcId: null,
+      lastValidDate: null,
+      titles: JSON.stringify([]),
+      status: "ACTIVE" as const,
+      membershipDate: new Date("2024-01-01T00:00:00Z"),
+      membershipKind: "MEMBER" as const,
+      tags: null,
+      department: null,
+      graduationYear: null,
+      occupation: null,
+      cvDatasetId: null, // No CV
+      createdAt: new Date("2024-01-01T00:00:00Z"),
+      updatedAt: new Date("2024-01-01T00:00:00Z"),
+    } as any;
+
+    vi.mocked(prisma.member.create).mockResolvedValue(mockMember);
+
+    const requestBody = {
+      firstName: "Test",
+      lastName: "User",
+      email: "test2@example.com",
+      birthDate: "1990-01-01T00:00:00Z",
+      membershipDate: "2024-01-01T00:00:00Z",
+      membershipKind: "MEMBER",
+      // cvDatasetId not provided
+    };
+
+    const request = new NextRequest("http://localhost:3000/api/members", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(data.cvDatasetId).toBeUndefined(); // Should not have CV
+    expect(prisma.member.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        cvDatasetId: null,
+      }),
+    });
+  });
+
   // Production-level edge case tests
   it("should automatically set status to ACTIVE for new members", async () => {
     const mockMember = {

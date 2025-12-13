@@ -16,4 +16,5 @@ export default defineConfig({
       shadowDatabaseUrl: env("SHADOW_DATABASE_URL"),
     }),
   },
+  // Note: generator config (engineType: "library") is defined in schema.prisma
 });

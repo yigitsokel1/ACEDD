@@ -66,6 +66,12 @@ NEXT_PUBLIC_BASE_URL="http://localhost:3000"
 - `NEXT_PUBLIC_BASE_URL`: Base URL for internal API calls
   - Development: Leave empty or use `http://localhost:3000` (fallback)
   - Production: **MUST be set** to production domain (e.g., `https://acedd.org`)
+- `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`: reCAPTCHA site key for public forms (Sprint 16+)
+  - Get from: https://www.google.com/recaptcha/admin
+  - If not set, reCAPTCHA verification is skipped (development mode)
+- `RECAPTCHA_SECRET_KEY`: reCAPTCHA secret key for backend verification (Sprint 16+)
+  - Get from: https://www.google.com/recaptcha/admin
+  - If not set, reCAPTCHA verification is skipped (development mode)
 - `NODE_ENV`: Automatically set by Next.js (usually not needed)
 - `SHADOW_DATABASE_URL`: Only if CREATE DATABASE permission not available (see `env.example`)
 
@@ -124,7 +130,29 @@ NEXT_PUBLIC_BASE_URL="http://localhost:3000"
 
 **Note:** This is used for Server Component API calls (e.g., admin dashboard). In production, this **must** be set to your production domain.
 
-8. Start the development server:
+7. (Optional) Configure reCAPTCHA (Sprint 16+):
+   ```env
+   # Public forms (membership, scholarship) use reCAPTCHA for spam prevention
+   # If not configured, reCAPTCHA verification is skipped (development mode)
+   # Get keys from: https://www.google.com/recaptcha/admin
+   NEXT_PUBLIC_RECAPTCHA_SITE_KEY="your-site-key-here"
+   RECAPTCHA_SECRET_KEY="your-secret-key-here"
+   ```
+
+   **Note:** For development, you can use Google's test keys or leave empty. For production, use your own reCAPTCHA keys from Google reCAPTCHA Admin.
+
+8. (Optional) Seed default settings:
+   ```bash
+   # Seed default settings (homepage content, donation accounts, etc.)
+   npm run seed:settings
+   
+   # Force overwrite existing settings (use with caution)
+   npm run seed:settings:force
+   ```
+
+   **Note:** This populates the `Setting` table with default content from `src/lib/constants/defaultContent.ts`. Use `--force` flag to overwrite existing settings.
+
+9. Start the development server:
 ```bash
 npm run dev
 ```
@@ -266,6 +294,164 @@ The project uses **Vitest** for testing. Test files are located in `src/**/__tes
 - Watch mode (default): `npm test`
 
 See test examples in `src/lib/utils/__tests__/isAnnouncementActive.test.ts`.
+
+## Scholarship Application Form
+
+**Sprint 16:** Complete scholarship application form with dynamic fields (relatives, education history, references).
+
+### Features
+
+- **Public Form:** Multi-step form with all required fields
+  - Static fields: Personal info, university info, bank info, health/disability, family info, address
+  - Dynamic fields: Relatives (min 1, max 50), Education History (min 1, max 50), References (min 1, max 20)
+  - reCAPTCHA integration for spam prevention
+  - Form validation with Zod schemas (Turkish error messages)
+
+- **Admin Panel:**
+  - List view: Filter by status, search by name/email
+  - Detail view (V2): Read-only display with collapsible sections
+    - Genel Bilgi (General Information)
+    - Aile & Akrabalar (Family & Relatives)
+    - Okul Geçmişi (Education History)
+    - Referanslar (References)
+    - Finansal Bilgiler (Financial Information)
+    - Sağlık ve Engellilik (Health & Disability)
+    - Ek Bilgiler (Additional Information)
+  - Status management: Approve, Reject, Under Review, Delete
+  - Review notes support
+
+### Technical Details
+
+- **Database:** Relational tables (Prisma)
+  - `ScholarshipApplication` (main table)
+  - `Relative` (1-N relationship)
+  - `EducationHistory` (1-N relationship)
+  - `Reference` (1-N relationship)
+
+- **Validation:** Zod schemas (`src/modules/scholarship/schemas.ts`)
+  - Single source of truth for form validation
+  - Used in both frontend (React Hook Form) and backend (API validation)
+  - Turkish error messages
+
+- **Form Components:**
+  - `FieldArray` - Reusable dynamic field array component
+  - `Recaptcha` - reCAPTCHA integration component
+  - Date and numeric normalization helpers
+
+- **API Routes:**
+  - `POST /api/scholarship-applications` - Public form submission (with reCAPTCHA)
+  - `GET /api/scholarship-applications` - Admin list (requires auth)
+  - `GET /api/scholarship-applications/[id]` - Admin detail (requires auth)
+  - `PUT /api/scholarship-applications/[id]` - Status update (requires auth)
+  - `DELETE /api/scholarship-applications/[id]` - Delete (requires auth)
+
+### Documentation
+
+- **Field Inventory:** [docs/forms/scholarship-fields.md](./docs/forms/scholarship-fields.md) - Complete field documentation
+- **Form Route:** `/burs-basvurusu` (public)
+- **Admin Route:** `/admin/burs-basvurulari` (admin only)
+
+## File Upload & Dataset Cleanup
+
+**Sprint 17:** Centralized file lifecycle management to prevent orphaned files.
+
+### Overview
+
+All file uploads (images, PDFs) are stored in the `Dataset` table as Base64 data URLs. The file lifecycle service ensures that files are properly cleaned up when their associated entities are deleted or updated.
+
+### Storage Policy
+
+**Database Storage:**
+- All files are stored as Base64 data URLs in the `Dataset.fileUrl` field (MEDIUMTEXT, 16MB limit)
+- No external file storage (e.g., S3, cloud storage) - all files are in the database
+- This approach simplifies deployment and backup (single database backup includes all files)
+
+**File Size Limits:**
+- Images: 5MB max per file
+- PDFs: 10MB max per file (e.g., member CVs)
+- Enforced in `/api/upload` endpoint
+
+**Automatic Cleanup:**
+- When an event is deleted → all associated images are removed from Dataset
+- When a member CV is updated → old CV file is removed from Dataset
+- When favicon/logo is updated → old file is removed from Dataset
+- Cleanup is non-critical (errors are logged but don't block operations)
+
+### Architecture
+
+1. **Upload Flow:**
+   ```
+   Upload → /api/upload → Dataset.create() → Returns datasetId
+   ```
+
+2. **Entity Linking:**
+   - Files can be linked to entities (Event, Member, Settings)
+   - Linking is done via `fileLifecycleService.linkFileToEntity()`
+   - Dataset `source` field indicates entity type (e.g., "event-upload", "member-cv", "favicon")
+
+3. **Cleanup Flow:**
+   ```
+   Entity Delete/Update → fileLifecycleService → Dataset.delete() → File removed
+   ```
+
+### File Service (`src/modules/files/fileService.ts`)
+
+**Functions:**
+- `linkFileToEntity()` - Link a dataset file to an entity
+- `unlinkAndDeleteFilesForEntity()` - Delete all files for an entity
+- `deleteEventFiles()` - Delete files for an event (convenience function)
+- `replaceSingleFile()` - Replace old file with new (e.g., CV update, favicon change)
+- `replaceMemberCV()` - Replace member CV (specialized function)
+- `replaceFaviconOrLogo()` - Replace favicon/logo (source-based cleanup)
+
+**Entity Types:**
+- `EVENT` - Event images
+- `MEMBER_CV` - Member CV PDFs
+- `FAVICON` - Site favicon
+- `LOGO` - Site logo
+
+### Integration Points
+
+**Event Deletion:**
+- When an event is deleted, `DELETE /api/events/[id]` calls `deleteEventFiles()`
+- All event-related images are automatically removed from Dataset table
+
+**Member CV Update:**
+- When a member CV is updated, old CV is deleted before new one is linked
+- Integration in `PUT /api/members/[id]`
+
+**Favicon/Logo Update:**
+- When favicon/logo is updated via settings, old file is cleaned up
+- Integration in `PUT /api/settings`
+
+### File Storage
+
+- **Format:** Base64 data URLs (`data:image/png;base64,...` or `data:application/pdf;base64,...`)
+- **Size Limits:**
+  - Images: 5MB max
+  - PDFs: 10MB max
+- **Database Field:** `fileUrl` (MEDIUMTEXT, 16MB limit)
+
+### Testing
+
+File lifecycle service is tested in:
+- `src/modules/files/__tests__/fileService.test.ts` - Unit tests
+- `src/app/api/events/[id]/__tests__/route.test.ts` - Event delete integration test
+
+### Dataset Management
+
+**Manual Cleanup (if needed):**
+- Orphaned dataset records can be identified by checking `source` and `eventId` fields
+- Use Prisma Studio to inspect and delete orphaned records:
+  ```bash
+  npx prisma studio
+  ```
+- Or write a cleanup script (future enhancement)
+
+**Best Practices:**
+- Always use the file lifecycle service (`src/modules/files/fileService.ts`) for file operations
+- Never delete Dataset records directly (use service functions)
+- Test file cleanup when modifying entity deletion logic
 
 ## Learn More
 

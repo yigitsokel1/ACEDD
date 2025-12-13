@@ -307,4 +307,88 @@ describe("POST /api/upload", () => {
     expect(response.status).toBe(500);
     expect(data).toHaveProperty("error", "Dosya kaydedilirken bir hata oluştu");
   });
+
+  // Sprint 17: PDF upload tests
+  it("should upload PDF file successfully", async () => {
+    const mockDataset = {
+      id: "dataset-pdf-1",
+      name: "CV - test",
+      description: "Belge için yüklenen dosya: test.pdf. Dosya boyutu: 0.00 MB",
+      category: "Belge",
+      fileUrl: "data:application/pdf;base64,test123",
+      fileName: "test.pdf",
+      fileSize: 1024,
+      fileType: "application/pdf",
+      tags: JSON.stringify(["pdf", "belge", "cv", "döküman"]),
+      isPublic: true,
+      downloadCount: 0,
+      uploadedBy: "Admin",
+      source: "member-cv",
+      eventId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    vi.mocked((prisma as any).dataset.create).mockResolvedValue(mockDataset);
+
+    const formData = new FormData();
+    const mockPdfFile = new File([], "test.pdf", { type: "application/pdf" });
+    Object.defineProperty(mockPdfFile, "size", { value: 1024, writable: false });
+    formData.append("file", mockPdfFile);
+
+    const request = {
+      formData: async () => formData,
+    } as unknown as NextRequest;
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data).toHaveProperty("success", true);
+    expect(data.datasetIds).toHaveLength(1);
+    expect((prisma as any).dataset.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        category: "Belge",
+        fileType: "application/pdf",
+        source: "member-cv",
+        name: "CV - test",
+      }),
+    });
+  });
+
+  it("should reject PDF file larger than 10MB", async () => {
+    const formData = new FormData();
+    const mockPdfFile = new File([], "test.pdf", { type: "application/pdf" });
+    Object.defineProperty(mockPdfFile, "size", { value: 11 * 1024 * 1024, writable: false }); // 11MB
+    formData.append("file", mockPdfFile);
+
+    const request = {
+      formData: async () => formData,
+    } as unknown as NextRequest;
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data).toHaveProperty("error", "Dosya boyutu 10MB'dan küçük olmalıdır");
+    expect((prisma as any).dataset.create).not.toHaveBeenCalled();
+  });
+
+  it("should reject non-image and non-PDF files", async () => {
+    const formData = new FormData();
+    const mockFile = new File([], "test.txt", { type: "text/plain" });
+    Object.defineProperty(mockFile, "size", { value: 1024, writable: false });
+    formData.append("file", mockFile);
+
+    const request = {
+      formData: async () => formData,
+    } as unknown as NextRequest;
+
+    const response = await POST(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data).toHaveProperty("error", "Sadece görsel (image) veya PDF dosyaları yüklenebilir");
+    expect((prisma as any).dataset.create).not.toHaveBeenCalled();
+  });
 });

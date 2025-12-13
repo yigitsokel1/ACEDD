@@ -1,23 +1,25 @@
 import React from "react";
 import { getPageContent } from "@/lib/settings/convenience";
-import { Target, Users, Heart, BookOpen, Globe, Award } from "lucide-react";
 
-// Icon mapping for goals (icons are React components, can't be stored in settings)
-const GOAL_ICONS = [Target, Users, Heart, BookOpen, Globe, Award];
+// Color gradient mapping (emerald, teal, green, cyan)
+const COLOR_GRADIENTS: Record<string, { gradient: string; bg: string; border: string }> = {
+  emerald: { gradient: "from-emerald-500 to-teal-600", bg: "from-emerald-600 to-teal-600", border: "border-emerald-100" },
+  teal: { gradient: "from-teal-500 to-cyan-600", bg: "from-teal-600 to-cyan-600", border: "border-teal-100" },
+  green: { gradient: "from-green-500 to-emerald-600", bg: "from-green-600 to-emerald-600", border: "border-green-100" },
+  cyan: { gradient: "from-cyan-500 to-teal-600", bg: "from-cyan-600 to-teal-600", border: "border-cyan-100" },
+};
 
 export async function HistorySection() {
   const content = await getPageContent("about");
   
-  // Get content from settings with minimal fallbacks
-  const goalsTitle = content.goalsTitle || "Hedefimiz";
-  const goalsSubtitle = content.goalsSubtitle || "Acıpayam Çevresi Eğitimi Destekleme Derneği'nin Temel Hedefi";
-  const goalsMainTitle = content.goalsMainTitle || "Ana Hedefimiz";
-  const goalsMainDescription = content.goalsMainDescription || "Acıpayam Çevresi Eğitimi Destekleme Derneği'nin ana hedefi, Acıpayam ve çevresindeki öğrencilere kapsamlı bir eğitim desteği sunmak ve onların kişisel gelişimlerine katkıda bulunmaktır. Bu hedef doğrultusunda, dernek çeşitli faaliyetler yürüterek gençlerin geleceğe daha umutla bakmalarını sağlamayı amaçlar.";
-  const goalsActivitiesTitle = content.goalsActivitiesTitle || "Hedefe Ulaşmak İçin Yürütülen Faaliyetler";
-  const goalsActivitiesSubtitle = content.goalsActivitiesSubtitle || "Dernek, bu büyük hedefi gerçekleştirmek için somut adımlar atıyor:";
-  const goalsFooter = content.goalsFooter || "Acıpayam Çevresi Eğitimi Destekleme Derneği, tüm bu faaliyetlerini hayırseverlerin ve eğitim gönüllülerinin destekleriyle sürdürerek, Acıpayamlı gençlerin daha iyi bir eğitim almalarına ve aydınlık bir geleceğe adım atmalarına yardımcı olmayı kendine hedef edinmiştir.";
-  
-  // Get goals from settings (empty array fallback)
+  // All content comes from settings with defaults from defaultContent.ts
+  const goalsTitle = content.goalsTitle;
+  const goalsSubtitle = content.goalsSubtitle;
+  const goalsMainTitle = content.goalsMainTitle;
+  const goalsMainDescription = content.goalsMainDescription;
+  const goalsActivitiesTitle = content.goalsActivitiesTitle;
+  const goalsActivitiesSubtitle = content.goalsActivitiesSubtitle;
+  const goalsFooter = content.goalsFooter;
   const goals = content.goals || [];
 
   return (
@@ -70,21 +72,23 @@ export async function HistorySection() {
         </div>
         
         <div className="grid md:grid-cols-2 gap-8 auto-rows-fr">
-          {goals.map((goal: any, index: number) => {
-            const IconComponent = GOAL_ICONS[index] || Target;
+          {goals.map((goal: any) => {
+            const colors = COLOR_GRADIENTS[goal.color] || COLOR_GRADIENTS.emerald;
             return (
-              <div key={index} className="group relative flex">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
-                <div className="relative bg-white p-8 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 flex flex-col w-full">
+              <div key={goal.id} className="group relative flex">
+                <div className={`absolute -inset-0.5 bg-gradient-to-r ${colors.bg} rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200`}></div>
+                <div className={`relative bg-white p-8 rounded-2xl shadow-lg border ${colors.border} hover:shadow-xl transition-all duration-300 flex flex-col w-full`}>
                   <div className="flex items-start space-x-5 flex-grow">
                     <div className="flex-shrink-0">
-                      <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center shadow-md">
-                        <IconComponent className="w-6 h-6 text-white" />
+                      <div className={`w-12 h-12 bg-gradient-to-br ${colors.gradient} rounded-xl flex items-center justify-center shadow-md`}>
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={goal.icon} />
+                        </svg>
                       </div>
                     </div>
                     <div className="flex-1 flex flex-col">
                       <h3 className="text-xl font-bold text-gray-900 mb-3">{goal.title}</h3>
-                      <div className="w-8 h-1 bg-emerald-500 rounded-full mb-4"></div>
+                      <div className={`w-8 h-1 bg-${goal.color}-500 rounded-full mb-4`}></div>
                       <p className="text-gray-700 leading-relaxed flex-grow">
                         {goal.description}
                       </p>

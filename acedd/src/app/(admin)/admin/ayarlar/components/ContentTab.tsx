@@ -6,7 +6,8 @@ import { Save, Loader2 } from "lucide-react";
 import type { Setting } from "@/lib/types/setting";
 import type { PageIdentifier } from "@/lib/types/setting";
 import { getContentPrefix, getContentKey } from "@/lib/settings/keys";
-import JsonEditor from "./JsonEditor";
+import EnhancedJsonEditor from "./EnhancedJsonEditor";
+import { PAGE_SCHEMAS } from "@/lib/constants/settingsSchema";
 
 const PAGES: Array<{ key: PageIdentifier; label: string }> = [
   { key: "home", label: "Ana Sayfa" },
@@ -24,65 +25,77 @@ const PAGES: Array<{ key: PageIdentifier; label: string }> = [
  */
 const PAGE_FIELDS: Record<PageIdentifier, Array<{ key: string; label: string; type: "input" | "textarea" | "json"; rows?: number; helperText?: string }>> = {
   home: [
+    // Hero Section
     { key: "heroTitle", label: "Hero Başlık", type: "input", helperText: "Ana sayfanın en üst kısmında görünecek ana başlık" },
     { key: "intro", label: "Hero Açıklama", type: "textarea", rows: 3, helperText: "Hero bölümündeki ana açıklama metni" },
-    { key: "primaryButtonText", label: "Birincil Buton Metni", type: "input", helperText: "Hero bölümündeki birincil buton metni (örn: 'Burs Başvurusu Yap')" },
-    { key: "secondaryButtonText", label: "İkincil Buton Metni", type: "input", helperText: "Hero bölümündeki ikincil buton metni (örn: 'Daha Fazla Bilgi')" },
+    { key: "primaryButtonText", label: "Hero Birincil Buton", type: "input", helperText: "Hero bölümündeki birincil buton metni" },
+    { key: "secondaryButtonText", label: "Hero İkincil Buton", type: "input", helperText: "Hero bölümündeki ikincil buton metni" },
+    // Stats Section
+    { key: "stats", label: "İstatistikler", type: "json", helperText: "İstatistikler listesi (value, label). Icon ve color otomatik eklenir." },
+    
     { key: "visualCardTitle", label: "Görsel Kart Başlığı", type: "input", helperText: "Hero bölümündeki sağ taraftaki görsel kartın başlığı" },
     { key: "visualCardDescription", label: "Görsel Kart Açıklaması", type: "input", helperText: "Görsel kartın altındaki kısa açıklama metni" },
-    { key: "missionTitle", label: "Misyon Bölümü Başlığı", type: "input", helperText: "Misyon kartlarının üstündeki başlık (örn: 'AMACIMIZ')" },
-    { key: "missionDescription", label: "Misyon Bölümü Açıklaması", type: "textarea", rows: 3, helperText: "Misyon kartlarının üstündeki açıklama metni" },
-    { key: "missionFooter", label: "Misyon Bölümü Alt Metni", type: "textarea", rows: 2, helperText: "Misyon kartlarının altındaki kapanış metni" },
-    { key: "ctaTitle", label: "CTA Bölümü Başlığı", type: "input", helperText: "Sayfa sonundaki CTA (Call to Action) bölümünün başlığı" },
+    // Activities Section
+    { key: "activities", label: "Aktiviteler", type: "json", helperText: "Aktiviteler listesi (title, description). Icon ve color otomatik eklenir." },
+    
+   
+    
+    // Mission Section
+    { key: "missionTitle", label: "Misyon Bölümü Başlığı", type: "input", helperText: "Misyon bölümünün başlığı" },
+    { key: "missionDescription", label: "Misyon Bölümü Açıklaması", type: "textarea", rows: 3, helperText: "Misyon bölümündeki açıklama metni" },
+    { key: "missions", label: "Misyon Kartları", type: "json", helperText: "Misyon kartları listesi (title, description). Icon ve color otomatik eklenir." },
+    { key: "missionFooter", label: "Misyon Bölümü Alt Metni", type: "textarea", rows: 2, helperText: "Misyon bölümünün altındaki kapanış metni" },
+    
+    
+    // CTA Section
+    { key: "ctaTitle", label: "CTA Bölümü Başlığı", type: "input", helperText: "Sayfa sonundaki CTA bölümünün başlığı" },
     { key: "ctaDescription", label: "CTA Bölümü Açıklaması", type: "textarea", rows: 3, helperText: "CTA bölümündeki açıklama metni" },
-    { key: "ctaPrimaryButtonText", label: "CTA Birincil Buton Metni", type: "input", helperText: "CTA bölümündeki birincil buton metni" },
-    { key: "ctaSecondaryButtonText", label: "CTA İkincil Buton Metni", type: "input", helperText: "CTA bölümündeki ikincil buton metni" },
-    { key: "stats", label: "İstatistik Kartları", type: "json", helperText: "Ana sayfadaki istatistik kartları (value, label, icon, color)" },
-    { key: "missions", label: "Misyon Kartları", type: "json", helperText: "Ana sayfadaki misyon kartları (title, description, icon, color)" },
-    { key: "activities", label: "Aktivite Kartları", type: "json", helperText: "Ana sayfadaki aktivite kartları (title, description, icon, color)" },
-    { key: "trustIndicators", label: "Güven Göstergeleri", type: "json", helperText: "Ana sayfadaki güven göstergeleri (label, icon)" },
+    { key: "ctaPrimaryButtonText", label: "CTA Birincil Buton", type: "input", helperText: "CTA bölümündeki birincil buton metni" },
+    { key: "ctaSecondaryButtonText", label: "CTA İkincil Buton", type: "input", helperText: "CTA bölümündeki ikincil buton metni" },
+    { key: "trustIndicators", label: "Güven Göstergeleri", type: "json", helperText: "Güven göstergeleri listesi (label). Icon ve color otomatik eklenir." },
   ],
   scholarship: [
     { key: "heroTitle", label: "Hero Başlık", type: "input", helperText: "Burs başvurusu sayfasının ana başlığı" },
     { key: "intro", label: "Hero Açıklama", type: "textarea", rows: 4, helperText: "Hero bölümündeki açıklama metni" },
-    { key: "requirements", label: "Burs Gereksinimleri", type: "json", helperText: "Burs başvurusu gereksinimleri listesi (string array)" },
-    { key: "applicationSteps", label: "Başvuru Adımları", type: "json", helperText: "Başvuru adımları listesi (step, title, description)" },
+    { key: "requirements", label: "Başvuru Şartları", type: "json", helperText: "Burs başvurusu için gerekli şartlar listesi (string array)" },
+    { key: "applicationSteps", label: "Başvuru Süreci", type: "json", helperText: "Başvuru süreci adımları (step, title, description). Icon ve color otomatik eklenir." },
   ],
   membership: [
     { key: "heroTitle", label: "Hero Başlık", type: "input", helperText: "Üyelik başvurusu sayfasının ana başlığı" },
     { key: "intro", label: "Hero Açıklama", type: "textarea", rows: 4, helperText: "Hero bölümündeki açıklama metni" },
-    { key: "membershipConditionsText", label: "Üyelik Şartları Metni", type: "textarea", rows: 8, helperText: "Başvuru formunda gösterilecek üyelik şartları ve koşulları metni (sade metin)" },
-    { key: "additionalInfoTitle", label: "Başvuru Hakkında Başlığı", type: "input", helperText: "Sayfa altındaki 'Başvuru Hakkında' bölümünün başlığı" },
-    { key: "additionalInfoDescription", label: "Başvuru Hakkında Açıklaması", type: "textarea", rows: 3, helperText: "Başvuru Hakkında bölümündeki açıklama metni" },
+    { key: "membershipConditionsText", label: "Üyelik Şartları", type: "textarea", rows: 8, helperText: "Başvuru formunda gösterilecek üyelik şartları metni" },
+    { key: "additionalInfoTitle", label: "Ek Bilgi Başlığı", type: "input", helperText: "Sayfa altındaki ek bilgi bölümünün başlığı" },
+    { key: "additionalInfoDescription", label: "Ek Bilgi Açıklaması", type: "textarea", rows: 3, helperText: "Ek bilgi bölümündeki açıklama metni" },
   ],
   about: [
     { key: "heroTitle", label: "Hero Başlık", type: "input", helperText: "Hakkımızda sayfasının ana başlığı" },
     { key: "intro", label: "Hero Açıklama", type: "textarea", rows: 4, helperText: "Hero bölümündeki açıklama metni" },
     { key: "missionVisionTitle", label: "Misyon/Vizyon Bölümü Başlığı", type: "input", helperText: "Misyon ve Vizyon bölümünün başlığı" },
     { key: "missionVisionSubtitle", label: "Misyon/Vizyon Bölümü Alt Başlığı", type: "input", helperText: "Misyon ve Vizyon bölümünün alt başlığı" },
+    { key: "missionVision", label: "Misyon ve Vizyon", type: "json", helperText: "Misyon ve vizyon içerikleri (mission: {title, description}, vision: {title, description}). Icon ve color otomatik eklenir." },
     { key: "valuesTitle", label: "Değerler Bölümü Başlığı", type: "input", helperText: "Değerler bölümünün başlığı" },
     { key: "valuesSubtitle", label: "Değerler Bölümü Alt Başlığı", type: "textarea", rows: 2, helperText: "Değerler bölümünün alt başlığı/açıklaması" },
+    { key: "values", label: "Değerler Listesi", type: "json", helperText: "Değerler listesi (title, description). Icon ve color otomatik eklenir." },
     { key: "valuesFooter", label: "Değerler Bölümü Alt Metni", type: "textarea", rows: 2, helperText: "Değerler bölümünün altındaki kapanış metni" },
     { key: "goalsTitle", label: "Hedefler Bölümü Başlığı", type: "input", helperText: "Hedefler bölümünün başlığı" },
     { key: "goalsSubtitle", label: "Hedefler Bölümü Alt Başlığı", type: "input", helperText: "Hedefler bölümünün alt başlığı" },
     { key: "goalsMainTitle", label: "Ana Hedef Başlığı", type: "input", helperText: "Ana hedef kartının başlığı" },
     { key: "goalsMainDescription", label: "Ana Hedef Açıklaması", type: "textarea", rows: 3, helperText: "Ana hedef kartının açıklama metni" },
-    { key: "goalsActivitiesTitle", label: "Faaliyetler Alt Başlığı", type: "input", helperText: "Faaliyetler listesinin üstündeki başlık" },
-    { key: "goalsActivitiesSubtitle", label: "Faaliyetler Alt Başlık Açıklaması", type: "input", helperText: "Faaliyetler listesinin üstündeki açıklama" },
+    { key: "goalsActivitiesTitle", label: "Faaliyetler Başlığı", type: "input", helperText: "Faaliyetler listesinin üstündeki başlık" },
+    { key: "goalsActivitiesSubtitle", label: "Faaliyetler Alt Başlığı", type: "input", helperText: "Faaliyetler listesinin üstündeki açıklama" },
+    { key: "goals", label: "Hedefler ve Faaliyetler Listesi", type: "json", helperText: "Hedefler ve faaliyetler listesi (title, description). Icon ve color otomatik eklenir." },
     { key: "goalsFooter", label: "Hedefler Bölümü Alt Metni", type: "textarea", rows: 2, helperText: "Hedefler bölümünün altındaki kapanış metni" },
-    { key: "jobDescriptionsTitle", label: "Görev Tanımları Başlığı", type: "input", helperText: "Görev tanımları kartlarının üstündeki başlık" },
-    { key: "jobDescriptions", label: "Görev Tanımları Kartları", type: "json", helperText: "Görev tanımları kartları listesi (title, description) - icon ve level bilgileri otomatik olarak constants'tan alınır" },
-    { key: "organizationStructureTitle", label: "Organizasyon Yapımız Başlığı", type: "input", helperText: "Sayfa altındaki 'Organizasyon Yapımız' bölümünün başlığı" },
-    { key: "organizationStructureDescription", label: "Organizasyon Yapımız Açıklaması", type: "textarea", rows: 3, helperText: "Organizasyon Yapımız bölümündeki açıklama metni" },
-    { key: "values", label: "Değerler", type: "json", helperText: "Hakkımızda sayfasındaki değerler listesi (title, description, icon)" },
-    { key: "goals", label: "Hedefler ve Faaliyetler", type: "json", helperText: "Hakkımızda sayfasındaki hedefler ve faaliyetler listesi (title, description, icon)" },
-    { key: "missionVision", label: "Misyon ve Vizyon", type: "json", helperText: "Misyon ve vizyon bilgileri (mission: {title, description, icon}, vision: {title, description, icon})" },
+    { key: "jobDescriptionsTitle", label: "Görev Tanımları Başlığı", type: "input", helperText: "Görev tanımları bölümünün başlığı" },
+    { key: "jobDescriptions", label: "Görev Tanımları Listesi", type: "json", helperText: "Görev tanımları listesi (title, description). Icon ve color otomatik eklenir." },
+    { key: "organizationStructureTitle", label: "Organizasyon Yapısı Başlığı", type: "input", helperText: "Organizasyon yapısı bölümünün başlığı" },
+    { key: "organizationStructureDescription", label: "Organizasyon Yapısı Açıklaması", type: "textarea", rows: 3, helperText: "Organizasyon yapısı bölümündeki açıklama metni" },
   ],
   contact: [
     { key: "heroTitle", label: "Hero Başlık", type: "input", helperText: "İletişim sayfasının ana başlığı" },
     { key: "intro", label: "Hero Açıklama", type: "textarea", rows: 4, helperText: "Hero bölümündeki açıklama metni" },
-    { key: "infoSectionTitle", label: "İletişim Bilgileri Bölümü Başlığı", type: "input", helperText: "İletişim bilgileri kartlarının üstündeki başlık (örn: 'İletişim Bilgileri')" },
-    { key: "infoSectionDescription", label: "İletişim Bilgileri Bölümü Açıklaması", type: "textarea", rows: 2, helperText: "İletişim bilgileri kartlarının üstündeki açıklama metni" },
+    { key: "infoSectionTitle", label: "İletişim Bilgileri Başlığı", type: "input", helperText: "İletişim bilgileri bölümünün başlığı" },
+    { key: "infoSectionDescription", label: "İletişim Bilgileri Açıklaması", type: "textarea", rows: 2, helperText: "İletişim bilgileri bölümündeki açıklama metni" },
+    { key: "contactInfoItems", label: "İletişim Kartları", type: "json", helperText: "İletişim kartları listesi (title, description). Icon ve color otomatik eklenir." },
   ],
   events: [
     { key: "heroTitle", label: "Hero Başlık", type: "input", helperText: "Etkinlikler sayfasının ana başlığı" },
@@ -93,13 +106,18 @@ const PAGE_FIELDS: Record<PageIdentifier, Array<{ key: string; label: string; ty
     { key: "ctaSecondaryButtonText", label: "CTA İkincil Buton Metni", type: "input", helperText: "CTA bölümündeki ikincil buton metni" },
   ],
   donation: [
+    // Hero Section
     { key: "heroTitle", label: "Hero Başlık", type: "input", helperText: "Bağış yap sayfasının ana başlığı" },
     { key: "intro", label: "Hero Açıklama", type: "textarea", rows: 3, helperText: "Hero bölümündeki açıklama metni" },
-    { key: "introduction", label: "Giriş Metni", type: "textarea", rows: 2, helperText: "Banka hesapları bölümünün üstündeki giriş metni" },
-    { key: "thankYouTitle", label: "Teşekkür Bölümü Başlığı", type: "input", helperText: "Bağış sonrası teşekkür bölümünün başlığı" },
-    { key: "thankYouDescription", label: "Teşekkür Bölümü Açıklaması", type: "textarea", rows: 3, helperText: "Teşekkür bölümündeki açıklama metni" },
+    
+    // Bank Accounts Section
+    { key: "introduction", label: "Banka Hesapları Giriş", type: "textarea", rows: 2, helperText: "Banka hesapları bölümünün üstündeki giriş metni" },
+    { key: "bankAccounts", label: "Banka Hesapları", type: "json", helperText: "Banka hesapları listesi (currency, bank, accountName, iban). Icon ve color otomatik eklenir." },
+    
+    // Thank You Section
+    { key: "thankYouTitle", label: "Teşekkür Başlığı", type: "input", helperText: "Teşekkür bölümünün başlığı" },
+    { key: "thankYouDescription", label: "Teşekkür Açıklaması", type: "textarea", rows: 3, helperText: "Teşekkür bölümündeki açıklama metni" },
     { key: "contactMessage", label: "İletişim Mesajı", type: "textarea", rows: 2, helperText: "Teşekkür bölümünün altındaki iletişim mesajı" },
-    { key: "bankAccounts", label: "Banka Hesapları", type: "json", helperText: "Banka hesap bilgileri (currency, bank, accountName, iban)" },
   ],
 };
 
@@ -191,7 +209,7 @@ export default function ContentTab() {
         
         // Handle different field types
         if (field.type === "json") {
-          // For JSON fields, use the value as-is (already parsed from JsonEditor)
+          // For JSON fields, use the value as-is (already parsed from EnhancedJsonEditor)
           // Accept null, empty array, empty object, or valid JSON structure
           if (value === undefined || value === null) {
             settingsToUpdate.push({ key: settingKey, value: null });
@@ -362,18 +380,31 @@ export default function ContentTab() {
                     const fieldValue = formData[field.key];
 
                     if (field.type === "json") {
+                      // Find corresponding field schema
+                      const pageSchemas = PAGE_SCHEMAS[selectedPage as PageIdentifier] || [];
+                      const fieldSchema = pageSchemas.find(schema => schema.key === field.key);
+                      
+                      if (!fieldSchema) {
+                        return (
+                          <div key={field.key} className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">
+                              {field.label}
+                            </label>
+                            <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                              <p className="text-xs text-red-800">
+                                ⚠️ Schema tanımı bulunamadı: {field.key}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      }
+                      
                       return (
                         <div key={field.key} className="space-y-2">
-                          <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
-                            <p className="text-xs text-amber-800">
-                              <strong>⚠️ JSON Formatı:</strong> Bu alan JSON formatındadır. Hatalı format girmeniz durumunda ilgili içerik boş görünür. Lütfen geçerli bir JSON yapısı kullanın.
-                            </p>
-                          </div>
-                          <JsonEditor
-                            label={field.label}
-                            value={fieldValue || (Array.isArray(fieldValue) ? [] : {})}
+                          <EnhancedJsonEditor
+                            fieldSchema={fieldSchema}
+                            value={fieldValue}
                             onChange={(value) => handleChange(field.key, value)}
-                            helperText={field.helperText}
                             error={errors[field.key]}
                           />
                         </div>

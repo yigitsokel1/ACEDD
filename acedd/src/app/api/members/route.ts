@@ -56,6 +56,7 @@ function formatMember(prismaMember: {
   occupation: string | null;
   bloodType: string | null;
   city: string | null;
+  cvDatasetId: string | null; // Sprint 17: CV Dataset ID
   createdAt: Date;
   updatedAt: Date;
 }) {
@@ -80,6 +81,7 @@ function formatMember(prismaMember: {
     tags: tags as Member["tags"],
     bloodType: prismaMember.bloodType as Member["bloodType"] || undefined,
     city: prismaMember.city || undefined,
+    cvDatasetId: prismaMember.cvDatasetId || undefined, // Sprint 17: CV Dataset ID
     createdAt: prismaMember.createdAt.toISOString(),
     updatedAt: prismaMember.updatedAt.toISOString(),
   };
@@ -269,6 +271,8 @@ export async function POST(request: NextRequest) {
         // Sprint 15: Membership Application'dan gelen yeni alanlar
         bloodType: body.bloodType || null,
         city: body.city || null,
+        // Sprint 17: CV Upload
+        cvDatasetId: body.cvDatasetId || null,
       },
     });
 

@@ -7,11 +7,11 @@ import { CTA_BUTTON_HREFS } from "../constants";
 export async function CTASection() {
   const content = await getPageContent("events");
   
-  // Get content from settings with minimal fallbacks
-  const ctaTitle = content.ctaTitle || "Etkinliklerimize Katılmak İster misiniz?";
-  const ctaSubtitle = content.ctaSubtitle || "Güncel etkinliklerimizi takip edin ve size uygun olanlara katılın.";
-  const ctaPrimaryButtonText = content.ctaPrimaryButtonText || "Etkinlikleri Görüntüle";
-  const ctaSecondaryButtonText = content.ctaSecondaryButtonText || "İletişime Geç";
+  // All content comes from settings with defaults from defaultContent.ts
+  const ctaTitle = content.ctaTitle;
+  const ctaSubtitle = content.ctaSubtitle;
+  const ctaPrimaryButtonText = content.ctaPrimaryButtonText;
+  const ctaSecondaryButtonText = content.ctaSecondaryButtonText;
   
   // Use href from constants (technical data - routing configuration, not managed in settings)
   const primaryButtonHref = CTA_BUTTON_HREFS.primary;

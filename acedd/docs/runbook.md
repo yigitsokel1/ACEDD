@@ -619,6 +619,254 @@ vercel logs --follow | grep "\[ERROR\]\[API\]\[SCHOLARSHIP\]"
 
 ---
 
+## Admin Password Reset
+
+### Using Create-Admin Script
+
+The simplest way to reset an admin password is to use the `create-admin` script, which will update the password if the user already exists:
+
+```bash
+# Update existing admin password
+npm run create-admin admin@acedd.org "new-secure-password" "Admin User" SUPER_ADMIN
+
+# Or use npx tsx directly:
+npx tsx scripts/create-admin.ts admin@acedd.org "new-secure-password" "Admin User" SUPER_ADMIN
+```
+
+**Note:** The script will:
+- Create a new admin user if the email doesn't exist
+- Update the password if the user already exists
+- Update the name and role if provided
+
+### Manual Password Reset (Database)
+
+If you need to manually reset a password in the database:
+
+1. **Generate a password hash:**
+   ```bash
+   # Using Node.js (in project directory):
+   node -e "const bcrypt = require('bcryptjs'); bcrypt.hash('new-password', 10).then(hash => console.log(hash));"
+   ```
+
+2. **Update the database:**
+   ```sql
+   -- Connect to database via Prisma Studio or SQL client:
+   -- Prisma Studio:
+   npx prisma studio
+   
+   -- Or SQL:
+   UPDATE AdminUser 
+   SET passwordHash = '<generated-hash-here>' 
+   WHERE email = 'admin@acedd.org';
+   ```
+
+3. **Verify:**
+   - Log in to admin panel with new password
+   - Old password should no longer work
+
+**Security Note:** Always use strong passwords and rotate them periodically. The password hash is stored in the database using bcrypt with 10 rounds.
+
+## Dataset Cleanup & File Lifecycle
+
+### Automatic Cleanup
+
+The file lifecycle service (`src/modules/files/fileService.ts`) automatically cleans up files when entities are deleted or updated:
+
+**Automatic Cleanup Scenarios:**
+- ✅ Event deletion → All associated images removed
+- ✅ Member CV update → Old CV file removed
+- ✅ Member deletion → CV file removed
+- ✅ Favicon/Logo update → Old file removed
+
+**Cleanup is Non-Critical:**
+- Errors during cleanup are logged but don't block operations
+- If cleanup fails, files remain in Dataset table (manual cleanup may be needed)
+
+### Manual Cleanup (If Needed)
+
+**Identify Orphaned Files:**
+
+1. **Using Prisma Studio:**
+   ```bash
+   npx prisma studio
+   ```
+   - Navigate to `Dataset` table
+   - Filter by `source` field to find files by type
+   - Check `eventId` field - if event is deleted but file still exists, it's orphaned
+
+2. **Using SQL Query:**
+   ```sql
+   -- Find orphaned event images (events deleted but files remain)
+   SELECT d.* FROM Dataset d
+   WHERE d.source = 'event-upload'
+   AND d.eventId IS NOT NULL
+   AND NOT EXISTS (
+     SELECT 1 FROM Event e WHERE e.id = d.eventId
+   );
+   
+   -- Find member CVs for deleted members
+   SELECT d.* FROM Dataset d
+   WHERE d.source = 'member-cv'
+   AND NOT EXISTS (
+     SELECT 1 FROM Member m WHERE m.cvDatasetId = d.id
+   );
+   ```
+
+**Delete Orphaned Files:**
+
+1. **Using Prisma Studio:**
+   - Find orphaned records
+   - Delete them manually (carefully!)
+
+2. **Using SQL (careful!):**
+   ```sql
+   -- Delete orphaned event images
+   DELETE FROM Dataset 
+   WHERE source = 'event-upload'
+   AND eventId IS NOT NULL
+   AND NOT EXISTS (
+     SELECT 1 FROM Event e WHERE e.id = Dataset.eventId
+   );
+   ```
+
+**Best Practice:** Always use the file lifecycle service functions in code. Manual cleanup should only be used for orphaned files from before the cleanup service was implemented.
+
+### File Lifecycle Service Functions
+
+For developers modifying file operations:
+
+- `linkFileToEntity()` - Link a dataset file to an entity
+- `unlinkAndDeleteFilesForEntity()` - Delete all files for an entity
+- `deleteEventFiles()` - Delete files for an event (convenience)
+- `replaceSingleFile()` - Replace old file with new
+- `replaceMemberCV()` - Replace member CV (specialized)
+- `replaceFaviconOrLogo()` - Replace favicon/logo
+
+See `src/modules/files/fileService.ts` for implementation details.
+
+## Logging Policy
+
+### Log Format Standard
+
+**Log Prefix Format:** `[LEVEL][MODULE][ACTION]`
+
+**Levels:**
+- `[ERROR]` - Critical errors that require attention
+- `[WARNING]` - Non-critical issues (e.g., cleanup failures)
+- `[INFO]` - Important information (e.g., member creation)
+- `[DEBUG]` - Debug information (development only)
+
+**Module Examples:**
+- `[ERROR][API][MEMBERSHIP][GET]` - Membership API GET error
+- `[ERROR][API][SCHOLARSHIP][CREATE]` - Scholarship API CREATE error
+- `[WARNING][fileService][linkFileToEntity]` - File service warning
+- `[INFO][API][MEMBERSHIP][APPROVE]` - Member creation info
+
+### Secure Logging
+
+**Never log sensitive data:**
+- ❌ Passwords or password hashes
+- ❌ TC Kimlik numbers
+- ❌ Full email addresses (use domain only: `emailDomain: 'example.com'`)
+- ❌ Full session data
+
+**Safe to log:**
+- ✅ Entity IDs (e.g., `memberId`, `applicationId`)
+- ✅ Error types and codes
+- ✅ User actions (without sensitive details)
+- ✅ Timestamps and operation status
+
+**Example:**
+```typescript
+// ❌ BAD
+console.error("Error:", { email: user.email, password: user.password, tcId: user.tcId });
+
+// ✅ GOOD
+logErrorSecurely("[API][MEMBERSHIP][CREATE]", error, { 
+  ipAddress: clientIp, 
+  emailDomain: user.email.split('@')[1],
+  errorCount: errors.length 
+});
+```
+
+### Vercel Log Access
+
+**Dashboard:**
+- Vercel Dashboard → Project → Logs
+- Real-time log stream
+- Filter by text (e.g., `[ERROR][API]`)
+- Deployment-specific logs
+
+**CLI:**
+```bash
+# Real-time logs
+vercel logs --follow
+
+# Filter logs
+vercel logs --follow | grep "\[ERROR\]\[API\]\[SCHOLARSHIP\]"
+
+# Specific deployment
+vercel logs <deployment-url>
+```
+
+## reCAPTCHA Key Management
+
+### Getting reCAPTCHA Keys
+
+1. **Register at Google reCAPTCHA Admin:**
+   - Visit: https://www.google.com/recaptcha/admin
+   - Click "Create" to register a new site
+   - Choose reCAPTCHA v2 (Checkbox)
+   - Add your domains:
+     - Development: `localhost` (or leave empty for testing)
+     - Production: Your production domain (e.g., `acedd.org`)
+
+2. **Get Keys:**
+   - **Site Key (Public):** Used in frontend forms (`NEXT_PUBLIC_RECAPTCHA_SITE_KEY`)
+   - **Secret Key:** Used in backend verification (`RECAPTCHA_SECRET_KEY`)
+   - Keep secret key secure (never commit to git)
+
+### Environment Setup
+
+**Development (.env):**
+```env
+# Optional - Leave empty to skip reCAPTCHA verification (development mode)
+NEXT_PUBLIC_RECAPTCHA_SITE_KEY=""
+RECAPTCHA_SECRET_KEY=""
+```
+
+**Production (Vercel Environment Variables):**
+1. Vercel Dashboard → Project → Settings → Environment Variables
+2. Add:
+   - `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` - Your site key
+   - `RECAPTCHA_SECRET_KEY` - Your secret key
+3. Select "Production" environment
+4. Save and redeploy
+
+### Testing reCAPTCHA
+
+**Google Test Keys (Development):**
+- Site Key: `6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI`
+- Secret Key: `6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe`
+- These always pass verification (for testing only)
+
+**Production:**
+- Use your own keys from Google reCAPTCHA Admin
+- Test on production domain before going live
+
+### Troubleshooting
+
+**reCAPTCHA not showing:**
+- Check `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` is set
+- Check browser console for errors
+- Verify domain is registered in Google reCAPTCHA Admin
+
+**Verification failing:**
+- Check `RECAPTCHA_SECRET_KEY` is set correctly
+- Check Vercel logs for reCAPTCHA verification errors
+- Verify secret key matches site key in Google reCAPTCHA Admin
+- Check domain matches registered domain
+
 ## Troubleshooting
 
 ### Build Hataları

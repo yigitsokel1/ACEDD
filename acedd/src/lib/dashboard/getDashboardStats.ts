@@ -137,7 +137,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
-        fullName: true,
+        firstName: true,
+        lastName: true,
         university: true,
         createdAt: true,
       },
@@ -261,7 +262,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       pending: scholarshipPending,
       recent: scholarshipRecent.map((app) => ({
         id: app.id,
-        fullName: app.fullName,
+        fullName: `${app.firstName} ${app.lastName}`,
         university: app.university,
         createdAt: app.createdAt.toISOString(),
       })),

@@ -11,12 +11,17 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/db";
 import type { MembershipApplication } from "@/lib/types/member";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
-import { validateTCNumber, validatePhoneNumber, validateEmail } from "@/lib/utils/validationHelpers";
 import { checkRateLimit, getClientIp } from "@/lib/utils/rateLimit";
 import { logErrorSecurely } from "@/lib/utils/secureLogging";
+import { verifyRecaptchaToken } from "@/lib/utils/recaptcha";
+import {
+  MembershipApplicationSchema,
+  type MembershipApplicationInput,
+} from "@/modules/membership/schemas";
 
 /**
  * Helper function to format Prisma MembershipApplication to frontend MembershipApplication
@@ -154,165 +159,89 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-
-    // Sprint 15.1: Yeni form alanları validation
-    // First Name
-    if (!body.firstName || typeof body.firstName !== "string" || body.firstName.trim().length === 0) {
+    // Parse request body
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch (parseError) {
       return NextResponse.json(
-        { error: "Ad alanı zorunludur" },
-        { status: 400 }
-      );
-    }
-    if (body.firstName.trim().length < 2) {
-      return NextResponse.json(
-        { error: "Ad en az 2 karakter olmalıdır" },
+        { error: "Geçersiz JSON formatı" },
         { status: 400 }
       );
     }
 
-    // Last Name
-    if (!body.lastName || typeof body.lastName !== "string" || body.lastName.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Soyad alanı zorunludur" },
-        { status: 400 }
-      );
+    // Extract reCAPTCHA token (if present)
+    const recaptchaToken = typeof body === "object" && body !== null && "recaptchaToken" in body
+      ? (body as { recaptchaToken?: string }).recaptchaToken
+      : undefined;
+
+    // Verify reCAPTCHA (if secret key is configured)
+    const recaptchaSecretKey = process.env.RECAPTCHA_SECRET_KEY;
+    if (recaptchaSecretKey) {
+      const isRecaptchaValid = await verifyRecaptchaToken(recaptchaToken, recaptchaSecretKey);
+      if (!isRecaptchaValid) {
+        return NextResponse.json(
+          { error: "reCAPTCHA doğrulaması başarısız oldu. Lütfen tekrar deneyin." },
+          { status: 403 }
+        );
+      }
     }
-    if (body.lastName.trim().length < 2) {
+
+    // Validate with Zod schema (single source of truth)
+    let validatedData: MembershipApplicationInput;
+    try {
+      validatedData = MembershipApplicationSchema.parse(body);
+    } catch (zodError) {
+      if (zodError instanceof z.ZodError) {
+        // Format Zod errors for client
+        const errors = zodError.errors.map((err) => ({
+          path: err.path.join("."),
+          message: err.message,
+        }));
+
+        // Get the first error message for the main error field
+        const firstError = errors[0];
+
+        // Log validation errors (without sensitive data)
+        logErrorSecurely(
+          "[API][MEMBERSHIP][CREATE][VALIDATION]",
+          zodError,
+          { ipAddress: clientIp, errorCount: errors.length }
+        );
+
+        return NextResponse.json(
+          {
+            error: firstError?.message || "Form validasyonu başarısız oldu",
+            message: "Lütfen tüm alanları kontrol edin",
+            errors,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Unknown validation error
+      logErrorSecurely(
+        "[API][MEMBERSHIP][CREATE][VALIDATION]",
+        zodError,
+        { ipAddress: clientIp }
+      );
+
       return NextResponse.json(
-        { error: "Soyad en az 2 karakter olmalıdır" },
+        { error: "Form validasyonu başarısız oldu" },
         { status: 400 }
       );
     }
 
-    // Identity Number (TC Kimlik)
-    if (!body.identityNumber || typeof body.identityNumber !== "string" || body.identityNumber.trim().length === 0) {
-      return NextResponse.json(
-        { error: "TC Kimlik No alanı zorunludur" },
-        { status: 400 }
-      );
-    }
-    if (!validateTCNumber(body.identityNumber.trim())) {
-      return NextResponse.json(
-        { error: "Geçerli bir TC Kimlik No giriniz (11 haneli)" },
-        { status: 400 }
-      );
-    }
+    // Log successful validation (metadata only, no sensitive data)
+    console.log("[API][MEMBERSHIP][CREATE] Validation successful", {
+      ipAddress: clientIp,
+      emailDomain: validatedData.email.split("@")[1], // Only domain, not full email
+    });
 
-    // Gender
-    if (!body.gender || (body.gender !== "erkek" && body.gender !== "kadın")) {
-      return NextResponse.json(
-        { error: "Cinsiyet seçimi zorunludur" },
-        { status: 400 }
-      );
-    }
-
-    // Blood Type (required)
-    const validBloodTypes = ["A_POSITIVE", "A_NEGATIVE", "B_POSITIVE", "B_NEGATIVE", "AB_POSITIVE", "AB_NEGATIVE", "O_POSITIVE", "O_NEGATIVE"];
-    if (!body.bloodType || !validBloodTypes.includes(body.bloodType)) {
-      return NextResponse.json(
-        { error: "Kan grubu seçimi zorunludur" },
-        { status: 400 }
-      );
-    }
-
-    // Birth Place
-    if (!body.birthPlace || typeof body.birthPlace !== "string" || body.birthPlace.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Doğum yeri alanı zorunludur" },
-        { status: 400 }
-      );
-    }
-    if (body.birthPlace.trim().length < 2) {
-      return NextResponse.json(
-        { error: "Doğum yeri en az 2 karakter olmalıdır" },
-        { status: 400 }
-      );
-    }
-
-    // Birth Date
-    if (!body.birthDate) {
-      return NextResponse.json(
-        { error: "Doğum tarihi zorunludur" },
-        { status: 400 }
-      );
-    }
-    const birthDate = new Date(body.birthDate);
-    if (isNaN(birthDate.getTime())) {
-      return NextResponse.json(
-        { error: "Geçerli bir doğum tarihi giriniz" },
-        { status: 400 }
-      );
-    }
-
-    // City
-    if (!body.city || typeof body.city !== "string" || body.city.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Şehir alanı zorunludur" },
-        { status: 400 }
-      );
-    }
-    if (body.city.trim().length < 2) {
-      return NextResponse.json(
-        { error: "Şehir en az 2 karakter olmalıdır" },
-        { status: 400 }
-      );
-    }
-
-    // Phone
-    if (!body.phone || typeof body.phone !== "string" || body.phone.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Telefon numarası zorunludur" },
-        { status: 400 }
-      );
-    }
-    if (!validatePhoneNumber(body.phone.trim())) {
-      return NextResponse.json(
-        { error: "Geçerli bir telefon numarası giriniz (örn: 05551234567)" },
-        { status: 400 }
-      );
-    }
-
-    // Email
-    if (!body.email || typeof body.email !== "string" || body.email.trim().length === 0) {
-      return NextResponse.json(
-        { error: "E-posta adresi zorunludur" },
-        { status: 400 }
-      );
-    }
-    if (!validateEmail(body.email.trim())) {
-      return NextResponse.json(
-        { error: "Geçerli bir e-posta adresi giriniz" },
-        { status: 400 }
-      );
-    }
-
-    // Address
-    if (!body.address || typeof body.address !== "string" || body.address.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Adres alanı zorunludur" },
-        { status: 400 }
-      );
-    }
-    if (body.address.trim().length < 10) {
-      return NextResponse.json(
-        { error: "Adres en az 10 karakter olmalıdır" },
-        { status: 400 }
-      );
-    }
-
-    // Conditions Accepted
-    if (body.conditionsAccepted !== true) {
-      return NextResponse.json(
-        { error: "Şartları kabul etmeniz gerekmektedir" },
-        { status: 400 }
-      );
-    }
-
-    // Sprint 15.1: Check for duplicate applications (TC, email, phone)
-    const trimmedIdentityNumber = body.identityNumber.trim();
-    const trimmedEmail = body.email.trim().toLowerCase();
-    const trimmedPhone = body.phone.trim();
+    // Check for duplicate applications (TC, email, phone)
+    const trimmedIdentityNumber = validatedData.identityNumber.trim();
+    const trimmedEmail = validatedData.email.trim().toLowerCase();
+    const trimmedPhone = validatedData.phone.trim();
 
     // Check if TC kimlik already exists in applications
     const existingByTC = await prisma.membershipApplication.findFirst({
@@ -399,20 +328,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Create application
+    // validatedData.birthDate is already a Date object (from z.coerce.date())
     const application = await prisma.membershipApplication.create({
       data: {
-        firstName: body.firstName.trim(),
-        lastName: body.lastName.trim(),
-        identityNumber: body.identityNumber.trim(),
-        gender: body.gender as "erkek" | "kadın",
-        bloodType: body.bloodType as any,
-        birthPlace: body.birthPlace.trim(),
-        birthDate,
-        city: body.city.trim(),
-        phone: body.phone.trim(),
-        email: body.email.trim().toLowerCase(),
-        address: body.address.trim(),
-        conditionsAccepted: body.conditionsAccepted === true,
+        firstName: validatedData.firstName.trim(),
+        lastName: validatedData.lastName.trim(),
+        identityNumber: trimmedIdentityNumber,
+        gender: validatedData.gender,
+        bloodType: validatedData.bloodType,
+        birthPlace: validatedData.birthPlace.trim(),
+        birthDate: validatedData.birthDate instanceof Date
+          ? validatedData.birthDate
+          : new Date(validatedData.birthDate),
+        city: validatedData.city.trim(),
+        phone: trimmedPhone,
+        email: trimmedEmail,
+        address: validatedData.address.trim(),
+        conditionsAccepted: validatedData.conditionsAccepted,
         status: "PENDING", // Always start as pending
       },
     });

@@ -1,19 +1,21 @@
 import React from "react";
 import { getPageContent } from "@/lib/settings/convenience";
-import { BookOpen, Users2, HandHeart, Lightbulb } from "lucide-react";
 
-// Icon mapping for values (icons can't be stored in settings - React components)
-const VALUE_ICONS = [BookOpen, Users2, HandHeart, Lightbulb];
+// Color gradient mapping (indigo, purple, blue, emerald)
+const COLOR_GRADIENTS: Record<string, { gradient: string; bg: string; border: string }> = {
+  indigo: { gradient: "from-indigo-500 to-indigo-700", bg: "from-indigo-600 to-purple-600", border: "border-indigo-100" },
+  purple: { gradient: "from-purple-500 to-purple-700", bg: "from-purple-600 to-indigo-600", border: "border-purple-100" },
+  blue: { gradient: "from-blue-500 to-blue-700", bg: "from-blue-600 to-cyan-600", border: "border-blue-100" },
+  emerald: { gradient: "from-emerald-500 to-emerald-700", bg: "from-emerald-600 to-teal-600", border: "border-emerald-100" },
+};
 
 export async function ValuesSection() {
   const content = await getPageContent("about");
   
-  // Get content from settings with minimal fallbacks
-  const valuesTitle = content.valuesTitle || "Temel İlkelerimiz";
-  const valuesSubtitle = content.valuesSubtitle || "Bu misyonu gerçekleştirmek üzere dernek, aşağıdaki temel ilkeler doğrultusunda hareket eder:";
-  const valuesFooter = content.valuesFooter || "Dernek, bu misyonu doğrultusunda, gençlerin aydınlık bir geleceğe sahip olmaları için köprü vazifesi görmeyi ve bölgenin eğitim kalitesini artırmayı hedeflemektedir.";
-  
-  // Get values from settings (empty array fallback)
+  // All content comes from settings with defaults from defaultContent.ts
+  const valuesTitle = content.valuesTitle;
+  const valuesSubtitle = content.valuesSubtitle;
+  const valuesFooter = content.valuesFooter;
   const values = content.values || [];
 
   return (
@@ -36,21 +38,23 @@ export async function ValuesSection() {
         </div>
         
         <div className="grid md:grid-cols-2 gap-8 auto-rows-fr">
-          {values.map((value: any, index: number) => {
-            const IconComponent = VALUE_ICONS[index] || BookOpen;
+          {values.map((value: any) => {
+            const colors = COLOR_GRADIENTS[value.color] || COLOR_GRADIENTS.indigo;
             return (
-              <div key={index} className="group relative flex">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
-                <div className="relative bg-white p-8 rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 flex flex-col w-full">
+              <div key={value.id} className="group relative flex">
+                <div className={`absolute -inset-0.5 bg-gradient-to-r ${colors.bg} rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200`}></div>
+                <div className={`relative bg-white p-8 rounded-2xl shadow-lg border ${colors.border} hover:shadow-xl transition-all duration-300 flex flex-col w-full`}>
                   <div className="flex items-start space-x-5 flex-grow">
                     <div className="flex-shrink-0">
-                      <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl flex items-center justify-center shadow-md">
-                        <IconComponent className="w-6 h-6 text-white" />
+                      <div className={`w-12 h-12 bg-gradient-to-br ${colors.gradient} rounded-xl flex items-center justify-center shadow-md`}>
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={value.icon} />
+                        </svg>
                       </div>
                     </div>
                     <div className="flex-1 flex flex-col">
                       <h3 className="text-xl font-bold text-gray-900 mb-3">{value.title}:</h3>
-                      <div className="w-8 h-1 bg-indigo-500 rounded-full mb-4"></div>
+                      <div className={`w-8 h-1 bg-${value.color}-500 rounded-full mb-4`}></div>
                       <p className="text-gray-700 leading-relaxed flex-grow">
                         {value.description}
                       </p>

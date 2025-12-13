@@ -6,6 +6,7 @@ import { Button, Badge, Input, Select, Textarea } from "@/components/ui";
 import { 
   CheckCircle, 
   XCircle, 
+  X,
   Eye, 
   Mail, 
   Phone, 
@@ -21,32 +22,46 @@ import { getGenderLabel } from "@/lib/utils/genderHelpers";
 interface ScholarshipApplicationModalProps {
   application: ScholarshipApplication | null;
   onClose: () => void;
-  onApprove: (id: string, reviewNotes?: string) => void;
-  onReject: (id: string, reviewNotes?: string) => void;
-  onUnderReview: (id: string, reviewNotes?: string) => void;
-  onDelete: (id: string) => void;
+  onApplicationUpdate?: (updatedApplication: ScholarshipApplication) => void;
+  onApplicationDelete?: (id: string) => void;
 }
 
 function ScholarshipApplicationModal({ 
   application, 
-  onClose, 
-  onApprove, 
-  onReject, 
-  onUnderReview,
-  onDelete 
+  onClose,
+  onApplicationUpdate,
+  onApplicationDelete
 }: ScholarshipApplicationModalProps) {
   const [reviewNotes, setReviewNotes] = useState("");
   const [action, setAction] = useState<'approve' | 'reject' | 'under_review' | 'delete' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const confirmationRef = useRef<HTMLDivElement>(null);
+  const messageContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (application) {
       setReviewNotes(application.reviewNotes || "");
       setAction(null);
+      setSuccessMessage(null);
+      setErrorMessage(null);
     }
   }, [application]);
+
+  // Scroll to message when it appears
+  useEffect(() => {
+    if (successMessage && messageContainerRef.current && modalRef.current) {
+      // Scroll modal container to show the message
+      setTimeout(() => {
+        if (messageContainerRef.current && modalRef.current) {
+          const messageTop = messageContainerRef.current.offsetTop;
+          modalRef.current.scrollTo({ top: messageTop - 20, behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  }, [successMessage]);
 
   // Auto-scroll to confirmation message when action is set
   useEffect(() => {
@@ -68,21 +83,78 @@ function ScholarshipApplicationModal({
     if (!action) return;
 
     setIsSubmitting(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    
     try {
+      let response: Response;
+      let successMsg = '';
+
       if (action === 'approve') {
-        await onApprove(application.id, reviewNotes);
+        response = await fetch(`/api/scholarship-applications/${application.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "APPROVED",
+            reviewNotes: reviewNotes || undefined,
+          }),
+        });
+        successMsg = 'Başvuru başarıyla onaylandı';
       } else if (action === 'reject') {
-        await onReject(application.id, reviewNotes);
+        response = await fetch(`/api/scholarship-applications/${application.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "REJECTED",
+            reviewNotes: reviewNotes || undefined,
+          }),
+        });
+        successMsg = 'Başvuru başarıyla reddedildi';
       } else if (action === 'under_review') {
-        await onUnderReview(application.id, reviewNotes);
+        response = await fetch(`/api/scholarship-applications/${application.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "UNDER_REVIEW",
+            reviewNotes: reviewNotes || undefined,
+          }),
+        });
+        successMsg = 'Başvuru incelemeye alındı';
       } else if (action === 'delete') {
-        await onDelete(application.id);
+        response = await fetch(`/api/scholarship-applications/${application.id}`, {
+          method: "DELETE",
+        });
+        successMsg = 'Başvuru başarıyla silindi';
+      } else {
+        throw new Error("Geçersiz işlem");
       }
-      onClose();
-      setReviewNotes("");
-      setAction(null);
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          throw new Error("Bu işlem için yetkiniz bulunmamaktadır.");
+        }
+        throw new Error("İşlem sırasında bir hata oluştu.");
+      }
+
+      // Show success message FIRST - this is critical!
+      setSuccessMessage(successMsg);
+      
+      // Update parent component state
+      if (action === 'delete') {
+        if (onApplicationDelete) {
+          onApplicationDelete(application.id);
+        }
+      } else {
+        const updatedApplication = await response.json();
+        if (onApplicationUpdate) {
+          onApplicationUpdate(updatedApplication);
+        }
+      }
+      
+      // Scroll to message (message will appear and scroll happens in useEffect)
     } catch (error) {
       console.error("Error performing action:", error);
+      setErrorMessage(error instanceof Error ? error.message : "İşlem sırasında bir hata oluştu");
     } finally {
       setIsSubmitting(false);
     }
@@ -141,12 +213,6 @@ function ScholarshipApplicationModal({
                   <label className="block text-sm font-medium text-gray-700">Telefon</label>
                   <p className="text-gray-900">{application.phone}</p>
                 </div>
-                {application.alternativePhone && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Alternatif Telefon</label>
-                    <p className="text-gray-900">{application.alternativePhone}</p>
-                  </div>
-                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Doğum Tarihi</label>
                   <p className="text-gray-900">{formatDateOnly(application.birthDate)}</p>
@@ -405,7 +471,46 @@ function ScholarshipApplicationModal({
           </div>
 
           {/* Aksiyonlar */}
-          <div className="mt-8 space-y-4">
+          <div ref={messageContainerRef} className="mt-8 space-y-4">
+            {/* Success Message - Butonların hemen üstünde */}
+            {successMessage && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
+                <div className="flex items-center">
+                  <CheckCircle className="w-5 h-5 text-green-600 mr-3 flex-shrink-0" />
+                  <p className="text-green-800 font-medium">{successMessage}</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSuccessMessage(null);
+                    onClose();
+                    setReviewNotes("");
+                    setAction(null);
+                  }}
+                  className="border-green-300 text-green-700 hover:bg-green-100"
+                >
+                  Listeye Dön
+                </Button>
+              </div>
+            )}
+
+            {/* Error Message - Butonların hemen üstünde */}
+            {errorMessage && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center justify-between">
+                <div className="flex items-center">
+                  <XCircle className="w-5 h-5 text-red-600 mr-3 flex-shrink-0" />
+                  <p className="text-red-800 font-medium">{errorMessage}</p>
+                </div>
+                <button
+                  onClick={() => setErrorMessage(null)}
+                  className="text-red-400 hover:text-red-600 ml-4"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            )}
+
             <h3 className="text-lg font-semibold text-gray-900">Başvuru Değerlendirmesi</h3>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">İnceleme Notları</label>
@@ -896,7 +1001,10 @@ export default function ScholarshipApplicationsPageContent() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => setSelectedApplication(application)}
+                          onClick={() => {
+                            // Sprint 16 - Block F: Navigate to detail page instead of modal
+                            window.location.href = `/admin/burs-basvurulari/${application.id}`;
+                          }}
                         >
                           <Eye className="w-4 h-4 mr-1" />
                           İncele
@@ -916,10 +1024,16 @@ export default function ScholarshipApplicationsPageContent() {
         <ScholarshipApplicationModal
           application={selectedApplication}
           onClose={() => setSelectedApplication(null)}
-          onApprove={handleApprove}
-          onReject={handleReject}
-          onUnderReview={handleUnderReview}
-          onDelete={handleDelete}
+          onApplicationUpdate={(updatedApp) => {
+            setAllApplications(prev => prev.map(app => app.id === updatedApp.id ? updatedApp : app));
+            // Update selectedApplication so modal shows updated data, but DON'T close modal
+            setSelectedApplication(updatedApp);
+          }}
+          onApplicationDelete={(id) => {
+            setAllApplications(prev => prev.filter(app => app.id !== id));
+            // For delete, close modal since application no longer exists
+            setSelectedApplication(null);
+          }}
         />
       )}
     </div>

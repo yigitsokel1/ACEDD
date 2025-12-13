@@ -10,7 +10,9 @@
     "test": "vitest",
     "test:watch": "vitest --watch",
     "create-admin": "tsx scripts/create-admin.ts",
-    "generate-session-secret": "node scripts/generate-session-secret.js"
+    "generate-session-secret": "node scripts/generate-session-secret.js",
+    "seed:settings": "tsx scripts/seed-settings.ts",
+    "seed:settings:force": "tsx scripts/seed-settings.ts --force --verbose"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

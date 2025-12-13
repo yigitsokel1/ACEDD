@@ -1,14 +1,21 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Banknote } from "lucide-react";
 import { getPageContent } from "@/lib/settings/convenience";
 import { CopyButton } from "./CopyButton";
+
+// Color mapping for bank account icons
+const COLOR_MAP: Record<string, string> = {
+  blue: "text-blue-600",
+  green: "text-green-600",
+  indigo: "text-indigo-600",
+  purple: "text-purple-600",
+};
 
 export async function BankAccountsSection() {
   const content = await getPageContent("donation");
   
-  // Get content from settings (empty array fallback - no constants fallback)
-  const introduction = content.introduction || "";
+  // All content comes from settings with defaults from defaultContent.ts
+  const introduction = content.introduction;
   const bankAccounts = content.bankAccounts || [];
 
   return (
@@ -26,14 +33,32 @@ export async function BankAccountsSection() {
 
           {/* Bank Accounts */}
           <div className="space-y-8">
-            {bankAccounts.map((account: any, index: number) => (
-              <Card key={index} className="shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
-                  <CardTitle className="text-2xl font-bold text-gray-800 flex items-center">
-                    <Banknote className="w-8 h-8 mr-3 text-blue-600" />
-                    {account.currency} HESABI
-                  </CardTitle>
-                </CardHeader>
+            {bankAccounts.map((account: any, index: number) => {
+              const iconColor = COLOR_MAP[account.color] || COLOR_MAP.blue;
+              
+              return (
+                <Card key={account.id || account.currency} className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+                  <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
+                    <CardTitle className="text-2xl font-bold text-gray-800 flex items-center">
+                      {account.icon && (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className={`w-8 h-8 mr-3 ${iconColor}`}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d={account.icon}
+                          />
+                        </svg>
+                      )}
+                      {account.currency} HESABI
+                    </CardTitle>
+                  </CardHeader>
                 <CardContent className="p-8">
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -70,7 +95,8 @@ export async function BankAccountsSection() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

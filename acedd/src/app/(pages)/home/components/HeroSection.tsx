@@ -8,19 +8,15 @@ import ActivityCard from "./ActivityCard";
 export async function HeroSection() {
   const content = await getPageContent("home");
   
-  // Get hero data from settings with minimal fallbacks
-  const heroTitle = content.heroTitle || "Acıpayam ve Çevresi Eğitimi Destekleme Derneği";
-  const heroDescription = content.intro || "Acıpayam ve çevresindeki öğrencilere eğitim desteği sağlayarak onların gelişimine katkıda bulunmak ve eğitimde fırsat eşitliği konusunda toplumsal farkındalık oluşturmak amacıyla faaliyet gösteriyoruz.";
-  const primaryButtonText = content.primaryButtonText || "Burs Başvurusu Yap";
-  const secondaryButtonText = content.secondaryButtonText || "Daha Fazla Bilgi";
-  
-  // Get stats and activities from settings (empty array fallback)
+  // All content comes from settings with defaults from defaultContent.ts
+  const heroTitle = content.heroTitle;
+  const heroDescription = content.intro;
+  const primaryButtonText = content.primaryButtonText;
+  const secondaryButtonText = content.secondaryButtonText;
   const stats = content.stats || [];
   const activities = content.activities || [];
-  
-  // Visual card content
-  const visualCardTitle = content.visualCardTitle || "Eğitimde Fırsat Eşitliği";
-  const visualCardDescription = content.visualCardDescription || "Her öğrencinin eşit şansı olmalı";
+  const visualCardTitle = content.visualCardTitle;
+  const visualCardDescription = content.visualCardDescription;
 
   return (
     <main className="relative pt-16">

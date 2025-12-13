@@ -19,10 +19,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function MembershipApplicationPage() {
   const content = await getPageContent("membership");
   
-  // Form title and description with fallbacks
-  const formTitle = content.formTitle || "Üyelik Başvuru Formu";
-  const formDescription = content.formDescription || "Lütfen aşağıdaki formu doldurarak üyelik başvurunuzu yapın. Tüm alanlar zorunludur.";
-  // Sprint 15.4: Membership conditions text from settings
+  // All content comes from settings with defaults from defaultContent.ts
+  const formTitle = content.formTitle || "Üyelik Başvuru Formu"; // Keep minimal fallback for form
+  const formDescription = content.formDescription || "Lütfen aşağıdaki formu doldurarak üyelik başvurunuzu yapın.";
   const membershipConditionsText = content.membershipConditionsText || "";
   
   return (

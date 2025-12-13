@@ -1,16 +1,15 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/Card";
-import { CheckCircle } from "lucide-react";
 import { getPageContent, getContactInfo } from "@/lib/settings/convenience";
 
 export async function ThankYouSection() {
   const content = await getPageContent("donation");
   const contactInfo = await getContactInfo();
   
-  // Get content from settings with minimal fallbacks
-  const thankYouTitle = content.thankYouTitle || "Bağışınız İçin Teşekkürler";
-  const thankYouDescription = content.thankYouDescription || "Bağışınız öğrencilerin eğitim hayatına katkı sağlayacaktır.";
-  const contactMessage = content.contactMessage || "Sorularınız için bizimle iletişime geçebilirsiniz:";
+  // All content comes from settings with defaults from defaultContent.ts
+  const thankYouTitle = content.thankYouTitle;
+  const thankYouDescription = content.thankYouDescription;
+  const contactMessage = content.contactMessage;
   const contactEmail = contactInfo.email || "";
 
   return (
@@ -20,7 +19,20 @@ export async function ThankYouSection() {
           <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
             <CardContent className="p-8">
               <div className="text-center">
-                <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-16 h-16 text-green-600 mx-auto mb-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4L12 14.01l-3-3"
+                  />
+                </svg>
                 <h3 className="text-2xl font-bold text-gray-800 mb-4">
                   {thankYouTitle}
                 </h3>

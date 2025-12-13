@@ -11,12 +11,14 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
 import { NextResponse } from "next/server";
+import { replaceFaviconOrLogo } from "@/modules/files/fileService";
 
 // Mock Prisma
 vi.mock("@/lib/db", () => ({
   prisma: {
     setting: {
       findMany: vi.fn(),
+      findUnique: vi.fn(),
       upsert: vi.fn(),
     },
   },
@@ -43,6 +45,11 @@ vi.mock("@/lib/auth/adminAuth", () => ({
       { status: 500 }
     );
   }),
+}));
+
+// Mock fileService (Sprint 17: replaceFaviconOrLogo)
+vi.mock("@/modules/files/fileService", () => ({
+  replaceFaviconOrLogo: vi.fn().mockResolvedValue(undefined),
 }));
 
 describe("GET /api/settings", () => {
@@ -202,6 +209,8 @@ describe("GET /api/settings", () => {
 describe("PUT /api/settings", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset replaceFaviconOrLogo mock (Sprint 17)
+    vi.mocked(replaceFaviconOrLogo).mockResolvedValue(undefined);
   });
 
   it("should return 403 when ADMIN tries to update settings", async () => {
@@ -464,6 +473,11 @@ describe("PUT /api/settings", () => {
       updatedBy: "super-admin-1",
     };
 
+    // Mock findUnique for oldValue retrieval (Sprint 17: favicon/logo cleanup)
+    vi.mocked(prisma.setting.findUnique).mockResolvedValue({
+      value: "old-logo-url",
+    } as any);
+    
     vi.mocked(prisma.setting.upsert).mockResolvedValue(mockSetting as any);
 
     const body = {

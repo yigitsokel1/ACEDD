@@ -17,6 +17,12 @@ export const SCHOLARSHIP_FORM_FIELDS = {
         placeholder: "+90 5XX XXX XX XX",
         required: true,
       },
+      alternativePhone: {
+        label: "Alternatif iletişim numarası",
+        placeholder: "+90 5XX XXX XX XX (opsiyonel)",
+        type: "tel",
+        required: false,
+      },
       email: {
         label: "E-posta",
         placeholder: "ornek@email.com",
@@ -72,7 +78,7 @@ export const SCHOLARSHIP_FORM_FIELDS = {
         required: true,
       },
       ibanNumber: {
-        label: "İBAN NO",
+        label: "IBAN NO",
         placeholder: "TR00 0000 0000 0000 0000 0000 00",
         required: true,
       },
@@ -82,8 +88,13 @@ export const SCHOLARSHIP_FORM_FIELDS = {
         required: true,
       },
       faculty: {
-        label: "Fakülte /Bölüm",
-        placeholder: "Fakülte ve bölümünüzü girin",
+        label: "Fakülte",
+        placeholder: "Fakültenizi girin",
+        required: true,
+      },
+      department: {
+        label: "Bölüm",
+        placeholder: "Bölümünüzü girin",
         required: true,
       },
       grade: {
@@ -127,11 +138,6 @@ export const SCHOLARSHIP_FORM_FIELDS = {
         options: ["Hayır", "Evet"],
         required: true,
       },
-      alternativePhone: {
-        label: "Alternatif iletişim numarası",
-        placeholder: "+90 5XX XXX XX XX",
-        required: false,
-      },
       permanentAddress: {
         label: "Daimi ikamet adresiniz",
         placeholder: "Daimi adresinizi girin",
@@ -145,6 +151,8 @@ export const SCHOLARSHIP_FORM_FIELDS = {
       interests: {
         label: "İlgi alanları",
         placeholder: "İlgi alanlarınızı yazın",
+        type: "textarea",
+        rows: 3,
         required: false,
       },
       selfIntroduction: {
@@ -188,11 +196,6 @@ export const SCHOLARSHIP_FORM_FIELDS = {
       occupation: {
         label: "Meslek",
         placeholder: "Mesleğini girin",
-        required: true,
-      },
-      job: {
-        label: "İşi",
-        placeholder: "İşini girin",
         required: true,
       },
       healthInsurance: {
@@ -241,9 +244,9 @@ export const SCHOLARSHIP_FORM_FIELDS = {
       },
       endDate: {
         label: "Bitiş",
-        placeholder: "mm/dd/yyyy",
+        placeholder: "mm/dd/yyyy (opsiyonel)",
         type: "date",
-        required: true,
+        required: false,
       },
       graduation: {
         label: "Mezuniyet",

@@ -16,6 +16,7 @@ interface ApplicationModalProps {
   onClose: () => void;
   onApprove: (id: string, notes?: string) => void;
   onReject: (id: string, notes?: string) => void;
+  onSaveNotes?: (id: string, notes: string) => void;
 }
 
 // Sprint 15.3: Collapsible section component with improved styling

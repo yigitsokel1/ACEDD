@@ -118,3 +118,58 @@ export function isoToDateInput(dateString: string | null | undefined): string {
     return "";
   }
 }
+
+// ============================================================================
+// Sprint 16 - Block C: Date Normalization Helpers
+// ============================================================================
+
+/**
+ * Normalizes a date input (string or Date) to a Date object
+ * Handles various input formats: ISO strings, YYYY-MM-DD strings, Date objects
+ * 
+ * @param input - Date input (string or Date)
+ * @returns Date object or null if invalid
+ */
+export function normalizeDateInput(input: string | Date | null | undefined): Date | null {
+  if (!input) return null;
+  
+  if (input instanceof Date) {
+    return isNaN(input.getTime()) ? null : input;
+  }
+  
+  if (typeof input === "string") {
+    const trimmed = input.trim();
+    if (!trimmed) return null;
+    
+    try {
+      const date = new Date(trimmed);
+      return isNaN(date.getTime()) ? null : date;
+    } catch {
+      return null;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Converts a date to start of day in UTC
+ * Useful for consistent date comparisons and storage
+ * 
+ * @param date - Date object or date string
+ * @returns Date object at start of day UTC, or null if invalid
+ */
+export function toStartOfDayUTC(date: Date | string | null | undefined): Date | null {
+  const normalized = normalizeDateInput(date);
+  if (!normalized) return null;
+  
+  try {
+    const year = normalized.getUTCFullYear();
+    const month = normalized.getUTCMonth();
+    const day = normalized.getUTCDate();
+    
+    return new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+  } catch {
+    return null;
+  }
+}

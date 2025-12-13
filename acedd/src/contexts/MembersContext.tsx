@@ -20,7 +20,7 @@ export interface MembersContextType {
   applicationsLoading: boolean;
   applicationsError: string | null;
   addApplication: (application: CreateApplicationData) => Promise<void>;
-  updateApplicationStatus: (id: string, status: 'approved' | 'rejected', notes?: string, reviewedBy?: string) => Promise<void>;
+  updateApplicationStatus: (id: string, status?: 'approved' | 'rejected', notes?: string, reviewedBy?: string) => Promise<void>;
   deleteApplication: (id: string) => Promise<void>;
   getApplicationById: (id: string) => MembershipApplication | undefined;
   refreshApplications: () => Promise<void>;

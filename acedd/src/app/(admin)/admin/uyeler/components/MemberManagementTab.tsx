@@ -7,13 +7,14 @@ import { Input } from "@/components/ui";
 import { Textarea } from "@/components/ui";
 import { Select } from "@/components/ui";
 import { Badge } from "@/components/ui";
-import { Plus, Edit, Trash2, User, Mail, Phone, Calendar, MapPin, Search, Filter, ToggleLeft, ToggleRight, Eye, Droplet, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Edit, Trash2, User, Mail, Phone, Calendar, MapPin, Search, Filter, ToggleLeft, ToggleRight, Eye, Droplet, ChevronDown, ChevronUp, FileText } from "lucide-react";
 import { useMembers } from "@/contexts/MembersContext";
 import { Member, CreateMemberData, UpdateMemberData, CreateMemberFormData, MembershipKind, MemberTag, BoardRole, BloodType } from "@/lib/types/member";
 import { getBoardRoleLabel } from "@/lib/utils/memberHelpers";
 import { formatDateOnly, isoToDateInput } from "@/lib/utils/dateHelpers";
 import { getGenderLabel } from "@/lib/utils/genderHelpers";
 import { getBloodTypeLabel } from "@/lib/utils/bloodTypeHelpers";
+import { FileUpload } from "@/components/ui/FileUpload";
 
 interface MemberModalProps {
   member: Member | null;
@@ -48,6 +49,8 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
     // Sprint 15: Membership Application'dan gelen yeni alanlar
     bloodType: member?.bloodType || null,
     city: member?.city || null,
+    // Sprint 17: CV Upload
+    cvDatasetId: member?.cvDatasetId || null,
   });
 
   // Update formData when member changes
@@ -71,6 +74,7 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
         tags: member.tags || [],
         bloodType: member.bloodType || null,
         city: member.city || null,
+        cvDatasetId: member.cvDatasetId || null,
       });
     } else {
       // Reset form when member is null (new member)
@@ -92,6 +96,7 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
         tags: [],
         bloodType: null,
         city: null,
+        cvDatasetId: null,
       });
     }
   }, [member]);
@@ -158,6 +163,7 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
       membershipKind: (formData.membershipKind || "MEMBER") as MembershipKind,
       tags: formData.tags || [],
       bloodType: formData.bloodType || null,
+      cvDatasetId: formData.cvDatasetId || null, // Sprint 17: CV Dataset ID
     };
     
     onSave(memberData);
@@ -376,6 +382,26 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
                     </label>
                   ))}
                 </div>
+              </div>
+
+              {/* Sprint 17: CV Upload */}
+              <div className="flex flex-col space-y-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  CV (PDF)
+                </label>
+                <FileUpload
+                  label=""
+                  value={formData.cvDatasetId ? [formData.cvDatasetId] : []}
+                  onChange={(datasetIds) => {
+                    setFormData(prev => ({ ...prev, cvDatasetId: datasetIds.length > 0 ? datasetIds[0] : null }));
+                  }}
+                  multiple={false}
+                  maxFiles={1}
+                  accept="application/pdf"
+                />
+                <p className="text-xs text-gray-500">
+                  Maksimum 10MB. Sadece PDF dosyaları kabul edilir.
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
