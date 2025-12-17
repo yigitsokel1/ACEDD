@@ -47,6 +47,7 @@ describe("GET /api/contact-messages/[id]", () => {
       role: "ADMIN" as const,
       email: "admin@acedd.org",
       name: "Admin User",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
   });
@@ -136,6 +137,7 @@ describe("PUT /api/contact-messages/[id] - Status Update", () => {
       role: "ADMIN" as const,
       email: "admin@acedd.org",
       name: "Admin User",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
   });
@@ -339,6 +341,7 @@ describe("DELETE /api/contact-messages/[id]", () => {
       role: "SUPER_ADMIN" as const,
       email: "admin@acedd.org",
       name: "Admin User",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
   });

@@ -95,6 +95,7 @@ describe("GET /api/settings", () => {
       role: "SUPER_ADMIN" as const,
       email: "superadmin@acedd.org",
       name: "Super Admin",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
 
@@ -143,6 +144,7 @@ describe("GET /api/settings", () => {
       role: "SUPER_ADMIN" as const,
       email: "superadmin@acedd.org",
       name: "Super Admin",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
 
@@ -189,6 +191,7 @@ describe("GET /api/settings", () => {
       role: "SUPER_ADMIN" as const,
       email: "superadmin@acedd.org",
       name: "Super Admin",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
 
@@ -271,6 +274,7 @@ describe("PUT /api/settings", () => {
       role: "SUPER_ADMIN" as const,
       email: "superadmin@acedd.org",
       name: "Super Admin",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
 
@@ -299,6 +303,7 @@ describe("PUT /api/settings", () => {
       role: "SUPER_ADMIN" as const,
       email: "superadmin@acedd.org",
       name: "Super Admin",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
 
@@ -327,6 +332,7 @@ describe("PUT /api/settings", () => {
       role: "SUPER_ADMIN" as const,
       email: "superadmin@acedd.org",
       name: "Super Admin",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
 
@@ -356,6 +362,7 @@ describe("PUT /api/settings", () => {
       role: "SUPER_ADMIN" as const,
       email: "superadmin@acedd.org",
       name: "Super Admin",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
 
@@ -412,6 +419,7 @@ describe("PUT /api/settings", () => {
       role: "SUPER_ADMIN" as const,
       email: "superadmin@acedd.org",
       name: "Super Admin",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
 
@@ -462,6 +470,7 @@ describe("PUT /api/settings", () => {
       role: "SUPER_ADMIN" as const,
       email: "superadmin@acedd.org",
       name: "Super Admin",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
 
@@ -505,6 +514,7 @@ describe("PUT /api/settings", () => {
       role: "SUPER_ADMIN" as const,
       email: "superadmin@acedd.org",
       name: "Super Admin",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
 
@@ -544,6 +554,7 @@ describe("PUT /api/settings", () => {
       role: "SUPER_ADMIN" as const,
       email: "superadmin@acedd.org",
       name: "Super Admin",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
 

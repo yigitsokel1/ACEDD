@@ -17,6 +17,8 @@ import { prisma } from "@/lib/db";
 import type { ContactMessage } from "@/lib/types/contact";
 import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
 import { logErrorSecurely } from "@/lib/utils/secureLogging";
+import { verifyRecaptchaToken } from "@/lib/utils/recaptcha";
+import { checkRateLimit, getClientIp } from "@/lib/utils/rateLimit";
 
 /**
  * Helper function to format Prisma ContactMessage to frontend ContactMessage
@@ -129,6 +131,33 @@ export async function GET(request: NextRequest) {
 // POST - Yeni mesaj oluştur (Public, no auth required)
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting check
+    const clientIp = getClientIp(request);
+    const rateLimitResult = checkRateLimit(clientIp);
+
+    if (!rateLimitResult.allowed) {
+      const resetTime = rateLimitResult.resetAt
+        ? new Date(rateLimitResult.resetAt).toLocaleTimeString("tr-TR")
+        : "birkaç dakika";
+      return NextResponse.json(
+        {
+          error: "Çok fazla istek gönderdiniz",
+          message: `Lütfen ${resetTime} sonra tekrar deneyin.`,
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": rateLimitResult.resetAt
+              ? Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000).toString()
+              : "60",
+            "X-RateLimit-Limit": "3",
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": rateLimitResult.resetAt?.toString() || "",
+          },
+        }
+      );
+    }
+
     const body = await request.json();
 
     // Validation
@@ -158,6 +187,23 @@ export async function POST(request: NextRequest) {
         { error: "Mesaj alanı zorunludur" },
         { status: 400 }
       );
+    }
+
+    // Extract reCAPTCHA token (if present)
+    const recaptchaToken = typeof body === "object" && body !== null && "recaptchaToken" in body
+      ? (body as { recaptchaToken?: string }).recaptchaToken
+      : undefined;
+
+    // Verify reCAPTCHA (if secret key is configured)
+    const recaptchaSecretKey = process.env.RECAPTCHA_SECRET_KEY;
+    if (recaptchaSecretKey) {
+      const isRecaptchaValid = await verifyRecaptchaToken(recaptchaToken, recaptchaSecretKey);
+      if (!isRecaptchaValid) {
+        return NextResponse.json(
+          { error: "reCAPTCHA doğrulaması başarısız oldu. Lütfen tekrar deneyin." },
+          { status: 403 }
+        );
+      }
     }
 
     // Extract IP address and user agent from request headers

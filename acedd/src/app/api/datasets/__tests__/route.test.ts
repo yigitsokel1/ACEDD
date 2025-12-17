@@ -161,6 +161,7 @@ describe("POST /api/datasets", () => {
       role: "ADMIN" as const,
       email: "admin@acedd.org",
       name: "Admin User",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
   });
@@ -306,6 +307,7 @@ describe("POST /api/datasets", () => {
       role: "ADMIN" as const,
       email: "admin@acedd.org",
       name: "Admin User",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockAdminSession);
 

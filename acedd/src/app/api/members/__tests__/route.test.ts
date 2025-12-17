@@ -29,6 +29,7 @@ describe("GET /api/members", () => {
       role: "SUPER_ADMIN" as const,
       email: "admin@acedd.org",
       name: "Admin User",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
     // Mock createAuthErrorResponse
@@ -88,6 +89,7 @@ describe("GET /api/members", () => {
       role: "ADMIN" as const,
       email: "admin@acedd.org",
       name: "Admin User",
+      issuedAt: Math.floor(Date.now() / 1000),
     });
     vi.mocked(prisma.member.findMany).mockResolvedValue([]);
 
@@ -242,6 +244,7 @@ describe("POST /api/members", () => {
       role: "SUPER_ADMIN" as const,
       email: "superadmin@acedd.org",
       name: "Super Admin",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
     // Mock createAuthErrorResponse
@@ -622,6 +625,7 @@ describe("POST /api/members", () => {
       role: "ADMIN" as const,
       email: "admin@acedd.org",
       name: "Admin User",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockImplementation(() => {
       throw new Error("FORBIDDEN");

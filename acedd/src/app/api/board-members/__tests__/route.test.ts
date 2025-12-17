@@ -130,6 +130,7 @@ describe("POST /api/board-members", () => {
       role: "SUPER_ADMIN" as const,
       email: "superadmin@acedd.org",
       name: "Super Admin",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
     // Mock createAuthErrorResponse

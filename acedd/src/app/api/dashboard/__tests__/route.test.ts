@@ -109,6 +109,7 @@ describe("GET /api/dashboard", () => {
       role: "SUPER_ADMIN" as const,
       email: "admin@acedd.org",
       name: "Admin User",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
 
@@ -437,6 +438,7 @@ describe("GET /api/dashboard", () => {
       role: "ADMIN" as const,
       email: "admin2@acedd.org",
       name: "Admin User 2",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
 
@@ -488,6 +490,7 @@ describe("GET /api/dashboard", () => {
       role: "SUPER_ADMIN" as const,
       email: "admin@acedd.org",
       name: "Admin User",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
 

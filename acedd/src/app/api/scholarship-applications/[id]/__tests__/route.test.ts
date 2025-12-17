@@ -48,6 +48,7 @@ describe("GET /api/scholarship-applications/[id]", () => {
       role: "SUPER_ADMIN" as const,
       email: "admin@acedd.org",
       name: "Admin User",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
   });
@@ -194,6 +195,7 @@ describe("PUT /api/scholarship-applications/[id] - Status Update", () => {
       role: "SUPER_ADMIN" as const,
       email: "admin@acedd.org",
       name: "Admin User",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
     vi.mocked(getAdminFromRequest).mockReturnValue(mockSession);
@@ -494,6 +496,7 @@ describe("PUT /api/scholarship-applications/[id] - Status Update", () => {
       role: "ADMIN" as const,
       email: "admin2@acedd.org",
       name: "Admin User 2",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockAdminSession);
     vi.mocked(getAdminFromRequest).mockReturnValue(mockAdminSession);
@@ -648,6 +651,7 @@ describe("DELETE /api/scholarship-applications/[id]", () => {
       role: "SUPER_ADMIN" as const,
       email: "admin@acedd.org",
       name: "Admin User",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
   });

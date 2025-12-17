@@ -31,6 +31,7 @@ describe("Admin Session Security (Sprint 6)", () => {
     role: "ADMIN" as const,
     email: "admin@acedd.org",
     name: "Admin User",
+    issuedAt: Math.floor(Date.now() / 1000),
   };
 
   describe("HMAC-SHA256 Signature", () => {

@@ -69,6 +69,7 @@ describe("GET /api/members/[id]", () => {
       role: "SUPER_ADMIN" as const,
       email: "admin@acedd.org",
       name: "Admin User",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
   });
@@ -111,6 +112,7 @@ describe("GET /api/members/[id]", () => {
       role: "ADMIN" as const,
       email: "admin@acedd.org",
       name: "Admin User",
+      issuedAt: Math.floor(Date.now() / 1000),
     });
 
     const mockMember = {
@@ -241,6 +243,7 @@ describe("PUT /api/members/[id]", () => {
       role: "SUPER_ADMIN" as const,
       email: "superadmin@acedd.org",
       name: "Super Admin",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
   });
@@ -391,6 +394,7 @@ describe("DELETE /api/members/[id]", () => {
       role: "SUPER_ADMIN" as const,
       email: "superadmin@acedd.org",
       name: "Super Admin",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
   });
@@ -537,6 +541,7 @@ describe("PUT /api/members/[id] - CV Update (Sprint 17)", () => {
       role: "SUPER_ADMIN" as const,
       email: "superadmin@acedd.org",
       name: "Super Admin",
+      issuedAt: Math.floor(Date.now() / 1000),
     };
     vi.mocked(requireRole).mockReturnValue(mockSession);
   });

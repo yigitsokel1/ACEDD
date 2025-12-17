@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { logClientError } from "@/lib/utils/clientLogging";
 import { CONTACT_FORM_FIELDS } from "../constants";
+import { Recaptcha } from "@/components/forms/Recaptcha";
 
 const contactFormSchema = z.object({
   name: z.string().min(2, "Ad soyad en az 2 karakter olmalıdır"),
@@ -25,6 +26,7 @@ export function ContactForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
 
   const {
     register,
@@ -39,13 +41,24 @@ export function ContactForm() {
     setIsSubmitting(true);
     setSubmitError(null);
 
+    // Check if reCAPTCHA is required and verified
+    const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+    if (recaptchaSiteKey && !recaptchaToken) {
+      setSubmitError("Lütfen reCAPTCHA doğrulamasını tamamlayın.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const response = await fetch("/api/contact-messages", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          recaptchaToken: recaptchaToken || undefined,
+        }),
       });
 
       if (!response.ok) {
@@ -76,6 +89,7 @@ export function ContactForm() {
 
       // Success - form submitted
       setIsSubmitted(true);
+      setRecaptchaToken(null);
       reset();
     } catch (error) {
       logClientError("[ContactForm][SUBMIT]", error);
@@ -167,11 +181,28 @@ export function ContactForm() {
             rows={6}
           />
           
+          {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
+            <Recaptcha
+              siteKey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
+              onVerify={(token) => {
+                setRecaptchaToken(token);
+                setSubmitError(null);
+              }}
+              onExpire={() => {
+                setRecaptchaToken(null);
+              }}
+              onError={() => {
+                setRecaptchaToken(null);
+                setSubmitError("reCAPTCHA doğrulaması başarısız oldu. Lütfen tekrar deneyin.");
+              }}
+            />
+          )}
+          
           <Button
             type="submit"
             className="w-full"
             isLoading={isSubmitting}
-            disabled={isSubmitting}
+            disabled={isSubmitting || (Boolean(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) && !recaptchaToken)}
           >
             {isSubmitting ? "Gönderiliyor..." : "Mesajı Gönder"}
           </Button>
