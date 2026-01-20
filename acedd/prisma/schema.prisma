@@ -4,8 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql" // MariaDB için mysql kullanıyoruz
-  // Note: url and shadowDatabaseUrl are now configured in prisma.config.ts (Prisma 7+)
+  provider  = "postgresql"
+  // Note: url and shadowDatabaseUrl are configured in prisma.config.ts (Prisma 7+)
 }
 
 // ============================================================================
@@ -416,7 +416,7 @@ model Dataset {
   name          String
   description   String?  @db.Text
   category      String
-  fileUrl       String   @db.MediumText // Base64 data URL (MEDIUMTEXT: 16MB limit)
+  fileUrl       String   @db.Text // Base64 data URL (TEXT: ~1GB in PostgreSQL, sufficient for 16MB+)
   fileName      String
   fileSize      Int      // bytes
   fileType      String   // MIME type

@@ -10,14 +10,8 @@
  * Role options: SUPER_ADMIN (default) or ADMIN
  */
 
-// Load environment variables from .env file FIRST (before any other imports)
-import { config } from "dotenv";
-import { resolve } from "path";
-
-// Load .env file from project root (use process.cwd() instead of __dirname for ES modules)
-config({ path: resolve(process.cwd(), ".env") });
-
-// Now import other modules (after .env is loaded)
+// .env yüklensin ki db importunda DATABASE_URL hazır olsun
+import "dotenv/config";
 import { prisma } from "../src/lib/db";
 import bcrypt from "bcryptjs";
 

@@ -12,9 +12,9 @@
  */
 
 import "dotenv/config";
-import { PrismaClient } from "@prisma/client";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
-import { 
+import type { Prisma } from "@prisma/client";
+import { prisma } from "../src/lib/db";
+import {
   DEFAULT_PAGE_CONTENT,
   DEFAULT_SITE_INFO,
   DEFAULT_CONTACT_INFO,
@@ -23,18 +23,6 @@ import {
 } from "../src/lib/constants/defaultContent";
 import { getContentKey } from "../src/lib/settings/keys";
 import type { PageIdentifier } from "../src/lib/types/setting";
-
-// Validate DATABASE_URL
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL environment variable is not set");
-}
-
-// Create adapter and client (same pattern as db.ts)
-const adapter = new PrismaMariaDb(process.env.DATABASE_URL);
-const prisma = new PrismaClient({
-  adapter,
-  log: ["error", "warn"],
-});
 
 const SYSTEM_USER_ID = "00000000-0000-0000-0000-000000000001"; // System user for seeding
 
@@ -47,37 +35,40 @@ interface SeedOptions {
 /**
  * Flatten nested object to dot notation
  * Example: { home: { heroTitle: "..." } } → { "content.home.heroTitle": "..." }
- * 
+ *
  * Special cases (don't flatten):
  * - missionVision: Keep as nested object { mission: {...}, vision: {...} }
  * - stats, missions, activities, etc.: Keep as arrays
  */
-function flattenObject(obj: any, prefix = ""): Record<string, any> {
-  const flattened: Record<string, any> = {};
-  
+function flattenObject(
+  obj: Record<string, unknown>,
+  prefix = ""
+): Record<string, unknown> {
+  const flattened: Record<string, unknown> = {};
+
   for (const key in obj) {
     const value = obj[key];
     const fullKey = prefix ? `${prefix}.${key}` : key;
-    
+
     if (value === null || value === undefined) {
       continue;
     }
-    
+
     // Special case: missionVision should stay as nested object
     if (key === "missionVision" && typeof value === "object" && !Array.isArray(value)) {
       flattened[fullKey] = value;
       continue;
     }
-    
+
     // If primitive or array, store directly
     if (typeof value !== "object" || Array.isArray(value)) {
       flattened[fullKey] = value;
     } else {
       // If object, recursively flatten
-      Object.assign(flattened, flattenObject(value, fullKey));
+      Object.assign(flattened, flattenObject(value as Record<string, unknown>, fullKey));
     }
   }
-  
+
   return flattened;
 }
 
@@ -85,12 +76,12 @@ function flattenObject(obj: any, prefix = ""): Record<string, any> {
  * Seed settings for a specific page
  */
 async function seedPageSettings(
-  pageKey: PageIdentifier, 
-  pageContent: any,
+  pageKey: PageIdentifier,
+  pageContent: Record<string, unknown>,
   options: SeedOptions
 ): Promise<{ created: number; updated: number; skipped: number }> {
   const stats = { created: 0, updated: 0, skipped: 0 };
-  
+
   // Flatten page content
   const flattened = flattenObject(pageContent);
   
@@ -117,9 +108,9 @@ async function seedPageSettings(
         await prisma.setting.update({
           where: { key: fullKey },
           data: {
-            value: value,
+            value: value as Prisma.InputJsonValue,
             updatedBy: SYSTEM_USER_ID,
-          }
+          },
         });
         stats.updated++;
         if (options.verbose) {
@@ -130,9 +121,9 @@ async function seedPageSettings(
         await prisma.setting.create({
           data: {
             key: fullKey,
-            value: value,
+            value: value as Prisma.InputJsonValue,
             updatedBy: SYSTEM_USER_ID,
-          }
+          },
         });
         stats.created++;
         if (options.verbose) {
@@ -151,15 +142,14 @@ async function seedPageSettings(
  * Seed simple key-value settings
  */
 async function seedSimpleSettings(
-  settings: Record<string, any>,
-  category: string,
+  settings: Record<string, unknown>,
   options: SeedOptions = {}
 ) {
   const stats = { created: 0, updated: 0, skipped: 0 };
-  
+
   for (const [key, value] of Object.entries(settings)) {
     const existing = await prisma.setting.findUnique({ where: { key } });
-    
+
     if (existing && !options.force) {
       stats.skipped++;
       if (options.verbose) {
@@ -167,18 +157,17 @@ async function seedSimpleSettings(
       }
       continue;
     }
-    
+
     await prisma.setting.upsert({
       where: { key },
       create: {
         key,
-        value,
+        value: value as Prisma.InputJsonValue,
         updatedBy: SYSTEM_USER_ID,
       },
       update: {
-        value,
+        value: value as Prisma.InputJsonValue,
         updatedBy: SYSTEM_USER_ID,
-        updatedAt: new Date(),
       },
     });
     
@@ -208,7 +197,7 @@ async function seedSettings(options: SeedOptions = {}) {
   
   // 1. Seed Site Info
   console.log("🏢 Seeding Site Info...");
-  const siteStats = await seedSimpleSettings(DEFAULT_SITE_INFO, "site", options);
+  const siteStats = await seedSimpleSettings(DEFAULT_SITE_INFO, options);
   totalStats.created += siteStats.created;
   totalStats.updated += siteStats.updated;
   totalStats.skipped += siteStats.skipped;
@@ -216,7 +205,7 @@ async function seedSettings(options: SeedOptions = {}) {
   
   // 2. Seed Contact Info
   console.log("📞 Seeding Contact Info...");
-  const contactStats = await seedSimpleSettings(DEFAULT_CONTACT_INFO, "contact", options);
+  const contactStats = await seedSimpleSettings(DEFAULT_CONTACT_INFO, options);
   totalStats.created += contactStats.created;
   totalStats.updated += contactStats.updated;
   totalStats.skipped += contactStats.skipped;
@@ -224,7 +213,7 @@ async function seedSettings(options: SeedOptions = {}) {
   
   // 3. Seed Social Media
   console.log("🌐 Seeding Social Media...");
-  const socialStats = await seedSimpleSettings(DEFAULT_SOCIAL_MEDIA, "social", options);
+  const socialStats = await seedSimpleSettings(DEFAULT_SOCIAL_MEDIA, options);
   totalStats.created += socialStats.created;
   totalStats.updated += socialStats.updated;
   totalStats.skipped += socialStats.skipped;
@@ -232,7 +221,7 @@ async function seedSettings(options: SeedOptions = {}) {
   
   // 4. Seed SEO
   console.log("🔍 Seeding SEO...");
-  const seoStats = await seedSimpleSettings(DEFAULT_SEO, "seo", options);
+  const seoStats = await seedSimpleSettings(DEFAULT_SEO, options);
   totalStats.created += seoStats.created;
   totalStats.updated += seoStats.updated;
   totalStats.skipped += seoStats.skipped;

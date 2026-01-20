@@ -8,6 +8,7 @@
  * as SESSION_SECRET in your .env file.
  */
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- CJS; Node built-in
 const crypto = require("crypto");
 
 // Generate a secure random 32-byte (256-bit) secret

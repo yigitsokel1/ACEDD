@@ -4,8 +4,8 @@ import "dotenv/config";
 import { defineConfig, env } from "prisma/config";
 
 // For prisma generate, DATABASE_URL is not strictly required
-// Use a dummy URL if not set (only needed for generate, actual connection happens at runtime)
-const databaseUrl = process.env.DATABASE_URL || "mysql://user:password@localhost:3306/dummy";
+// Use a dummy PostgreSQL URL if not set (only for generate; migrations/runtime need real DATABASE_URL)
+const databaseUrl = process.env.DATABASE_URL || "postgresql://user:password@localhost:5432/dummy";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",

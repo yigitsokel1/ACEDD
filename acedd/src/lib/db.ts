@@ -1,14 +1,10 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
 /**
  * Global type definition for Prisma singleton pattern.
  * Prevents multiple instances of PrismaClient in development (Next.js hot reload).
  */
-const globalForPrisma = globalThis as unknown as {
-  prisma?: PrismaClient;
-  adapter?: PrismaMariaDb;
-};
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
 /**
  * Load .env file if DATABASE_URL is not set (for scripts)
@@ -38,23 +34,10 @@ if (!process.env.DATABASE_URL) {
 }
 
 /**
- * MariaDB adapter instance.
- * Uses singleton pattern in development to prevent multiple adapter instances.
- */
-const adapter =
-  globalForPrisma.adapter ??
-  new PrismaMariaDb(process.env.DATABASE_URL);
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.adapter = adapter;
-}
-
-/**
- * Prisma Client instance.
- * 
- * Configuration:
- * - Uses MariaDB adapter for database connections
- * - Logging:
+ * Prisma Client instance (PostgreSQL / Supabase).
+ * DATABASE_URL is read from the environment by Prisma.
+ *
+ * Logging:
  *   - Production: error only (for performance)
  *   - Development: Controlled by PRISMA_LOG_QUERIES env var
  *     - PRISMA_LOG_QUERIES=true: query, error, warn (verbose debugging)
@@ -70,7 +53,6 @@ const shouldLogQueries =
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    adapter,
     log:
       shouldLogQueries
         ? ["query", "error", "warn"]
