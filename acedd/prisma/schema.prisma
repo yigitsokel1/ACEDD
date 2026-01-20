@@ -4,8 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  // Note: url and shadowDatabaseUrl are configured in prisma.config.ts (Prisma 7+)
+  provider = "postgresql"
+  // url: prisma.config.ts (Migrate/generate); PrismaClient: adapter (db.ts)
 }
 
 // ============================================================================

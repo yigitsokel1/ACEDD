@@ -16,7 +16,7 @@ interface ConditionalLayoutProps {
  * Fetches settings from database and passes to Header.
  */
 export async function ConditionalLayout({ children }: ConditionalLayoutProps) {
-  // Get pathname from headers (set by middleware)
+  // Get pathname from headers (set by proxy)
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") || "";
   

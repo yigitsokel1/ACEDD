@@ -103,6 +103,7 @@ Bu doküman, ACEDD projesinin local'de çalıştırılması, production'a deploy
    ```bash
    npm run create-admin admin@acedd.org "secure-password-123" "Admin User" SUPER_ADMIN
    ```
+   Detay ve alternatif (API): [docs/admin-creation.md](./admin-creation.md)
 
 7. **Development server'ı başlat:**
    ```bash
@@ -133,6 +134,7 @@ npx prisma studio
 ```bash
 npm run create-admin <email> <password> <name> [role]
 ```
+(Bkz. [docs/admin-creation.md](./admin-creation.md))
 
 **Test çalıştır:**
 ```bash
@@ -621,22 +623,11 @@ vercel logs --follow | grep "\[ERROR\]\[API\]\[SCHOLARSHIP\]"
 
 ## Admin Password Reset
 
-### Using Create-Admin Script
+### Create-Admin Script — Sadece Yeni Kullanıcı
 
-The simplest way to reset an admin password is to use the `create-admin` script, which will update the password if the user already exists:
+`create-admin` script'i **sadece yeni** admin oluşturur. Aynı email zaten varsa hata verir; şifre veya ad güncellemez. Şifre sıfırlama için aşağıdaki **Manuel (Database)** yöntemini kullanın.
 
-```bash
-# Update existing admin password
-npm run create-admin admin@acedd.org "new-secure-password" "Admin User" SUPER_ADMIN
-
-# Or use npx tsx directly:
-npx tsx scripts/create-admin.ts admin@acedd.org "new-secure-password" "Admin User" SUPER_ADMIN
-```
-
-**Note:** The script will:
-- Create a new admin user if the email doesn't exist
-- Update the password if the user already exists
-- Update the name and role if provided
+Admin oluşturma özeti: [docs/admin-creation.md](./admin-creation.md)
 
 ### Manual Password Reset (Database)
 

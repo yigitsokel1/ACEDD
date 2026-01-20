@@ -1,3 +1,4 @@
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
 /**
@@ -35,28 +36,28 @@ if (!process.env.DATABASE_URL) {
 
 /**
  * Prisma Client instance (PostgreSQL / Supabase).
- * DATABASE_URL is read from the environment by Prisma.
+ * Uses @prisma/adapter-pg: Next.js 16 / Turbopack "workerd" ortamında engineType "library"
+ * adapter ile çalışır; binary engine kullanılmaz.
  *
  * Logging:
  *   - Production: error only (for performance)
  *   - Development: Controlled by PRISMA_LOG_QUERIES env var
- *     - PRISMA_LOG_QUERIES=true: query, error, warn (verbose debugging)
- *     - PRISMA_LOG_QUERIES=false or unset: error, warn (minimal logging)
- * 
+ *
  * Singleton pattern in development prevents multiple instances during hot reload.
  */
-const shouldLogQueries = 
+const shouldLogQueries =
   process.env.NODE_ENV === "production"
-    ? false // Production: never log queries
-    : process.env.PRISMA_LOG_QUERIES === "true"; // Development: only if explicitly enabled
+    ? false
+    : process.env.PRISMA_LOG_QUERIES === "true";
 
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log:
-      shouldLogQueries
-        ? ["query", "error", "warn"]
-        : ["error", "warn"],
+    adapter: new PrismaPg(
+      { connectionString: process.env.DATABASE_URL! },
+      { schema: "public" }
+    ),
+    log: shouldLogQueries ? ["query", "error", "warn"] : ["error", "warn"],
   });
 
 if (process.env.NODE_ENV !== "production") {
