@@ -121,7 +121,7 @@ function BoardMemberModal({ boardMember, onClose, onSave, isEditing }: BoardMemb
                         <div className="font-medium text-gray-900">
                           {member.firstName} {member.lastName}
                         </div>
-                        <div className="text-sm text-gray-500">{member.email}</div>
+                        <div className="text-sm text-gray-500">{member.email || "-"}</div>
                       </button>
                     ))
                   ) : (
@@ -297,7 +297,7 @@ export default function BoardMembersTab() {
                       {/* Ad Soyad */}
                       <div className="col-span-5">
                         <div className="font-medium text-gray-900">{fullName}</div>
-                        <div className="text-sm text-gray-500">{member.email}</div>
+                        <div className="text-sm text-gray-500">{member.email || "-"}</div>
                       </div>
                       
                       {/* Rol */}

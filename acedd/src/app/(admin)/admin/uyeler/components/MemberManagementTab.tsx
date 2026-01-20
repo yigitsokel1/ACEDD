@@ -29,6 +29,7 @@ interface MemberDetailsModalProps {
 }
 
 function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
+  const [formErrors, setFormErrors] = useState<string | null>(null);
   const [formData, setFormData] = useState<CreateMemberFormData>({
     firstName: member?.firstName || "",
     lastName: member?.lastName || "",
@@ -53,8 +54,9 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
     cvDatasetId: member?.cvDatasetId || null,
   });
 
-  // Update formData when member changes
+  // Update formData and clear errors when member changes
   useEffect(() => {
+    setFormErrors(null);
     if (member) {
       setFormData({
         firstName: member.firstName || "",
@@ -122,6 +124,7 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
   // ];
 
   const statusOptions = [
+    { value: "", label: "Seçiniz" },
     { value: "active", label: "Aktif" },
     { value: "inactive", label: "Pasif" },
   ];
@@ -155,18 +158,42 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // FormData'yı CreateMemberData'ya dönüştür
-    const memberData: CreateMemberData = {
-      ...formData,
-      gender: formData.gender as 'erkek' | 'kadın',
-      status: formData.status as 'active' | 'inactive',
+    setFormErrors(null);
+
+    // Zorunlu alanlar: Ad, Soyad, Durum, Üye Türü
+    const missing: string[] = [];
+    if (!formData.firstName?.trim()) missing.push("Ad");
+    if (!formData.lastName?.trim()) missing.push("Soyad");
+    if (!formData.status || (formData.status !== "active" && formData.status !== "inactive")) missing.push("Durum");
+    if (!formData.membershipKind || (formData.membershipKind !== "MEMBER" && formData.membershipKind !== "VOLUNTEER")) missing.push("Üye Türü");
+
+    if (missing.length > 0) {
+      setFormErrors(`Lütfen zorunlu alanları doldurun: ${missing.join(", ")}`);
+      return;
+    }
+
+    // Zorunlu + opsiyonel alanlar; boş opsiyoneller null/"" ile API’ye gidiyor
+    const memberData = {
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+      status: formData.status as "active" | "inactive",
       membershipKind: (formData.membershipKind || "MEMBER") as MembershipKind,
-      tags: formData.tags || [],
+      gender: (formData.gender === "erkek" || formData.gender === "kadın") ? formData.gender : null,
+      email: formData.email?.trim() || null,
+      phone: formData.phone?.trim() || null,
+      birthDate: formData.birthDate?.trim() || null,
+      placeOfBirth: formData.placeOfBirth?.trim() || "",
+      currentAddress: formData.currentAddress?.trim() || "",
+      membershipDate: formData.membershipDate?.trim() || null,
+      tcId: formData.tcId?.trim() || null,
+      lastValidDate: formData.lastValidDate?.trim() || null,
+      titles: formData.titles ?? [],
+      tags: formData.tags ?? [],
       bloodType: formData.bloodType || null,
-      cvDatasetId: formData.cvDatasetId || null, // Sprint 17: CV Dataset ID
-    };
-    
+      city: formData.city?.trim() || null,
+      cvDatasetId: formData.cvDatasetId || null,
+    } as CreateMemberData;
+
     onSave(memberData);
   };
 
@@ -189,7 +216,12 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Sprint 15: Üyelik başvuru formuna göre düzenlenmiş alanlar */}
+            {formErrors && (
+              <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700" role="alert">
+                {formErrors}
+              </div>
+            )}
+            {/* Sprint 15: Üyelik başvuru formuna göre düzenlenmiş alanlar; zorunlu: Ad, Soyad, Durum, Üye Türü */}
             <div className="space-y-6">
               {/* Satır 1: Ad Soyad | TC Kimlik No */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -227,14 +259,11 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
               {/* Satır 2: Cinsiyet | İkamet Ettiğiniz Şehir */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex flex-col">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Cinsiyet <span className="text-red-500">*</span>
-                  </label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Cinsiyet</label>
                   <Select
                     value={formData.gender}
                     onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value as "" | "erkek" | "kadın" }))}
                     options={genderOptions}
-                    required
                   />
                 </div>
                 <div className="flex flex-col">
@@ -252,25 +281,19 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
               {/* Satır 3: Doğum Yeri | Doğum Tarihi */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex flex-col">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Doğum Yeri <span className="text-red-500">*</span>
-                  </label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Doğum Yeri</label>
                   <Input
                     value={formData.placeOfBirth}
                     onChange={(e) => setFormData(prev => ({ ...prev, placeOfBirth: e.target.value }))}
                     placeholder="Doğum yeri"
-                    required
                   />
                 </div>
                 <div className="flex flex-col">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Doğum Tarihi <span className="text-red-500">*</span>
-                  </label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Doğum Tarihi</label>
                   <Input
                     type="date"
                     value={formData.birthDate}
                     onChange={(e) => setFormData(prev => ({ ...prev, birthDate: e.target.value }))}
-                    required
                   />
                 </div>
               </div>
@@ -278,27 +301,21 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
               {/* Satır 4: E-posta | Telefon Numarası */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex flex-col">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    E-posta <span className="text-red-500">*</span>
-                  </label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">E-posta</label>
                   <Input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     placeholder="ornek@email.com"
-                    required
                   />
                 </div>
                 <div className="flex flex-col">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Telefon Numarası <span className="text-red-500">*</span>
-                  </label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Telefon Numarası</label>
                   <Input
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                     placeholder="05551234567"
-                    required
                   />
                 </div>
               </div>
@@ -317,15 +334,12 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
 
               {/* Satır 6: Adres (Tam genişlik) */}
               <div className="flex flex-col">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Adres <span className="text-red-500">*</span>
-                </label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Adres</label>
                 <Textarea
                   value={formData.currentAddress}
                   onChange={(e) => setFormData(prev => ({ ...prev, currentAddress: e.target.value }))}
                   placeholder="Tam adresinizi girin"
                   rows={4}
-                  required
                 />
               </div>
             </div>
@@ -340,7 +354,6 @@ function MemberModal({ member, onClose, onSave, isEditing }: MemberModalProps) {
                 type="date"
                 value={formData.membershipDate}
                 onChange={(e) => setFormData(prev => ({ ...prev, membershipDate: e.target.value }))}
-                required
               />
               
               {/* Sprint 5: Üye Türü (membershipKind) */}
@@ -582,14 +595,14 @@ function MemberDetailsModal({ member, onClose }: MemberDetailsModalProps) {
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">E-posta</label>
                   <p className="text-base text-gray-900 font-medium flex items-center">
                     <Mail className="w-4 h-4 mr-2 text-blue-500" />
-                    {member.email}
+                    {member.email || "-"}
                   </p>
                 </div>
                 <div className="space-y-1">
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Telefon Numarası</label>
                   <p className="text-base text-gray-900 font-medium flex items-center">
                     <Phone className="w-4 h-4 mr-2 text-green-500" />
-                    {member.phone}
+                    {member.phone || "-"}
                   </p>
                 </div>
                 <div className="space-y-1 md:col-span-2">
@@ -847,9 +860,9 @@ export default function MemberManagementTab() {
   // Sprint 14.7: useMemo ile filtreleme optimizasyonu - flash effect'i önlemek için
   const filteredMembers = React.useMemo(() => {
     return members.filter(member => {
-      const matchesSearch = 
+      const matchesSearch =
         `${member.firstName} ${member.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (member.email || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
         (member.phone && member.phone.includes(searchTerm));
 
       const matchesStatus = statusFilter === 'all' || member.status === statusFilter;
@@ -874,18 +887,13 @@ export default function MemberManagementTab() {
     );
   }
 
-  if (membersError) {
-    return (
-      <div className="p-6">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          Hata: {membersError}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="p-6">
+      {membersError && (
+        <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700" role="alert">
+          Hata: {membersError}
+        </div>
+      )}
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Üye Yönetimi</h2>
@@ -1029,11 +1037,11 @@ export default function MemberManagementTab() {
                     <div className="space-y-1">
                       <div className="flex items-center text-sm text-gray-600">
                         <Mail className="w-3 h-3 mr-2 text-blue-500" />
-                        <span className="truncate">{member.email}</span>
+                        <span className="truncate">{member.email || "-"}</span>
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <Phone className="w-3 h-3 mr-2 text-green-500" />
-                        {member.phone}
+                        {member.phone || "-"}
                       </div>
                     </div>
                   </div>

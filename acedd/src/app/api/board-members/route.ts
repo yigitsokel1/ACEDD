@@ -31,10 +31,9 @@ function formatBoardMember(prismaBoardMember: {
     id: string;
     firstName: string;
     lastName: string;
-    email: string;
+    email: string | null;
     phone: string | null;
-    tags: any; // JSON array
-    // Diğer Member alanları...
+    tags: unknown;
   };
   role: string;
   termStart: Date | null;
@@ -52,8 +51,8 @@ function formatBoardMember(prismaBoardMember: {
       id: prismaBoardMember.member.id,
       firstName: prismaBoardMember.member.firstName,
       lastName: prismaBoardMember.member.lastName,
-      email: prismaBoardMember.member.email,
-      phone: prismaBoardMember.member.phone || undefined,
+      email: prismaBoardMember.member.email ?? "",
+      phone: prismaBoardMember.member.phone ?? undefined,
       tags: tags,
       // Diğer Member alanları gerekirse buraya eklenebilir
     },

@@ -11,9 +11,10 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import type { Member } from "@/lib/types/member";
-import { requireRole, createAuthErrorResponse, getAdminFromRequest } from "@/lib/auth/adminAuth";
+import { requireRole, createAuthErrorResponse } from "@/lib/auth/adminAuth";
 import { validateMemberTags } from "@/lib/utils/memberHelpers";
 import { validateTCNumber } from "@/lib/utils/validationHelpers";
 import { logErrorSecurely } from "@/lib/utils/secureLogging";
@@ -39,50 +40,49 @@ function formatMember(prismaMember: {
   id: string;
   firstName: string;
   lastName: string;
-  gender: string;
-  email: string;
+  gender: string | null;
+  email: string | null;
   phone: string | null;
-  birthDate: Date;
+  birthDate: Date | null;
   placeOfBirth: string;
   currentAddress: string;
   tcId: string | null;
   lastValidDate: Date | null;
   titles: string;
   status: string;
-  membershipDate: Date;
+  membershipDate: Date | null;
   membershipKind: string;
-  tags: any; // JSON array
+  tags: unknown;
   department: string | null;
   graduationYear: number | null;
   occupation: string | null;
   bloodType: string | null;
   city: string | null;
-  cvDatasetId: string | null; // Sprint 17: CV Dataset ID
+  cvDatasetId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }) {
-  const tags = prismaMember.tags ? (Array.isArray(prismaMember.tags) ? prismaMember.tags : JSON.parse(prismaMember.tags as string)) : [];
-  
+  const tags = prismaMember.tags ? (Array.isArray(prismaMember.tags) ? prismaMember.tags : JSON.parse(String(prismaMember.tags))) : [];
   return {
     id: prismaMember.id,
     firstName: prismaMember.firstName,
     lastName: prismaMember.lastName,
-    gender: prismaMember.gender as "erkek" | "kadın",
-    email: prismaMember.email,
-    phone: prismaMember.phone || "",
-    birthDate: prismaMember.birthDate.toISOString(),
-    placeOfBirth: prismaMember.placeOfBirth,
-    currentAddress: prismaMember.currentAddress,
+    gender: (prismaMember.gender ?? "") as "erkek" | "kadın",
+    email: prismaMember.email ?? "",
+    phone: prismaMember.phone ?? "",
+    birthDate: prismaMember.birthDate?.toISOString() ?? "",
+    placeOfBirth: prismaMember.placeOfBirth ?? "",
+    currentAddress: prismaMember.currentAddress ?? "",
     tcId: prismaMember.tcId || undefined,
     lastValidDate: prismaMember.lastValidDate?.toISOString() || undefined,
     titles: parseJsonArray(prismaMember.titles) || [],
     status: prismaMember.status.toLowerCase() as "active" | "inactive",
-    membershipDate: prismaMember.membershipDate.toISOString(),
+    membershipDate: prismaMember.membershipDate?.toISOString() ?? "",
     membershipKind: prismaMember.membershipKind as "MEMBER" | "VOLUNTEER",
     tags: tags as Member["tags"],
-    bloodType: prismaMember.bloodType as Member["bloodType"] || undefined,
+    bloodType: (prismaMember.bloodType as Member["bloodType"]) || undefined,
     city: prismaMember.city || undefined,
-    cvDatasetId: prismaMember.cvDatasetId || undefined, // Sprint 17: CV Dataset ID
+    cvDatasetId: prismaMember.cvDatasetId || undefined,
     createdAt: prismaMember.createdAt.toISOString(),
     updatedAt: prismaMember.updatedAt.toISOString(),
   };
@@ -154,7 +154,7 @@ export async function POST(request: NextRequest) {
     
     const body = await request.json();
 
-    // Validation
+    // Zorunlu alanlar: Ad, Soyad, Durum, Üye Türü
     if (!body.firstName || typeof body.firstName !== "string" || body.firstName.trim().length === 0) {
       return NextResponse.json(
         { error: "Ad alanı zorunludur" },
@@ -169,51 +169,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!body.email || typeof body.email !== "string" || body.email.trim().length === 0) {
+    if (!body.status || (body.status !== "active" && body.status !== "inactive")) {
       return NextResponse.json(
-        { error: "E-posta adresi zorunludur" },
+        { error: "Durum zorunludur (active veya inactive)" },
         { status: 400 }
       );
     }
 
-    if (!body.birthDate) {
-      return NextResponse.json(
-        { error: "Doğum tarihi zorunludur" },
-        { status: 400 }
-      );
-    }
-
-    if (!body.membershipDate) {
-      return NextResponse.json(
-        { error: "Üyelik tarihi zorunludur" },
-        { status: 400 }
-      );
-    }
-
-    // Sprint 5: membershipKind validation
     if (!body.membershipKind || (body.membershipKind !== "MEMBER" && body.membershipKind !== "VOLUNTEER")) {
       return NextResponse.json(
-        { error: "Üyelik türü zorunludur (MEMBER veya VOLUNTEER)" },
+        { error: "Üye türü zorunludur (MEMBER veya VOLUNTEER)" },
         { status: 400 }
       );
     }
 
-    // Parse dates
-    const birthDate = new Date(body.birthDate);
-    const membershipDate = new Date(body.membershipDate);
-
-    if (isNaN(birthDate.getTime())) {
-      return NextResponse.json(
-        { error: "Geçerli bir doğum tarihi giriniz" },
-        { status: 400 }
-      );
+    // Opsiyonel tarihler: sadece gönderilmiş ve geçerliyse parse et
+    let birthDate: Date | null = null;
+    if (body.birthDate && String(body.birthDate).trim()) {
+      const d = new Date(body.birthDate);
+      if (isNaN(d.getTime())) {
+        return NextResponse.json(
+          { error: "Geçerli bir doğum tarihi giriniz" },
+          { status: 400 }
+        );
+      }
+      birthDate = d;
     }
 
-    if (isNaN(membershipDate.getTime())) {
-      return NextResponse.json(
-        { error: "Geçerli bir üyelik tarihi giriniz" },
-        { status: 400 }
-      );
+    let membershipDate: Date | null = null;
+    if (body.membershipDate && String(body.membershipDate).trim()) {
+      const d = new Date(body.membershipDate);
+      if (isNaN(d.getTime())) {
+        return NextResponse.json(
+          { error: "Geçerli bir üyelik tarihi giriniz" },
+          { status: 400 }
+        );
+      }
+      membershipDate = d;
     }
 
     // Validate TC Number if provided
@@ -246,33 +238,35 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create member
+    // Create member (sadece ad, soyad, durum, üye türü zorunlu)
+    // gender: sadece erkek/kadın ise ekle (null gönderilmez; Prisma optional = anahtar yok)
+    // birthDate, membershipDate: her zaman gönder; null ise null (Prisma DateTime? kabul eder)
+    const data: Record<string, unknown> = {
+      firstName: body.firstName.trim(),
+      lastName: body.lastName.trim(),
+      email: (body.email && typeof body.email === "string" && body.email.trim()) ? body.email.trim() : null,
+      phone: (body.phone && typeof body.phone === "string" && body.phone.trim()) ? body.phone.trim() : null,
+      placeOfBirth: (body.placeOfBirth && typeof body.placeOfBirth === "string") ? body.placeOfBirth.trim() : "",
+      currentAddress: (body.currentAddress && typeof body.currentAddress === "string") ? body.currentAddress.trim() : "",
+      tcId: (body.tcId && typeof body.tcId === "string" && body.tcId.trim()) ? body.tcId.trim() : null,
+      lastValidDate: body.lastValidDate ? new Date(body.lastValidDate) : null,
+      titles: body.titles && Array.isArray(body.titles) ? JSON.stringify(body.titles) : JSON.stringify([]),
+      status: body.status === "inactive" ? "INACTIVE" : "ACTIVE",
+      membershipKind: body.membershipKind,
+      tags,
+      department: body.department || null,
+      graduationYear: body.graduationYear || null,
+      occupation: body.occupation || null,
+      bloodType: body.bloodType || null,
+      city: (body.city && typeof body.city === "string" && body.city.trim()) ? body.city.trim() : null,
+      cvDatasetId: body.cvDatasetId || null,
+      birthDate,
+      membershipDate,
+    };
+    if (body.gender === "erkek" || body.gender === "kadın") data.gender = body.gender;
+
     const member = await prisma.member.create({
-      data: {
-        firstName: body.firstName.trim(),
-        lastName: body.lastName.trim(),
-        gender: body.gender || "erkek",
-        email: body.email.trim(),
-        phone: body.phone || null,
-        birthDate,
-        placeOfBirth: body.placeOfBirth || "",
-        currentAddress: body.currentAddress || "",
-        tcId: body.tcId || null,
-        lastValidDate: body.lastValidDate ? new Date(body.lastValidDate) : null,
-        titles: body.titles && Array.isArray(body.titles) ? JSON.stringify(body.titles) : JSON.stringify([]),
-        status: "ACTIVE", // Automatically active for new members
-        membershipDate,
-        membershipKind: body.membershipKind, // Sprint 5: Required field
-        tags: tags, // Sprint 5: Optional tags
-        department: body.department || null,
-        graduationYear: body.graduationYear || null,
-        occupation: body.occupation || null,
-        // Sprint 15: Membership Application'dan gelen yeni alanlar
-        bloodType: body.bloodType || null,
-        city: body.city || null,
-        // Sprint 17: CV Upload
-        cvDatasetId: body.cvDatasetId || null,
-      },
+      data: data as unknown as Prisma.MemberCreateInput,
     });
 
     const formattedMember = formatMember(member);

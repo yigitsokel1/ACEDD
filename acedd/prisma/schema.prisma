@@ -61,17 +61,17 @@ model Member {
   id            String         @id @default(uuid())
   firstName     String
   lastName      String
-  gender        MemberGender
-  email         String         @unique
+  gender        MemberGender?  // Opsiyonel: Sadece ad, soyad, durum, üye türü zorunlu
+  email         String?        @unique // Opsiyonel
   phone         String?
-  birthDate     DateTime
-  placeOfBirth  String
-  currentAddress String        @db.Text
+  birthDate     DateTime?      // Opsiyonel
+  placeOfBirth  String         // Boş string kabul; API boşsa ""
+  currentAddress String        @db.Text // Boş string kabul; API boşsa ""
   tcId          String?        // TC Kimlik No (identityNumber için kullanılacak)
   lastValidDate DateTime?
   titles        String         @db.Text // JSON array olarak saklanacak
   status        MemberStatus   @default(ACTIVE)
-  membershipDate DateTime
+  membershipDate DateTime?     // Opsiyonel
   // Yeni alanlar (opsiyonel)
   department    String?        // Bölüm
   graduationYear Int?           // Mezuniyet yılı

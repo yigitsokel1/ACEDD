@@ -40,8 +40,8 @@ async function fetchBoardMembers(): Promise<BoardMember[]> {
         id: bm.member.id,
         firstName: bm.member.firstName,
         lastName: bm.member.lastName,
-        email: bm.member.email,
-        phone: bm.member.phone || undefined,
+        email: bm.member.email ?? "",
+        phone: bm.member.phone ?? undefined,
         tags: parseTags(bm.member.tags),
         cvDatasetId: (bm.member as any).cvDatasetId || undefined, // Sprint 17: CV Dataset ID
         // Diğer Member alanları gerekirse buraya eklenebilir
@@ -99,18 +99,17 @@ export async function TeamSection() {
     id: m.id,
     firstName: m.firstName,
     lastName: m.lastName,
-    gender: m.gender as 'erkek' | 'kadın',
-    email: m.email,
-    phone: m.phone || "", // Prisma'dan null gelebilir, string'e çevir
-    birthDate: m.birthDate.toISOString(),
-    // Sprint 15: academicLevel, maritalStatus, hometown, nationality alanları kaldırıldı
-    placeOfBirth: m.placeOfBirth,
-    currentAddress: m.currentAddress,
+    gender: (m.gender ?? "") as "erkek" | "kadın",
+    email: m.email ?? "",
+    phone: m.phone ?? "",
+    birthDate: m.birthDate?.toISOString() ?? "",
+    placeOfBirth: m.placeOfBirth ?? "",
+    currentAddress: m.currentAddress ?? "",
     tcId: m.tcId || undefined,
     lastValidDate: m.lastValidDate?.toISOString(),
     titles: m.titles ? (Array.isArray(m.titles) ? m.titles : JSON.parse(m.titles)) : [],
-    status: (m.status === "ACTIVE" ? "active" : "inactive") as 'active' | 'inactive',
-    membershipDate: m.membershipDate.toISOString(),
+    status: (m.status === "ACTIVE" ? "active" : "inactive") as "active" | "inactive",
+    membershipDate: m.membershipDate?.toISOString() ?? "",
     membershipKind: m.membershipKind as any,
     tags: parseTags(m.tags),
     cvDatasetId: (m as any).cvDatasetId || undefined, // Sprint 17: CV Dataset ID

@@ -6,6 +6,8 @@ import { defineConfig, env } from "prisma/config";
 // For prisma generate, DATABASE_URL is not strictly required
 // Use a dummy PostgreSQL URL if not set (only for generate; migrations/runtime need real DATABASE_URL)
 const databaseUrl = process.env.DATABASE_URL || "postgresql://user:password@localhost:5432/dummy";
+// db push / migrate: Supabase pooler (6543) DDL'de takılır. DIRECT_DATABASE_URL (5432) varsa onu kullan.
+const prismaUrl = process.env.DIRECT_DATABASE_URL || databaseUrl;
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -13,7 +15,7 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: databaseUrl,
+    url: prismaUrl,
     // Shadow database: Opsiyonel (sadece prisma migrate dev için gerekli)
     // prisma db push shadow DB kullanmaz, bu yüzden tanımlamaya gerek yok
     ...(process.env.SHADOW_DATABASE_URL && {

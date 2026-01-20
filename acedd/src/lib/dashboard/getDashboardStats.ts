@@ -273,7 +273,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       recent: membersRecent.map((member) => ({
         id: member.id,
         fullName: `${member.firstName} ${member.lastName}`,
-        email: member.email,
+        email: member.email ?? "",
         createdAt: member.createdAt.toISOString(),
       })),
     },

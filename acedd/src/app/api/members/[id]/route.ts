@@ -41,50 +41,49 @@ function formatMember(prismaMember: {
   id: string;
   firstName: string;
   lastName: string;
-  gender: string;
-  email: string;
+  gender: string | null;
+  email: string | null;
   phone: string | null;
-  birthDate: Date;
+  birthDate: Date | null;
   placeOfBirth: string;
   currentAddress: string;
   tcId: string | null;
   lastValidDate: Date | null;
   titles: string;
   status: string;
-  membershipDate: Date;
+  membershipDate: Date | null;
   membershipKind: string;
-  tags: any; // JSON array
+  tags: unknown;
   department: string | null;
   graduationYear: number | null;
   occupation: string | null;
   bloodType: string | null;
   city: string | null;
-  cvDatasetId: string | null; // Sprint 17: CV Dataset ID
+  cvDatasetId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }) {
-  const tags = prismaMember.tags ? (Array.isArray(prismaMember.tags) ? prismaMember.tags : JSON.parse(prismaMember.tags as string)) : [];
-  
+  const tags = prismaMember.tags ? (Array.isArray(prismaMember.tags) ? prismaMember.tags : JSON.parse(String(prismaMember.tags))) : [];
   return {
     id: prismaMember.id,
     firstName: prismaMember.firstName,
     lastName: prismaMember.lastName,
-    gender: prismaMember.gender as "erkek" | "kadın",
-    email: prismaMember.email,
-    phone: prismaMember.phone || "",
-    birthDate: prismaMember.birthDate.toISOString(),
-    placeOfBirth: prismaMember.placeOfBirth,
-    currentAddress: prismaMember.currentAddress,
+    gender: (prismaMember.gender ?? "") as "erkek" | "kadın",
+    email: prismaMember.email ?? "",
+    phone: prismaMember.phone ?? "",
+    birthDate: prismaMember.birthDate?.toISOString() ?? "",
+    placeOfBirth: prismaMember.placeOfBirth ?? "",
+    currentAddress: prismaMember.currentAddress ?? "",
     tcId: prismaMember.tcId || undefined,
     lastValidDate: prismaMember.lastValidDate?.toISOString() || undefined,
     titles: parseJsonArray(prismaMember.titles) || [],
     status: prismaMember.status.toLowerCase() as "active" | "inactive",
-    membershipDate: prismaMember.membershipDate.toISOString(),
+    membershipDate: prismaMember.membershipDate?.toISOString() ?? "",
     membershipKind: prismaMember.membershipKind as "MEMBER" | "VOLUNTEER",
     tags: tags as Member["tags"],
-    bloodType: prismaMember.bloodType as Member["bloodType"] || undefined,
+    bloodType: (prismaMember.bloodType as Member["bloodType"]) || undefined,
     city: prismaMember.city || undefined,
-    cvDatasetId: prismaMember.cvDatasetId || undefined, // Sprint 17: CV Dataset ID
+    cvDatasetId: prismaMember.cvDatasetId || undefined,
     createdAt: prismaMember.createdAt.toISOString(),
     updatedAt: prismaMember.updatedAt.toISOString(),
   };
@@ -168,13 +167,8 @@ export async function PUT(
     }
 
     if (body.email !== undefined) {
-      if (typeof body.email !== "string" || body.email.trim().length === 0) {
-        return NextResponse.json(
-          { error: "E-posta adresi boş olamaz" },
-          { status: 400 }
-        );
-      }
-      updateData.email = body.email.trim();
+      // E-posta opsiyonel; boş string veya null ile temizlenebilir
+      updateData.email = (typeof body.email === "string" && body.email.trim().length > 0) ? body.email.trim() : null;
     }
 
     if (body.phone !== undefined) {
@@ -182,28 +176,40 @@ export async function PUT(
     }
 
     if (body.birthDate !== undefined) {
-      const birthDate = new Date(body.birthDate);
-      if (isNaN(birthDate.getTime())) {
-        return NextResponse.json(
-          { error: "Geçerli bir doğum tarihi giriniz" },
-          { status: 400 }
-        );
+      const raw = body.birthDate;
+      if (raw === null || raw === "" || (typeof raw === "string" && !raw.trim())) {
+        updateData.birthDate = null;
+      } else {
+        const birthDate = new Date(raw);
+        if (isNaN(birthDate.getTime())) {
+          return NextResponse.json(
+            { error: "Geçerli bir doğum tarihi giriniz" },
+            { status: 400 }
+          );
+        }
+        updateData.birthDate = birthDate;
       }
-      updateData.birthDate = birthDate;
     }
 
     if (body.membershipDate !== undefined) {
-      const membershipDate = new Date(body.membershipDate);
-      if (isNaN(membershipDate.getTime())) {
-        return NextResponse.json(
-          { error: "Geçerli bir üyelik tarihi giriniz" },
-          { status: 400 }
-        );
+      const raw = body.membershipDate;
+      if (raw === null || raw === "" || (typeof raw === "string" && !raw.trim())) {
+        updateData.membershipDate = null;
+      } else {
+        const membershipDate = new Date(raw);
+        if (isNaN(membershipDate.getTime())) {
+          return NextResponse.json(
+            { error: "Geçerli bir üyelik tarihi giriniz" },
+            { status: 400 }
+          );
+        }
+        updateData.membershipDate = membershipDate;
       }
-      updateData.membershipDate = membershipDate;
     }
 
-    if (body.gender !== undefined) updateData.gender = body.gender;
+    if (body.gender !== undefined) {
+      updateData.gender = (body.gender === "erkek" || body.gender === "kadın") ? body.gender : null;
+    }
     if (body.placeOfBirth !== undefined) updateData.placeOfBirth = body.placeOfBirth;
     if (body.currentAddress !== undefined) updateData.currentAddress = body.currentAddress;
     if (body.tcId !== undefined) updateData.tcId = body.tcId || null;
