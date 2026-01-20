@@ -50,13 +50,17 @@ const shouldLogQueries =
     ? false
     : process.env.PRISMA_LOG_QUERIES === "true";
 
+const poolConfig = {
+  connectionString: process.env.DATABASE_URL!,
+  // Serverless (Vercel): her instance en fazla 2 connection açar; "MaxClientsInSessionMode" limitine takılmayı azaltır
+  max: 2,
+  connectionTimeoutMillis: 10_000,
+};
+
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    adapter: new PrismaPg(
-      { connectionString: process.env.DATABASE_URL! },
-      { schema: "public" }
-    ),
+    adapter: new PrismaPg(poolConfig, { schema: "public" }),
     log: shouldLogQueries ? ["query", "error", "warn"] : ["error", "warn"],
   });
 

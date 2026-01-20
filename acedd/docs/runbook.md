@@ -881,11 +881,26 @@ RECAPTCHA_SECRET_KEY=""
 
 **Problem:** `DATABASE_URL` hatalı veya database erişilemiyor
 
+**Çözüm (Supabase/Postgres):**
+1. Supabase Dashboard → Project Settings → Database → Connection string
+2. `DATABASE_URL` formatı: `postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true` (Transaction mode, Vercel için)
+3. Firewall/network erişimini kontrol et
+
+### MaxClientsInSessionMode / Operation has timed out (Supabase + Vercel)
+
+**Problem:** Vercel loglarında `MaxClientsInSessionMode: max clients reached` veya `Operation has timed out`, `Settings fetch timeout`, `/api/events` 500.
+
+**Sebep:** `DATABASE_URL` **Session** pooler (port 5432) kullanıyor. Serverless’ta her istek/instance ayrı connection tutar; Supabase Session `pool_size` sınırı (free tier ~15–20) hemen dolar.
+
 **Çözüm:**
-1. Plesk → Databases → Connection info'yu kontrol et
-2. `DATABASE_URL` formatını doğrula: `mysql://user:password@host:port/database`
-3. Database kullanıcısının yetkilerini kontrol et
-4. Firewall/network erişimini kontrol et
+1. **Vercel’de `DATABASE_URL`’i Transaction pooler’a geçir:**
+   - Supabase → Database → Connection pooling → **Transaction** mode → URI
+   - Host: `aws-0-[REGION].pooler.supabase.com`, **port: 6543**
+   - Sonuna `?pgbouncer=true` ekle (Prisma prepared statement’ları kapatır; Transaction modda zorunlu).
+   - Örnek: `postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true`
+2. Vercel → Project → Settings → Environment Variables → `DATABASE_URL`’i güncelle (Production + Preview) → Redeploy
+
+Aynı `DATABASE_URL`’i local/build’de de kullanabilirsin. Bkz. [env.example](../env.example), [Supabase Connection Pooling](https://supabase.com/docs/guides/database/connecting-to-postgres#connection-pooler).
 
 ### Application Başlamıyor
 
